@@ -51,8 +51,8 @@ export const schemas = {
       name: z.string().min(2, 'Name must be at least 2 characters'),
       mobileNumber: z.string().min(10, 'Mobile number must be at least 10 characters'),
       password: z.string().min(6, 'Password must be at least 6 characters'),
-      project: z.string().optional(),
-      location: z.string().optional(),
+      projectId: z.number().int().positive().optional(),
+      locationId: z.number().int().positive().optional(),
       role: z.enum(['ADMIN', 'SURVEYOR']).optional(),
     }),
   },
@@ -80,8 +80,8 @@ export const schemas = {
       name: z.string().min(2, 'Name must be at least 2 characters'),
       mobileNumber: z.string().min(10, 'Mobile number must be at least 10 characters'),
       password: z.string().min(6, 'Password must be at least 6 characters'),
-      project: z.string().optional(),
-      location: z.string().optional(),
+      projectId: z.number().int().positive().optional(),
+      locationId: z.number().int().positive().optional(),
     }),
   },
 
@@ -89,8 +89,8 @@ export const schemas = {
     body: z.object({
       name: z.string().min(2).optional(),
       mobileNumber: z.string().min(10).optional(),
-      project: z.string().optional(),
-      location: z.string().optional(),
+      projectId: z.number().int().positive().optional(),
+      locationId: z.number().int().positive().optional(),
       isActive: z.boolean().optional(),
     }),
   },
@@ -99,6 +99,40 @@ export const schemas = {
   idParam: {
     params: z.object({
       id: z.string().uuid('Invalid ID format'),
+    }),
+  },
+
+  idParamInt: {
+    params: z.object({
+      id: z.string().refine(val => !isNaN(parseInt(val)), 'Invalid integer ID format'),
+    }),
+  },
+
+  // Project schemas
+  createProject: {
+    body: z.object({
+      name: z.string().min(2, 'Project name must be at least 2 characters'),
+      description: z.string().optional(),
+    }),
+  },
+
+  updateProject: {
+    body: z.object({
+      name: z.string().min(2, 'Project name must be at least 2 characters').optional(),
+      description: z.string().optional(),
+    }),
+  },
+
+  // Location schemas
+  createLocation: {
+    body: z.object({
+      name: z.string().min(2, 'Location name must be at least 2 characters'),
+    }),
+  },
+
+  updateLocation: {
+    body: z.object({
+      name: z.string().min(2, 'Location name must be at least 2 characters').optional(),
     }),
   },
 

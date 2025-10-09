@@ -40,6 +40,7 @@ import {
   LocationOn,
   CalendarToday,
   Person,
+  Map,
 } from '@mui/icons-material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -47,6 +48,8 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
 import { attendanceService, surveyorService, Attendance, User } from '@/services/api'
 import { exportAttendanceToCSV, exportAttendanceToPDF } from '@/utils/exportUtils'
+import AttendanceMap from '@/components/AttendanceMap'
+import '@/utils/leafletSetup'
 
 interface AttendanceFilters {
   startDate: Dayjs | null
@@ -75,6 +78,11 @@ export default function AttendancePage() {
   // Photo dialog
   const [openPhotoDialog, setOpenPhotoDialog] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<string>('')
+  
+  // Map dialog
+  const [openMapDialog, setOpenMapDialog] = useState(false)
+  const [selectedAttendance, setSelectedAttendance] = useState<Attendance | Attendance[]>([])
+  const [mapTitle, setMapTitle] = useState('')
 
   useEffect(() => {
     fetchSurveyors()
@@ -146,6 +154,18 @@ export default function AttendancePage() {
     setOpenPhotoDialog(true)
   }
 
+  const handleLocationClick = (record: Attendance) => {
+    setSelectedAttendance(record)
+    setMapTitle(`${record.user.name} - ${record.type === 'CHECK_IN' ? 'Check In' : 'Check Out'}`)
+    setOpenMapDialog(true)
+  }
+
+  const handleViewAllLocations = () => {
+    setSelectedAttendance(attendanceData)
+    setMapTitle('All Attendance Locations')
+    setOpenMapDialog(true)
+  }
+
   const handleExportCSV = () => {
     exportAttendanceToCSV(attendanceData)
   }
@@ -199,8 +219,8 @@ export default function AttendancePage() {
         )}
 
         {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={4}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+          <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -218,8 +238,8 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          </Box>
+          <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -237,8 +257,8 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          </Box>
+          <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -256,8 +276,8 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Filters */}
         <Paper sx={{ p: 3, mb: 3 }}>
@@ -265,24 +285,24 @@ export default function AttendancePage() {
             <FilterList />
             <Typography variant="h6">Filters</Typography>
           </Box>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={2.5}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
               <DatePicker
                 label="Start Date"
                 value={filters.startDate}
                 onChange={(value) => handleFilterChange('startDate', value)}
                 slotProps={{ textField: { fullWidth: true, size: 'small' } }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.5}>
+            </Box>
+            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
               <DatePicker
                 label="End Date"
                 value={filters.endDate}
                 onChange={(value) => handleFilterChange('endDate', value)}
                 slotProps={{ textField: { fullWidth: true, size: 'small' } }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.5}>
+            </Box>
+            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Surveyor</InputLabel>
                 <Select
@@ -298,8 +318,8 @@ export default function AttendancePage() {
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.5}>
+            </Box>
+            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Type</InputLabel>
                 <Select
@@ -312,37 +332,45 @@ export default function AttendancePage() {
                   <MenuItem value="CHECK_OUT">Check Out</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={12} md={2}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  onClick={clearFilters}
-                  size="small"
-                  sx={{ mr: 1 }}
-                >
-                  Clear
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  size="small"
-                  onClick={handleExportCSV}
-                  sx={{ mr: 1 }}
-                >
-                  CSV
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  size="small"
-                  onClick={handleExportPDF}
-                >
-                  PDF
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                onClick={clearFilters}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Map />}
+                size="small"
+                onClick={handleViewAllLocations}
+                sx={{ mr: 1 }}
+                disabled={attendanceData.length === 0}
+              >
+                View Map
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Download />}
+                size="small"
+                onClick={handleExportCSV}
+                sx={{ mr: 1 }}
+              >
+                CSV
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Download />}
+                size="small"
+                onClick={handleExportPDF}
+              >
+                PDF
+              </Button>
+            </Box>
+          </Box>
         </Paper>
 
         {/* Attendance Table */}
@@ -401,11 +429,29 @@ export default function AttendancePage() {
                       {dayjs(record.capturedAt).format('hh:mm A')}
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LocationOn fontSize="small" color="action" />
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: 'action.hover',
+                            borderRadius: 1
+                          },
+                          p: 1,
+                          borderRadius: 1
+                        }}
+                        onClick={() => handleLocationClick(record)}
+                        title="Click to view on map"
+                      >
+                        <LocationOn fontSize="small" color="primary" />
                         <Box>
                           <Typography variant="body2">
                             {record.latitude.toFixed(6)}, {record.longitude.toFixed(6)}
+                          </Typography>
+                          <Typography variant="caption" color="primary">
+                            View on map
                           </Typography>
                         </Box>
                       </Box>
@@ -430,6 +476,14 @@ export default function AttendancePage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Paper>
+
+        {/* Map Dialog */}
+        <AttendanceMap
+          open={openMapDialog}
+          onClose={() => setOpenMapDialog(false)}
+          attendance={selectedAttendance}
+          title={mapTitle}
+        />
 
         {/* Photo Dialog */}
         <Dialog

@@ -25,7 +25,12 @@ The Web Admin Portal for the Surveyor Attendance Management System (SAMS) built 
 ### 📋 Attendance Reports
 - **Comprehensive Filtering**: Date range, surveyor, and type filters
 - **Photo Verification**: View attendance selfies in full-screen modal
-- **Location Tracking**: GPS coordinates with mapping integration
+- **Interactive Map Viewing**: GPS coordinates with interactive Leaflet maps
+  - Click any coordinates to view individual location on map
+  - "View Map" button to show all attendance locations simultaneously
+  - Custom markers for check-in (green) and check-out (orange)
+  - Rich popups with surveyor details, photos, and attendance info
+  - Responsive design for desktop and mobile viewing
 - **Export Options**: CSV and PDF export with custom formatting
 
 ### 🚴 Bike Meter Reports
@@ -46,6 +51,7 @@ The Web Admin Portal for the Surveyor Attendance Management System (SAMS) built 
 - **Next.js 13+**: App Router with Server/Client Components
 - **TypeScript**: Full type safety and better development experience
 - **Material-UI v5**: Modern React component library
+- **Leaflet & React-Leaflet**: Interactive maps for location visualization
 - **Recharts**: Interactive and responsive charts
 - **Day.js**: Lightweight date manipulation library
 
@@ -110,13 +116,15 @@ src/
 │   └── bike-readings/     # Bike meter reports
 ├── components/            # Reusable React components
 │   ├── AdminLayout.tsx    # Main admin layout with navigation
+│   ├── AttendanceMap.tsx  # Interactive map component for coordinates
 │   └── ProtectedRoute.tsx # Route protection wrapper
 ├── context/               # React Context providers
 │   └── AuthContext.tsx    # Authentication state management
 ├── services/              # API service layer
 │   └── api.ts            # Axios configuration and API calls
 ├── utils/                 # Utility functions
-│   └── exportUtils.ts    # CSV and PDF export functions
+│   ├── exportUtils.ts    # CSV and PDF export functions
+│   └── leafletSetup.ts   # Leaflet configuration for Next.js
 └── lib/                   # Configuration and setup
     └── theme.ts          # Material-UI theme configuration
 ```
@@ -163,6 +171,17 @@ All data views include sophisticated filtering:
 - **Multi-select Dropdowns**: Surveyor and type filtering
 - **Real-time Updates**: Instant data refresh on filter changes
 - **Persistent State**: Filters maintained across page refreshes
+- **Map Integration**: "View Map" button to visualize all filtered locations
+
+### Interactive Maps
+Comprehensive map viewing for attendance locations:
+- **Individual Location View**: Click coordinates to open interactive map
+- **Bulk Location View**: View all attendance records on single map
+- **Custom Markers**: Color-coded markers (green for check-in, orange for check-out)
+- **Rich Popups**: Detailed information with photos and attendance details
+- **Auto-fit Bounds**: Automatically centers and zooms to show all locations
+- **Responsive Design**: Full-screen on mobile, modal on desktop
+- **OpenStreetMap**: Reliable global map coverage
 
 ### Export Functionality
 Professional reporting capabilities:
