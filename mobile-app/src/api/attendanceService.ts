@@ -1,9 +1,23 @@
 import { apiFormData, createFormData } from './index';
 import api from './index';
 
-export const attendanceService = {
+export interface AttendanceFilters {
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  type?: 'Morning' | 'Evening';
+}
+
+export interface AttendanceService {
+  markAttendance: (type: 'Morning' | 'Evening', latitude: number, longitude: number, photoUri: string) => Promise<any>;
+  getTodayStatus: () => Promise<any>;
+  getAttendanceList: (filters?: AttendanceFilters) => Promise<any>;
+  getAttendanceSummary: (startDate: string, endDate: string) => Promise<any>;
+}
+
+export const attendanceService: AttendanceService = {
   // Mark attendance with photo and GPS
-  markAttendance: async (type, latitude, longitude, photoUri) => {
+  markAttendance: async (type: 'Morning' | 'Evening', latitude: number, longitude: number, photoUri: string) => {
     try {
       const formData = createFormData(
         {
@@ -33,7 +47,7 @@ export const attendanceService = {
   },
 
   // Get attendance list with filters
-  getAttendanceList: async (filters = {}) => {
+  getAttendanceList: async (filters: AttendanceFilters = {}) => {
     try {
       const params = new URLSearchParams();
       
@@ -53,7 +67,7 @@ export const attendanceService = {
   },
 
   // Get attendance summary
-  getAttendanceSummary: async (startDate, endDate) => {
+  getAttendanceSummary: async (startDate: string, endDate: string) => {
     try {
       const params = new URLSearchParams({
         startDate,

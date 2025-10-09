@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, TextInputProps } from 'react-native';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../theme';
+import { InputFieldProps } from '../types';
 
-const InputField = ({
+const InputField: React.FC<InputFieldProps & TextInputProps> = ({
   label,
   placeholder,
   value,

@@ -5,7 +5,7 @@ import { store } from './src/store';
 import { RootNavigator } from './src/navigation';
 import { Colors } from './src/theme';
 
-export default function App() {
+const App: React.FC = () => {
   return (
     <Provider store={store}>
       <StatusBar 
@@ -16,4 +16,6 @@ export default function App() {
       <RootNavigator />
     </Provider>
   );
-}
+};
+
+export default App;

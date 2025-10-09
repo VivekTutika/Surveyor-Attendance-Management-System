@@ -1,4 +1,59 @@
-export const Colors = {
+export interface ColorPalette {
+  // Primary Colors
+  primary: string;
+  primaryDark: string;
+  primaryLight: string;
+  
+  // Secondary Colors
+  secondary: string;
+  secondaryDark: string;
+  secondaryLight: string;
+  
+  // Accent Colors
+  accent: string;
+  accentDark: string;
+  accentLight: string;
+  
+  // Status Colors
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+  
+  // Neutral Colors
+  white: string;
+  black: string;
+  gray: string;
+  lightGray: string;
+  darkGray: string;
+  
+  // Background Colors
+  background: string;
+  surface: string;
+  overlay: string;
+  
+  // Text Colors
+  textPrimary: string;
+  textSecondary: string;
+  textDisabled: string;
+  textOnPrimary: string;
+  textOnSecondary: string;
+  
+  // Border Colors
+  border: string;
+  divider: string;
+  
+  // Attendance Status Colors
+  morningAttendance: string;
+  eveningAttendance: string;
+  pendingAttendance: string;
+  
+  // Bike Meter Colors
+  bikeMeterMorning: string;
+  bikeMeterEvening: string;
+}
+
+export const Colors: ColorPalette = {
   // Primary Colors
   primary: '#1976D2',
   primaryDark: '#1565C0',

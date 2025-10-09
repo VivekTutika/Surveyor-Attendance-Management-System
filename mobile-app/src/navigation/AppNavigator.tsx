@@ -1,8 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../theme';
+import { AppStackParamList, DashboardStackParamList, ProfileStackParamList } from '../types';
 
 // Import screens
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
@@ -10,13 +12,14 @@ import AttendanceScreen from '../screens/Dashboard/AttendanceScreen';
 import BikeMeterScreen from '../screens/Dashboard/BikeMeterScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator<AppStackParamList>();
+const DashboardStackNavigator = createStackNavigator<DashboardStackParamList>();
+const ProfileStackNavigator = createStackNavigator<ProfileStackParamList>();
 
 // Dashboard Stack Navigator
-const DashboardStack = () => {
+const DashboardStack: React.FC = () => {
   return (
-    <Stack.Navigator
+    <DashboardStackNavigator.Navigator
       screenOptions={{
         headerStyle: {
           backgroundColor: Colors.primary,
@@ -25,34 +28,35 @@ const DashboardStack = () => {
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {
-          ...Typography.styles.h3,
+          fontSize: Typography.styles.h3.fontSize,
+          fontWeight: Typography.styles.h3.fontWeight as any,
           color: Colors.textOnPrimary,
         },
       }}
     >
-      <Stack.Screen
+      <DashboardStackNavigator.Screen
         name="DashboardMain"
         component={DashboardScreen}
         options={{ title: 'Dashboard' }}
       />
-      <Stack.Screen
+      <DashboardStackNavigator.Screen
         name="Attendance"
         component={AttendanceScreen}
         options={{ title: 'Mark Attendance' }}
       />
-      <Stack.Screen
+      <DashboardStackNavigator.Screen
         name="BikeMeter"
         component={BikeMeterScreen}
         options={{ title: 'Bike Meter Reading' }}
       />
-    </Stack.Navigator>
+    </DashboardStackNavigator.Navigator>
   );
 };
 
 // Profile Stack Navigator
-const ProfileStack = () => {
+const ProfileStack: React.FC = () => {
   return (
-    <Stack.Navigator
+    <ProfileStackNavigator.Navigator
       screenOptions={{
         headerStyle: {
           backgroundColor: Colors.primary,
@@ -61,27 +65,28 @@ const ProfileStack = () => {
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {
-          ...Typography.styles.h3,
+          fontSize: Typography.styles.h3.fontSize,
+          fontWeight: Typography.styles.h3.fontWeight as any,
           color: Colors.textOnPrimary,
         },
       }}
     >
-      <Stack.Screen
+      <ProfileStackNavigator.Screen
         name="ProfileMain"
         component={ProfileScreen}
         options={{ title: 'Profile' }}
       />
-    </Stack.Navigator>
+    </ProfileStackNavigator.Navigator>
   );
 };
 
-const AppNavigator = () => {
+const AppNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+          let iconName: any;
 
           if (route.name === 'Dashboard') {
             iconName = focused ? 'home' : 'home-outline';
@@ -103,7 +108,7 @@ const AppNavigator = () => {
           height: 60,
         },
         tabBarLabelStyle: {
-          ...Typography.styles.caption,
+          fontSize: Typography.styles.caption.fontSize,
           marginBottom: 4,
         },
       })}

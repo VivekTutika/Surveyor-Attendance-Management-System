@@ -1,9 +1,23 @@
 import { apiFormData, createFormData } from './index';
 import api from './index';
 
-export const bikeService = {
+export interface BikeReadingFilters {
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  type?: 'Morning' | 'Evening';
+}
+
+export interface BikeService {
+  uploadBikeMeterReading: (type: 'Morning' | 'Evening', photoUri: string, kmReading?: number | null) => Promise<any>;
+  getTodayStatus: () => Promise<any>;
+  getBikeMeterList: (filters?: BikeReadingFilters) => Promise<any>;
+  getBikeMeterSummary: (startDate: string, endDate: string) => Promise<any>;
+}
+
+export const bikeService: BikeService = {
   // Upload bike meter reading with photo
-  uploadBikeMeterReading: async (type, photoUri, kmReading = null) => {
+  uploadBikeMeterReading: async (type: 'Morning' | 'Evening', photoUri: string, kmReading: number | null = null) => {
     try {
       const formData = createFormData(
         {
@@ -32,7 +46,7 @@ export const bikeService = {
   },
 
   // Get bike meter readings list with filters
-  getBikeMeterList: async (filters = {}) => {
+  getBikeMeterList: async (filters: BikeReadingFilters = {}) => {
     try {
       const params = new URLSearchParams();
       
@@ -52,7 +66,7 @@ export const bikeService = {
   },
 
   // Get bike meter summary
-  getBikeMeterSummary: async (startDate, endDate) => {
+  getBikeMeterSummary: async (startDate: string, endDate: string) => {
     try {
       const params = new URLSearchParams({
         startDate,
