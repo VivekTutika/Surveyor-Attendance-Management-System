@@ -1,12 +1,13 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Colors, Typography } from '../theme';
+import { AuthStackParamList } from '../types';
 
 import LoginScreen from '../screens/Auth/LoginScreen';
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<AuthStackParamList>();
 
-const AuthNavigator = () => {
+const AuthNavigator: React.FC = () => {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -17,7 +18,8 @@ const AuthNavigator = () => {
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {
-          ...Typography.styles.h3,
+          fontSize: Typography.styles.h3.fontSize,
+          fontWeight: Typography.styles.h3.fontWeight as any,
           color: Colors.textOnPrimary,
         },
         cardStyle: { backgroundColor: Colors.background },

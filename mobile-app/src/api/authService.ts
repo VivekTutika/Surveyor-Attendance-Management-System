@@ -1,8 +1,22 @@
 import api from './index';
+import { 
+  LoginRequest, 
+  LoginResponse, 
+  User, 
+  ApiResponse 
+} from '../types';
 
-export const authService = {
+export interface AuthService {
+  login: (mobileNumber: string, password: string) => Promise<any>;
+  getProfile: () => Promise<any>;
+  updateProfile: (profileData: Partial<User>) => Promise<any>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<any>;
+  logout: () => Promise<{ success: boolean }>;
+}
+
+export const authService: AuthService = {
   // Login user
-  login: async (mobileNumber, password) => {
+  login: async (mobileNumber: string, password: string) => {
     try {
       const response = await api.post('/auth/login', {
         mobileNumber,
@@ -25,7 +39,7 @@ export const authService = {
   },
 
   // Update user profile
-  updateProfile: async (profileData) => {
+  updateProfile: async (profileData: Partial<User>) => {
     try {
       const response = await api.put('/auth/profile', profileData);
       return response;
@@ -35,7 +49,7 @@ export const authService = {
   },
 
   // Change password
-  changePassword: async (currentPassword, newPassword) => {
+  changePassword: async (currentPassword: string, newPassword: string) => {
     try {
       const response = await api.post('/auth/change-password', {
         currentPassword,
@@ -48,7 +62,7 @@ export const authService = {
   },
 
   // Logout (mainly for clearing local storage)
-  logout: async () => {
+  logout: async (): Promise<{ success: boolean }> => {
     try {
       // You can add a logout endpoint call here if needed
       // For now, just return success since token clearing is handled in Redux

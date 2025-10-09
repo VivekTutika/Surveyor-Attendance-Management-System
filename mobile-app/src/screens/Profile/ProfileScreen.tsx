@@ -6,17 +6,27 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { StackNavigationProp } from '@react-navigation/stack';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button, LoadingSpinner, Card } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { getUserProfile, logoutUser } from '../../store/authSlice';
+import { RootState, ProfileStackParamList } from '../../types';
 
-const ProfileScreen = ({ navigation }) => {
-  const dispatch = useDispatch();
-  const { user, profileLoading } = useSelector((state) => state.auth);
+type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
+
+interface Props {
+  navigation: ProfileScreenNavigationProp;
+}
+
+const ProfileScreen: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useDispatch<any>();
+  const { user, loading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     // Refresh profile data when screen comes into focus
@@ -38,7 +48,7 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -47,15 +57,15 @@ const ProfileScreen = ({ navigation }) => {
     });
   };
 
-  const getStatusColor = (isActive) => {
+  const getStatusColor = (isActive?: boolean): string => {
     return isActive ? Colors.success : Colors.error;
   };
 
-  const getStatusText = (isActive) => {
+  const getStatusText = (isActive?: boolean): string => {
     return isActive ? 'Active' : 'Inactive';
   };
 
-  if (profileLoading && !user) {
+  if (loading && !user) {
     return (
       <SafeAreaView style={styles.container}>
         <LoadingSpinner />
@@ -70,20 +80,20 @@ const ProfileScreen = ({ navigation }) => {
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <Ionicons name=\"person\" size={48} color={Colors.white} />
+              <Ionicons name="person" size={48} color={Colors.white} />
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.userName}>{user?.name || 'Unknown User'}</Text>
-              <Text style={styles.userRole}>{user?.role || 'SURVEYOR'}</Text>
+              <Text style={styles.userRole}>{user?.role || 'Surveyor'}</Text>
               <View style={styles.statusContainer}>
                 <View 
                   style={[
                     styles.statusDot, 
-                    { backgroundColor: getStatusColor(user?.isActive) }
+                    { backgroundColor: getStatusColor(true) }
                   ]} 
                 />
                 <Text style={styles.statusText}>
-                  {getStatusText(user?.isActive)}
+                  {getStatusText(true)}
                 </Text>
               </View>
             </View>
@@ -96,7 +106,7 @@ const ProfileScreen = ({ navigation }) => {
           
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"call\" size={20} color={Colors.primary} />
+              <Ionicons name="call" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Mobile Number</Text>
@@ -111,7 +121,7 @@ const ProfileScreen = ({ navigation }) => {
           
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"briefcase\" size={20} color={Colors.primary} />
+              <Ionicons name="briefcase" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Project</Text>
@@ -121,7 +131,7 @@ const ProfileScreen = ({ navigation }) => {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"location\" size={20} color={Colors.primary} />
+              <Ionicons name="location" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Location</Text>
@@ -136,7 +146,7 @@ const ProfileScreen = ({ navigation }) => {
           
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"calendar\" size={20} color={Colors.primary} />
+              <Ionicons name="calendar" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Account Created</Text>
@@ -146,7 +156,7 @@ const ProfileScreen = ({ navigation }) => {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"time\" size={20} color={Colors.primary} />
+              <Ionicons name="time" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Last Updated</Text>
@@ -161,7 +171,7 @@ const ProfileScreen = ({ navigation }) => {
           
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"information-circle\" size={20} color={Colors.primary} />
+              <Ionicons name="information-circle" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>App Version</Text>
@@ -171,7 +181,7 @@ const ProfileScreen = ({ navigation }) => {
 
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
-              <Ionicons name=\"business\" size={20} color={Colors.primary} />
+              <Ionicons name="business" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Company</Text>
@@ -183,29 +193,21 @@ const ProfileScreen = ({ navigation }) => {
         {/* Actions */}
         <View style={styles.actionsContainer}>
           <Button
-            title=\"Refresh Profile\"
-            variant=\"outline\"
+            title="Refresh Profile"
+            variant="outline"
             onPress={() => dispatch(getUserProfile())}
-            loading={profileLoading}
+            loading={loading}
             style={styles.actionButton}
-            icon={<Ionicons name=\"refresh\" size={16} color={Colors.primary} />}
+            icon={<Ionicons name="refresh" size={16} color={Colors.primary} />}
           />
           
           <Button
-            title=\"Logout\"
-            variant=\"danger\"
+            title="Logout"
+            variant="danger"
             onPress={handleLogout}
             style={styles.actionButton}
-            icon={<Ionicons name=\"log-out\" size={16} color={Colors.white} />}
+            icon={<Ionicons name="log-out" size={16} color={Colors.white} />}
           />
-        </View>
-
-        {/* Note */}
-        <View style={styles.noteContainer}>
-          <Text style={styles.noteText}>
-            📝 Note: Profile information can only be updated by an administrator. 
-            Contact your supervisor if any information needs to be changed.
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -274,16 +276,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingVertical: 8,
   },
   infoIcon: {
     width: 40,
     alignItems: 'center',
+    marginRight: 12,
   },
   infoContent: {
     flex: 1,
@@ -299,24 +302,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   actionsContainer: {
-    marginTop: 8,
-    marginBottom: 24,
+    marginTop: 24,
+    gap: 12,
   },
   actionButton: {
-    marginBottom: 12,
-  },
-  noteContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 32,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.info,
-  },
-  noteText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 18,
+    marginBottom: 8,
   },
 });
 

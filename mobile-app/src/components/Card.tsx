@@ -1,8 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Colors, Typography } from '../theme';
+import { CardProps } from '../types';
 
-const Card = ({
+const Card: React.FC<CardProps & { 
+  title?: string;
+  subtitle?: string;
+  titleStyle?: any;
+  subtitleStyle?: any;
+  icon?: React.ReactNode;
+  rightElement?: React.ReactNode;
+}> = ({
   title,
   subtitle,
   children,

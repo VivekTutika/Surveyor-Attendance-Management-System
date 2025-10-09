@@ -9,24 +9,47 @@ import {
   Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+// @ts-ignore
 import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { markAttendance } from '../../store/attendanceSlice';
+import { RootState, DashboardStackParamList } from '../../types';
 
-const AttendanceScreen = ({ navigation, route }) => {
-  const dispatch = useDispatch();
-  const { markingAttendance, error } = useSelector((state) => state.attendance);
+type AttendanceScreenNavigationProp = StackNavigationProp<DashboardStackParamList, 'Attendance'>;
+type AttendanceScreenRouteProp = RouteProp<DashboardStackParamList, 'Attendance'>;
+
+interface Props {
+  navigation: AttendanceScreenNavigationProp;
+  route: AttendanceScreenRouteProp;
+}
+
+interface LocationCoords {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+}
+
+interface CapturedPhoto {
+  uri: string;
+}
+
+const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
+  const dispatch = useDispatch<any>();
+  const { submittingAttendance, error } = useSelector((state: RootState) => state.attendance);
   
   const attendanceType = route.params?.type || 'MORNING';
   
-  const [hasPermission, setHasPermission] = useState(null);
-  const [cameraRef, setCameraRef] = useState(null);
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [location, setLocation] = useState(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [cameraRef, setCameraRef] = useState<any | null>(null);
+  const [capturedImage, setCapturedImage] = useState<CapturedPhoto | null>(null);
+  const [location, setLocation] = useState<LocationCoords | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
 
   useEffect(() => {
@@ -111,10 +134,11 @@ const AttendanceScreen = ({ navigation, route }) => {
 
     try {
       await dispatch(markAttendance({
-        type: attendanceType,
+        type: attendanceType as 'Morning' | 'Evening',
         latitude: location.latitude,
         longitude: location.longitude,
         photoUri: capturedImage.uri,
+        timestamp: new Date().toISOString(),
       })).unwrap();
 
       Alert.alert(
@@ -122,7 +146,7 @@ const AttendanceScreen = ({ navigation, route }) => {
         `${attendanceType.toLowerCase()} attendance marked successfully!`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Error', error || 'Failed to mark attendance.');
     }
   };
@@ -189,22 +213,24 @@ const AttendanceScreen = ({ navigation, route }) => {
             <Button
               title="Submit"
               onPress={submitAttendance}
-              loading={markingAttendance}
-              disabled={markingAttendance || !location}
+              loading={submittingAttendance}
+              disabled={submittingAttendance || !location}
               style={styles.actionButton}
             />
           </View>
         </View>
       ) : (
         <View style={styles.cameraContainer}>
+          {/* @ts-ignore */}
           <Camera
             style={styles.camera}
-            type={Camera.Constants.Type.front}
-            ref={(ref) => setCameraRef(ref)}
+            type="front"
+            ref={(ref: any) => setCameraRef(ref)}
           >
             <View style={styles.cameraOverlay}>
               <View style={styles.cameraFrame} />
             </View>
+          {/* @ts-ignore */}
           </Camera>
           
           <View style={styles.cameraControls}>

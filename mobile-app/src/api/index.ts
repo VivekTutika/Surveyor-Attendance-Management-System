@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Read from .env file - update with your actual backend URL
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:5000/api';
 
 // Create axios instance
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
@@ -15,7 +15,7 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  async (config) => {
+  async (config: any) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
@@ -26,18 +26,18 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error);
   }
 );
 
 // Response interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => {
+  (response: AxiosResponse) => {
     // Return the data from successful responses
     return response.data.data || response.data;
   },
-  async (error) => {
+  async (error: any) => {
     const { response } = error;
     
     if (response) {
@@ -81,7 +81,12 @@ api.interceptors.response.use(
 );
 
 // Helper function to create FormData for file uploads
-export const createFormData = (data, fileUri, fileName = 'photo', fileType = 'image/jpeg') => {
+export const createFormData = (
+  data: Record<string, any>, 
+  fileUri?: string, 
+  fileName: string = 'photo', 
+  fileType: string = 'image/jpeg'
+): FormData => {
   const formData = new FormData();
   
   // Add the file
@@ -90,7 +95,7 @@ export const createFormData = (data, fileUri, fileName = 'photo', fileType = 'im
       uri: fileUri,
       type: fileType,
       name: fileName,
-    });
+    } as any);
   }
   
   // Add other data
@@ -104,7 +109,7 @@ export const createFormData = (data, fileUri, fileName = 'photo', fileType = 'im
 };
 
 // Helper function for multipart/form-data requests
-export const apiFormData = axios.create({
+const apiFormData: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // Longer timeout for file uploads
   headers: {
@@ -114,7 +119,7 @@ export const apiFormData = axios.create({
 
 // Add the same interceptors to the form data instance
 apiFormData.interceptors.request.use(
-  async (config) => {
+  async (config: any) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
@@ -125,12 +130,12 @@ apiFormData.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: any) => Promise.reject(error)
 );
 
 apiFormData.interceptors.response.use(
-  (response) => response.data.data || response.data,
-  async (error) => {
+  (response: AxiosResponse) => response.data.data || response.data,
+  async (error: any) => {
     // Same error handling as the main api instance
     const { response } = error;
     

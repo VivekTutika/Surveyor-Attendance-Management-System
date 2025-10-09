@@ -1,69 +1,85 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { attendanceService } from '../api/attendanceService';
+import { 
+  AttendanceState, 
+  AttendanceRecord, 
+  AttendanceSubmission 
+} from '../types';
 
 // Async thunks
-export const markAttendance = createAsyncThunk(
+export const markAttendance = createAsyncThunk<
+  AttendanceRecord,
+  AttendanceSubmission,
+  { rejectValue: string }
+>(
   'attendance/markAttendance',
-  async ({ type, latitude, longitude, photoUri }, { rejectWithValue }) => {
+  async ({ type, latitude, longitude, photoUri, timestamp }, { rejectWithValue }) => {
     try {
       const response = await attendanceService.markAttendance(type, latitude, longitude, photoUri);
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to mark attendance');
     }
   }
 );
 
-export const getTodayAttendanceStatus = createAsyncThunk(
+export const getTodayAttendanceStatus = createAsyncThunk<
+  { morning: AttendanceRecord | null; evening: AttendanceRecord | null },
+  void,
+  { rejectValue: string }
+>(
   'attendance/getTodayStatus',
   async (_, { rejectWithValue }) => {
     try {
       const response = await attendanceService.getTodayStatus();
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get attendance status');
     }
   }
 );
 
-export const getAttendanceHistory = createAsyncThunk(
+export const getAttendanceHistory = createAsyncThunk<
+  AttendanceRecord[],
+  any,
+  { rejectValue: string }
+>(
   'attendance/getHistory',
   async (filters, { rejectWithValue }) => {
     try {
       const response = await attendanceService.getAttendanceList(filters);
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get attendance history');
     }
   }
 );
 
-export const getAttendanceSummary = createAsyncThunk(
+export const getAttendanceSummary = createAsyncThunk<
+  any[],
+  { startDate: string; endDate: string },
+  { rejectValue: string }
+>(
   'attendance/getSummary',
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
       const response = await attendanceService.getAttendanceSummary(startDate, endDate);
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get attendance summary');
     }
   }
 );
 
-const initialState = {
-  todayStatus: {
-    date: null,
-    morningMarked: false,
-    eveningMarked: false,
-    morningTime: null,
-    eveningTime: null,
+const initialState: AttendanceState = {
+  records: [],
+  todayAttendance: {
+    morning: null,
+    evening: null,
   },
-  attendanceHistory: [],
-  attendanceSummary: [],
   loading: false,
-  markingAttendance: false,
   error: null,
-  lastMarkedAttendance: null,
+  submittingAttendance: false,
 };
 
 const attendanceSlice = createSlice({
@@ -74,36 +90,41 @@ const attendanceSlice = createSlice({
       state.error = null;
     },
     clearLastMarkedAttendance: (state) => {
-      state.lastMarkedAttendance = null;
+      // Reset any temporary states if needed
     },
-    updateTodayStatus: (state, action) => {
-      state.todayStatus = { ...state.todayStatus, ...action.payload };
+    updateTodayStatus: (state, action: PayloadAction<Partial<AttendanceState['todayAttendance']>>) => {
+      state.todayAttendance = { ...state.todayAttendance, ...action.payload };
     },
   },
   extraReducers: (builder) => {
     builder
       // Mark attendance
       .addCase(markAttendance.pending, (state) => {
-        state.markingAttendance = true;
+        state.submittingAttendance = true;
         state.error = null;
       })
       .addCase(markAttendance.fulfilled, (state, action) => {
-        state.markingAttendance = false;
-        state.lastMarkedAttendance = action.payload;
+        state.submittingAttendance = false;
         
-        // Update today's status
+        // Update today's attendance
         const attendanceType = action.payload.type.toLowerCase();
         if (attendanceType === 'morning') {
-          state.todayStatus.morningMarked = true;
-          state.todayStatus.morningTime = action.payload.capturedAt;
+          state.todayAttendance.morning = action.payload;
         } else if (attendanceType === 'evening') {
-          state.todayStatus.eveningMarked = true;
-          state.todayStatus.eveningTime = action.payload.capturedAt;
+          state.todayAttendance.evening = action.payload;
+        }
+        
+        // Add to records if not already present
+        const existingIndex = state.records.findIndex(
+          record => record.id === action.payload.id
+        );
+        if (existingIndex === -1) {
+          state.records.unshift(action.payload);
         }
       })
       .addCase(markAttendance.rejected, (state, action) => {
-        state.markingAttendance = false;
-        state.error = action.payload;
+        state.submittingAttendance = false;
+        state.error = action.payload || 'Failed to mark attendance';
       })
       // Get today's status
       .addCase(getTodayAttendanceStatus.pending, (state) => {
@@ -111,11 +132,11 @@ const attendanceSlice = createSlice({
       })
       .addCase(getTodayAttendanceStatus.fulfilled, (state, action) => {
         state.loading = false;
-        state.todayStatus = action.payload;
+        state.todayAttendance = action.payload;
       })
       .addCase(getTodayAttendanceStatus.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || 'Failed to get attendance status';
       })
       // Get attendance history
       .addCase(getAttendanceHistory.pending, (state) => {
@@ -123,11 +144,11 @@ const attendanceSlice = createSlice({
       })
       .addCase(getAttendanceHistory.fulfilled, (state, action) => {
         state.loading = false;
-        state.attendanceHistory = action.payload;
+        state.records = action.payload;
       })
       .addCase(getAttendanceHistory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || 'Failed to get attendance history';
       })
       // Get attendance summary
       .addCase(getAttendanceSummary.pending, (state) => {
@@ -135,11 +156,11 @@ const attendanceSlice = createSlice({
       })
       .addCase(getAttendanceSummary.fulfilled, (state, action) => {
         state.loading = false;
-        state.attendanceSummary = action.payload;
+        // Handle summary data as needed
       })
       .addCase(getAttendanceSummary.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || 'Failed to get attendance summary';
       });
   },
 });

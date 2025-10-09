@@ -1,26 +1,41 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from '../api/authService';
+import { 
+  AuthState, 
+  LoginRequest, 
+  LoginResponse, 
+  User, 
+  ApiResponse 
+} from '../types';
 
 // Async thunks
-export const loginUser = createAsyncThunk(
+export const loginUser = createAsyncThunk<
+  LoginResponse,
+  LoginRequest,
+  { rejectValue: string }
+>(
   'auth/loginUser',
   async ({ mobileNumber, password }, { rejectWithValue }) => {
     try {
       const response = await authService.login(mobileNumber, password);
       
       // Store token in AsyncStorage
-      await AsyncStorage.setItem('userToken', response.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+      await AsyncStorage.setItem('userToken', response.data.token);
+      await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
       
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Login failed');
     }
   }
 );
 
-export const logoutUser = createAsyncThunk(
+export const logoutUser = createAsyncThunk<
+  boolean,
+  void,
+  { rejectValue: string }
+>(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
@@ -29,13 +44,17 @@ export const logoutUser = createAsyncThunk(
       await AsyncStorage.removeItem('userData');
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Logout failed');
     }
   }
 );
 
-export const loadStoredAuth = createAsyncThunk(
+export const loadStoredAuth = createAsyncThunk<
+  { token: string; user: User } | null,
+  void,
+  { rejectValue: string }
+>(
   'auth/loadStoredAuth',
   async (_, { rejectWithValue }) => {
     try {
@@ -45,65 +64,75 @@ export const loadStoredAuth = createAsyncThunk(
       if (token && userData) {
         return {
           token,
-          user: JSON.parse(userData),
+          user: JSON.parse(userData) as User,
         };
       }
       
       return null;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to load stored auth');
     }
   }
 );
 
-export const getUserProfile = createAsyncThunk(
+export const getUserProfile = createAsyncThunk<
+  User,
+  void,
+  { rejectValue: string }
+>(
   'auth/getUserProfile',
   async (_, { rejectWithValue }) => {
     try {
       const response = await authService.getProfile();
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get profile');
     }
   }
 );
 
-export const updateUserProfile = createAsyncThunk(
+export const updateUserProfile = createAsyncThunk<
+  User,
+  Partial<User>,
+  { rejectValue: string }
+>(
   'auth/updateUserProfile',
   async (profileData, { rejectWithValue }) => {
     try {
       const response = await authService.updateProfile(profileData);
       
       // Update stored user data
-      await AsyncStorage.setItem('userData', JSON.stringify(response));
+      await AsyncStorage.setItem('userData', JSON.stringify(response.data));
       
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update profile');
     }
   }
 );
 
-export const changePassword = createAsyncThunk(
+export const changePassword = createAsyncThunk<
+  ApiResponse,
+  { currentPassword: string; newPassword: string },
+  { rejectValue: string }
+>(
   'auth/changePassword',
   async ({ currentPassword, newPassword }, { rejectWithValue }) => {
     try {
       const response = await authService.changePassword(currentPassword, newPassword);
-      return response;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to change password');
     }
   }
 );
 
-const initialState = {
+const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
   loading: false,
   error: null,
-  profileLoading: false,
-  passwordChangeLoading: false,
 };
 
 const authSlice = createSlice({
@@ -113,7 +142,7 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    setAuthState: (state, action) => {
+    setAuthState: (state, action: PayloadAction<{ user: User; token: string }>) => {
       const { user, token } = action.payload;
       state.user = user;
       state.token = token;
@@ -136,7 +165,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || 'Login failed';
         state.isAuthenticated = false;
         state.user = null;
         state.token = null;
@@ -166,39 +195,39 @@ const authSlice = createSlice({
       })
       // Get profile
       .addCase(getUserProfile.pending, (state) => {
-        state.profileLoading = true;
+        state.loading = true;
       })
       .addCase(getUserProfile.fulfilled, (state, action) => {
-        state.profileLoading = false;
+        state.loading = false;
         state.user = action.payload;
       })
       .addCase(getUserProfile.rejected, (state, action) => {
-        state.profileLoading = false;
-        state.error = action.payload;
+        state.loading = false;
+        state.error = action.payload || 'Failed to get profile';
       })
       // Update profile
       .addCase(updateUserProfile.pending, (state) => {
-        state.profileLoading = true;
+        state.loading = true;
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
-        state.profileLoading = false;
+        state.loading = false;
         state.user = action.payload;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
-        state.profileLoading = false;
-        state.error = action.payload;
+        state.loading = false;
+        state.error = action.payload || 'Failed to update profile';
       })
       // Change password
       .addCase(changePassword.pending, (state) => {
-        state.passwordChangeLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(changePassword.fulfilled, (state) => {
-        state.passwordChangeLoading = false;
+        state.loading = false;
       })
       .addCase(changePassword.rejected, (state, action) => {
-        state.passwordChangeLoading = false;
-        state.error = action.payload;
+        state.loading = false;
+        state.error = action.payload || 'Failed to change password';
       });
   },
 });

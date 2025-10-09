@@ -11,21 +11,39 @@ import {
   Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { StackNavigationProp } from '@react-navigation/stack';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button, InputField, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { loginUser, clearError, loadStoredAuth } from '../../store/authSlice';
+import { RootState, AuthStackParamList } from '../../types';
 
-const LoginScreen = ({ navigation }) => {
-  const dispatch = useDispatch();
-  const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
-  const [formData, setFormData] = useState({
+interface Props {
+  navigation: LoginScreenNavigationProp;
+}
+
+interface FormData {
+  mobileNumber: string;
+  password: string;
+}
+
+interface FormErrors {
+  [key: string]: string | null;
+}
+
+const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useDispatch<any>();
+  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  const [formData, setFormData] = useState<FormData>({
     mobileNumber: '',
     password: '',
   });
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     // Load stored authentication on component mount
@@ -48,8 +66,8 @@ const LoginScreen = ({ navigation }) => {
     }
   }, [error, dispatch]);
 
-  const validateForm = () => {
-    const errors = {};
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
 
     if (!formData.mobileNumber.trim()) {
       errors.mobileNumber = 'Mobile number is required';
@@ -67,7 +85,7 @@ const LoginScreen = ({ navigation }) => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -97,7 +115,7 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const fillDemoCredentials = (userType) => {
+  const fillDemoCredentials = (userType: 'admin' | 'surveyor') => {
     if (userType === 'admin') {
       setFormData({
         mobileNumber: '+1234567890',

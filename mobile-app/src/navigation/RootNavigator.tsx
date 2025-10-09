@@ -6,11 +6,12 @@ import { useSelector } from 'react-redux';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
 import { Colors } from '../theme';
+import { RootStackParamList, RootState } from '../types';
 
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<RootStackParamList>();
 
-const RootNavigator = () => {
-  const { isAuthenticated, token } = useSelector((state) => state.auth);
+const RootNavigator: React.FC = () => {
+  const { isAuthenticated, token } = useSelector((state: RootState) => state.auth);
 
   return (
     <NavigationContainer>

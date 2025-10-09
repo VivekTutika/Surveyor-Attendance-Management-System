@@ -8,9 +8,12 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 
 import { Card, LoadingSpinner } from '../../components';
@@ -18,18 +21,25 @@ import { Colors, Typography } from '../../theme';
 import { getTodayAttendanceStatus } from '../../store/attendanceSlice';
 import { getTodayBikeMeterStatus } from '../../store/bikeMeterSlice';
 import { logoutUser } from '../../store/authSlice';
+import { RootState, DashboardStackParamList } from '../../types';
 
-const DashboardScreen = ({ navigation }) => {
-  const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+type DashboardScreenNavigationProp = StackNavigationProp<DashboardStackParamList, 'DashboardMain'>;
+
+interface Props {
+  navigation: DashboardScreenNavigationProp;
+}
+
+const DashboardScreen: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useDispatch<any>();
+  const { user } = useSelector((state: RootState) => state.auth);
   const { 
-    todayStatus: attendanceStatus, 
+    todayAttendance: attendanceStatus, 
     loading: attendanceLoading 
-  } = useSelector((state) => state.attendance);
+  } = useSelector((state: RootState) => state.attendance);
   const { 
-    todayStatus: bikeMeterStatus, 
+    todayReadings: bikeMeterStatus, 
     loading: bikeMeterLoading 
-  } = useSelector((state) => state.bikeMeter);
+  } = useSelector((state: RootState) => state.bikeMeter);
 
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -72,49 +82,49 @@ const DashboardScreen = ({ navigation }) => {
     );
   };
 
-  const getAttendanceCardColor = (type) => {
+  const getAttendanceCardColor = (type: 'morning' | 'evening'): string => {
     if (type === 'morning') {
-      return attendanceStatus?.morningMarked ? Colors.success : Colors.gray;
+      return attendanceStatus?.morning ? Colors.success : Colors.gray;
     }
-    return attendanceStatus?.eveningMarked ? Colors.warning : Colors.gray;
+    return attendanceStatus?.evening ? Colors.warning : Colors.gray;
   };
 
-  const getBikeMeterCardColor = (type) => {
+  const getBikeMeterCardColor = (type: 'morning' | 'evening'): string => {
     if (type === 'morning') {
-      return bikeMeterStatus?.morningUploaded ? Colors.info : Colors.gray;
+      return bikeMeterStatus?.morning ? Colors.info : Colors.gray;
     }
-    return bikeMeterStatus?.eveningUploaded ? Colors.secondary : Colors.gray;
+    return bikeMeterStatus?.evening ? Colors.secondary : Colors.gray;
   };
 
-  const getAttendanceStatus = (type) => {
+  const getAttendanceStatus = (type: 'morning' | 'evening'): string => {
     if (type === 'morning') {
-      return attendanceStatus?.morningMarked ? 'Completed' : 'Pending';
+      return attendanceStatus?.morning ? 'Completed' : 'Pending';
     }
-    return attendanceStatus?.eveningMarked ? 'Completed' : 'Pending';
+    return attendanceStatus?.evening ? 'Completed' : 'Pending';
   };
 
-  const getBikeMeterStatus = (type) => {
+  const getBikeMeterStatus = (type: 'morning' | 'evening'): string => {
     if (type === 'morning') {
-      return bikeMeterStatus?.morningUploaded ? 'Uploaded' : 'Pending';
+      return bikeMeterStatus?.morning ? 'Uploaded' : 'Pending';
     }
-    return bikeMeterStatus?.eveningUploaded ? 'Uploaded' : 'Pending';
+    return bikeMeterStatus?.evening ? 'Uploaded' : 'Pending';
   };
 
-  const canMarkAttendance = (type) => {
+  const canMarkAttendance = (type: 'morning' | 'evening'): boolean => {
     if (type === 'morning') {
-      return !attendanceStatus?.morningMarked;
+      return !attendanceStatus?.morning;
     }
-    return !attendanceStatus?.eveningMarked;
+    return !attendanceStatus?.evening;
   };
 
-  const canUploadBikeMeter = (type) => {
+  const canUploadBikeMeter = (type: 'morning' | 'evening'): boolean => {
     if (type === 'morning') {
-      return !bikeMeterStatus?.morningUploaded;
+      return !bikeMeterStatus?.morning;
     }
-    return !bikeMeterStatus?.eveningUploaded;
+    return !bikeMeterStatus?.evening;
   };
 
-  const navigateToAttendance = (type) => {
+  const navigateToAttendance = (type: 'morning' | 'evening') => {
     if (canMarkAttendance(type)) {
       navigation.navigate('Attendance', { type: type.toUpperCase() });
     } else {
@@ -126,7 +136,7 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const navigateToBikeMeter = (type) => {
+  const navigateToBikeMeter = (type: 'morning' | 'evening') => {
     if (canUploadBikeMeter(type)) {
       navigation.navigate('BikeMeter', { type: type.toUpperCase() });
     } else {
@@ -138,7 +148,7 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const formatTime = (timeString) => {
+  const formatTime = (timeString?: string): string => {
     if (!timeString) return '--:--';
     return new Date(timeString).toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -146,7 +156,7 @@ const DashboardScreen = ({ navigation }) => {
     });
   };
 
-  const getCurrentDate = () => {
+  const getCurrentDate = (): string => {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -220,9 +230,9 @@ const DashboardScreen = ({ navigation }) => {
                 />
                 <Text style={styles.cardTitle}>Morning{'\n'}Attendance</Text>
                 <Text style={styles.cardStatus}>{getAttendanceStatus('morning')}</Text>
-                {attendanceStatus?.morningMarked && (
+                {attendanceStatus?.morning && (
                   <Text style={styles.cardTime}>
-                    {formatTime(attendanceStatus.morningTime)}
+                    {formatTime(attendanceStatus.morning.capturedAt)}
                   </Text>
                 )}
               </View>
@@ -242,9 +252,9 @@ const DashboardScreen = ({ navigation }) => {
                 />
                 <Text style={styles.cardTitle}>Evening{'\n'}Attendance</Text>
                 <Text style={styles.cardStatus}>{getAttendanceStatus('evening')}</Text>
-                {attendanceStatus?.eveningMarked && (
+                {attendanceStatus?.evening && (
                   <Text style={styles.cardTime}>
-                    {formatTime(attendanceStatus.eveningTime)}
+                    {formatTime(attendanceStatus.evening.capturedAt)}
                   </Text>
                 )}
               </View>
@@ -267,9 +277,9 @@ const DashboardScreen = ({ navigation }) => {
                 />
                 <Text style={styles.cardTitle}>Morning{'\n'}Bike Meter</Text>
                 <Text style={styles.cardStatus}>{getBikeMeterStatus('morning')}</Text>
-                {bikeMeterStatus?.morningUploaded && (
+                {bikeMeterStatus?.morning && (
                   <Text style={styles.cardTime}>
-                    {formatTime(bikeMeterStatus.morningTime)}
+                    {formatTime(bikeMeterStatus.morning.capturedAt)}
                   </Text>
                 )}
               </View>
@@ -289,9 +299,9 @@ const DashboardScreen = ({ navigation }) => {
                 />
                 <Text style={styles.cardTitle}>Evening{'\n'}Bike Meter</Text>
                 <Text style={styles.cardStatus}>{getBikeMeterStatus('evening')}</Text>
-                {bikeMeterStatus?.eveningUploaded && (
+                {bikeMeterStatus?.evening && (
                   <Text style={styles.cardTime}>
-                    {formatTime(bikeMeterStatus.eveningTime)}
+                    {formatTime(bikeMeterStatus.evening.capturedAt)}
                   </Text>
                 )}
               </View>

@@ -1,18 +1,21 @@
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { Colors } from '../theme';
+import { LoadingSpinnerProps } from '../types';
 
-const LoadingSpinner = ({ 
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'large', 
   color = Colors.primary, 
   style,
-  overlay = false 
+  overlay = false,
+  text
 }) => {
   if (overlay) {
     return (
       <View style={[styles.overlay, style]}>
         <View style={styles.spinnerContainer}>
           <ActivityIndicator size={size} color={color} />
+          {text && <Text style={styles.overlayText}>{text}</Text>}
         </View>
       </View>
     );
@@ -21,6 +24,7 @@ const LoadingSpinner = ({
   return (
     <View style={[styles.container, style]}>
       <ActivityIndicator size={size} color={color} />
+      {text && <Text style={styles.text}>{text}</Text>}
     </View>
   );
 };
@@ -52,6 +56,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  text: {
+    marginTop: 12,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  overlayText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
 });
 
-export default LoadingSpinner;
+export default React.memo(LoadingSpinner);

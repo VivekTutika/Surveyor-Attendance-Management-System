@@ -11,19 +11,31 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button, LoadingSpinner, InputField } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { uploadBikeMeterReading } from '../../store/bikeMeterSlice';
+import { RootState, DashboardStackParamList } from '../../types';
 
-const BikeMeterScreen = ({ navigation, route }) => {
-  const dispatch = useDispatch();
-  const { uploadingReading, error } = useSelector((state) => state.bikeMeter);
+type BikeMeterScreenNavigationProp = StackNavigationProp<DashboardStackParamList, 'BikeMeter'>;
+type BikeMeterScreenRouteProp = RouteProp<DashboardStackParamList, 'BikeMeter'>;
+
+interface Props {
+  navigation: BikeMeterScreenNavigationProp;
+  route: BikeMeterScreenRouteProp;
+}
+
+const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
+  const dispatch = useDispatch<any>();
+  const { submittingReading, error } = useSelector((state: RootState) => state.bikeMeter);
   
   const readingType = route.params?.type || 'MORNING';
   
-  const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedImage, setCapturedImage] = useState<any>(null);
   const [kmReading, setKmReading] = useState('');
   const [kmError, setKmError] = useState('');
 
@@ -51,7 +63,7 @@ const BikeMeterScreen = ({ navigation, route }) => {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3],
+        aspect: [4, 3] as [number, number],
         quality: 0.8,
       });
 
@@ -69,7 +81,7 @@ const BikeMeterScreen = ({ navigation, route }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3],
+        aspect: [4, 3] as [number, number],
         quality: 0.8,
       });
 
@@ -98,10 +110,10 @@ const BikeMeterScreen = ({ navigation, route }) => {
     setCapturedImage(null);
   };
 
-  const validateKmReading = (value) => {
+  const validateKmReading = (value: string) => {
     setKmReading(value);
     
-    if (value && (isNaN(value) || parseFloat(value) <= 0)) {
+    if (value && (isNaN(Number(value)) || parseFloat(value) <= 0)) {
       setKmError('Please enter a valid KM reading');
     } else {
       setKmError('');
@@ -121,9 +133,10 @@ const BikeMeterScreen = ({ navigation, route }) => {
 
     try {
       await dispatch(uploadBikeMeterReading({
-        type: readingType,
+        type: readingType as 'Morning' | 'Evening',
         photoUri: capturedImage.uri,
-        kmReading: kmReading ? parseFloat(kmReading) : null,
+        reading: kmReading ? parseFloat(kmReading) : undefined,
+        timestamp: new Date().toISOString(),
       })).unwrap();
 
       Alert.alert(
@@ -131,7 +144,7 @@ const BikeMeterScreen = ({ navigation, route }) => {
         `${readingType.toLowerCase()} bike meter reading uploaded successfully!`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Error', error || 'Failed to upload bike meter reading.');
     }
   };
@@ -202,44 +215,16 @@ const BikeMeterScreen = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Instructions */}
-        <View style={styles.instructionsSection}>
-          <Text style={styles.sectionTitle}>Instructions:</Text>
-          <View style={styles.instructionItem}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-            <Text style={styles.instructionText}>
-              Ensure the odometer display is clearly visible
-            </Text>
-          </View>
-          <View style={styles.instructionItem}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-            <Text style={styles.instructionText}>
-              Take the photo in good lighting conditions
-            </Text>
-          </View>
-          <View style={styles.instructionItem}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-            <Text style={styles.instructionText}>
-              Avoid blurry or tilted photos
-            </Text>
-          </View>
-          <View style={styles.instructionItem}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-            <Text style={styles.instructionText}>
-              Manual KM entry helps with report accuracy
-            </Text>
-          </View>
-        </View>
-
         {/* Submit Button */}
-        <Button
-          title="Upload Reading"
-          onPress={submitReading}
-          loading={uploadingReading}
-          disabled={uploadingReading || !capturedImage}
-          style={styles.submitButton}
-          icon={<Ionicons name="cloud-upload" size={20} color={Colors.white} />}
-        />
+        <View style={styles.actionSection}>
+          <Button
+            title="Upload Reading"
+            onPress={submitReading}
+            loading={submittingReading}
+            disabled={submittingReading || !capturedImage}
+            style={styles.submitButton}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -260,13 +245,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: Colors.textSecondary,
   },
   imageContainer: {
@@ -289,56 +274,40 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   imageUploadButton: {
-    height: 200,
     backgroundColor: Colors.surface,
-    borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: Colors.primary,
     borderStyle: 'dashed',
-    justifyContent: 'center',
+    borderRadius: 12,
+    padding: 40,
     alignItems: 'center',
-    padding: 24,
+    justifyContent: 'center',
   },
   imageUploadText: {
     fontSize: 16,
     color: Colors.primary,
-    textAlign: 'center',
     marginTop: 12,
-    fontWeight: '500',
+    textAlign: 'center',
   },
   formSection: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   sectionSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 16,
   },
-  instructionsSection: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  instructionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  instructionText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    flex: 1,
+  actionSection: {
+    marginTop: 20,
   },
   submitButton: {
-    marginBottom: 32,
+    marginTop: 16,
   },
 });
 

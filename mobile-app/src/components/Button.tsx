@@ -1,8 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View, TouchableOpacityProps } from 'react-native';
 import { Colors, Typography } from '../theme';
+import { ButtonProps } from '../types';
 
-const Button = ({
+const Button: React.FC<ButtonProps & TouchableOpacityProps> = ({
   title,
   onPress,
   variant = 'primary',
@@ -15,7 +16,7 @@ const Button = ({
   ...props
 }) => {
   const getButtonStyle = () => {
-    const baseStyle = [styles.button, styles[size]];
+    const baseStyle: any[] = [styles.button, styles[size]];
     
     if (variant === 'primary') {
       baseStyle.push(styles.primary);
@@ -35,7 +36,7 @@ const Button = ({
   };
 
   const getTextStyle = () => {
-    const baseTextStyle = [styles.text, styles[`${size}Text`]];
+    const baseTextStyle: any[] = [styles.text, styles[`${size}Text`]];
     
     if (variant === 'primary') {
       baseTextStyle.push(styles.primaryText);
@@ -165,4 +166,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Button;
+export default React.memo(Button);
