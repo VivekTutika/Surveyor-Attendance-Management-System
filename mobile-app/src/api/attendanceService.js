@@ -1,0 +1,69 @@
+import { apiFormData, createFormData } from './index';
+import api from './index';
+
+export const attendanceService = {
+  // Mark attendance with photo and GPS
+  markAttendance: async (type, latitude, longitude, photoUri) => {
+    try {
+      const formData = createFormData(
+        {
+          type,
+          latitude: latitude.toString(),
+          longitude: longitude.toString(),
+        },
+        photoUri,
+        `attendance_${type}_${Date.now()}.jpg`
+      );
+
+      const response = await apiFormData.post('/attendance/mark', formData);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get today's attendance status
+  getTodayStatus: async () => {
+    try {
+      const response = await api.get('/attendance/today');
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get attendance list with filters
+  getAttendanceList: async (filters = {}) => {
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.date) params.append('date', filters.date);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.type) params.append('type', filters.type);
+
+      const queryString = params.toString();
+      const url = queryString ? `/attendance/list?${queryString}` : '/attendance/list';
+      
+      const response = await api.get(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get attendance summary
+  getAttendanceSummary: async (startDate, endDate) => {
+    try {
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+      });
+
+      const response = await api.get(`/attendance/summary?${params.toString()}`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
