@@ -1,0 +1,111 @@
+Product Requirements Document (PRD)
+Project: Surveyor Attendance Management System (MVP)
+1. Objective
+To develop a lightweight attendance management system for field surveyors that captures attendance and bike meter readings with minimal features, ensuring timely delivery within 7 days.
+2. Users & Roles
+- Surveyor (Mobile App User): Marks attendance and uploads bike odometer readings.
+- Admin (Web Portal User): Manages surveyors, validates records, and generates reports.
+
+3. Mobile Application (Surveyor App)
+Features - 
+  1. Login/Logout
+  - Credentials issued by Admin.
+  - Simple authentication (no JWT expiry logic needed).
+  2. Profile
+  - Fields: Name, Mobile Number, Project, Location.
+  - Editable only by Admin (not by surveyor).
+  3. Attendance (Morning & Evening)
+  - Marked through self-image (front camera) capture.
+  - At the moment of capture:
+    - Store image.
+    - Store timestamp.
+    - Store GPS latitude & longitude.
+  4. Bike Odometer Reading (Morning & Evening)
+  - Capture photo of the odometer via app camera.
+  - Only image + timestamp (no GPS, no OCR).
+4. Web Application (Admin Portal)
+Features
+  1. Login/Logout
+  - Admin login with credentials provided by dev team.
+  2. Surveyor Management
+  - List all surveyors with fields (Name, Mobile, Project, Location).
+  - Add/Edit/Delete surveyors.
+  3. Attendance Viewer
+  - Filter by daily/weekly/monthly.
+  - Show attendance photos with timestamp + GPS coordinates.
+  4. Bike Meter Viewer
+  - View morning/evening bike meter photos.
+  - Option for manual entry of KM readings if needed.
+  5. Reports
+  - Monthly Attendance Report (per surveyor).
+  - Fortnightly Bike Meter Report (15 days per surveyor).
+  - Exportable in Excel/PDF.
+5. Database Design (Simplified)
+  1. Users Table
+  - user_id (PK)
+  - role (Admin/Surveyor)
+  - name
+  - mobile_number (unique)
+  - password_hash
+  - project
+  - location
+  - created_at, updated_at (timestamps)
+  2. Attendance Table
+  - attendance_id (PK)
+  - user_id (FK → Users)
+  - date
+  - type (Morning/Evening)
+  - photo_path
+  - latitude
+  - longitude
+  - captured_at
+  3. Bike_Meter_Readings Table
+  - meter_id (PK)
+  - user_id (FK → Users)
+  - date
+  - type (Morning/Evening)
+  - photo_path
+  - captured_at
+  4. Reports (Optional Snapshot Table)
+  - report_id (PK)
+  - user_id (FK → Users)
+  - report_type (Monthly_Attendance / Fortnightly_KM)
+  - start_date
+  - end_date
+  - file_path
+  - generated_at
+  5. Geo-Fencing Table
+  - surveyor_id (PK, FK -> Users)
+  - coordinates
+  - created_at
+  - updated_at
+6. Out of Scope (Future Enhancements)
+- OCR for bike meter reading.
+- Location-restriction enforcement (geo-fencing).
+- Push notifications.
+- Advanced analytics & dashboards.
+7. Deliverables (MVP)
+Mobile App (Android preferred):
+- Surveyor login, attendance marking (self-photo + GPS), bike meter photo upload.
+Web App (Admin Portal):
+- Admin login, surveyor management, attendance & meter viewing, reports export.
+8. Timeline
+- Development + Testing: 7 days (MVP features only).
+- Deployment: Android app + hosted web admin portal.
+
+8. Tech Stack
+  1. Mobile App: React Native + Expo
+   - Camera (expo-camera)
+   - Location (expo-location)
+   - Client-side geo-fencing check (optional, via turf.js)
+  2. Backend API: Node.js + Express + Prisma ORM
+   - Database: Supabase (Postgres)
+   - Authentication: JWT
+   - Geo-fencing: Point-in-polygon check (via turf)
+  3. Web Admin: Next.js
+   - Surveyor CRUD management
+   - Attendance viewer (photos + GPS maps via Leaflet.js/Mapbox)
+   - Bike meter verification (with optional OCR via Tesseract.js or backend service)
+   - Reports generation (Excel/PDF via exceljs, pdfkit)
+   - Reports generation (Excel/PDF via exceljs, pdfkit)
+  4. Image Storage: Cloudinary

@@ -1,0 +1,79 @@
+import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+export declare const validateRequest: (schema: {
+    body?: z.ZodSchema;
+    params?: z.ZodSchema;
+    query?: z.ZodSchema;
+}) => (req: Request, res: Response, next: NextFunction) => void;
+export declare const schemas: {
+    login: {
+        body: z.ZodObject<{
+            mobileNumber: z.ZodString;
+            password: z.ZodString;
+        }, z.core.$strip>;
+    };
+    register: {
+        body: z.ZodObject<{
+            name: z.ZodString;
+            mobileNumber: z.ZodString;
+            password: z.ZodString;
+            project: z.ZodOptional<z.ZodString>;
+            location: z.ZodOptional<z.ZodString>;
+            role: z.ZodOptional<z.ZodEnum<{
+                ADMIN: "ADMIN";
+                SURVEYOR: "SURVEYOR";
+            }>>;
+        }, z.core.$strip>;
+    };
+    markAttendance: {
+        body: z.ZodObject<{
+            type: z.ZodEnum<{
+                MORNING: "MORNING";
+                EVENING: "EVENING";
+            }>;
+            latitude: z.ZodNumber;
+            longitude: z.ZodNumber;
+        }, z.core.$strip>;
+    };
+    uploadBikeMeter: {
+        body: z.ZodObject<{
+            type: z.ZodEnum<{
+                MORNING: "MORNING";
+                EVENING: "EVENING";
+            }>;
+            kmReading: z.ZodOptional<z.ZodNumber>;
+        }, z.core.$strip>;
+    };
+    createSurveyor: {
+        body: z.ZodObject<{
+            name: z.ZodString;
+            mobileNumber: z.ZodString;
+            password: z.ZodString;
+            project: z.ZodOptional<z.ZodString>;
+            location: z.ZodOptional<z.ZodString>;
+        }, z.core.$strip>;
+    };
+    updateSurveyor: {
+        body: z.ZodObject<{
+            name: z.ZodOptional<z.ZodString>;
+            mobileNumber: z.ZodOptional<z.ZodString>;
+            project: z.ZodOptional<z.ZodString>;
+            location: z.ZodOptional<z.ZodString>;
+            isActive: z.ZodOptional<z.ZodBoolean>;
+        }, z.core.$strip>;
+    };
+    idParam: {
+        params: z.ZodObject<{
+            id: z.ZodString;
+        }, z.core.$strip>;
+    };
+    dateQuery: {
+        query: z.ZodObject<{
+            date: z.ZodOptional<z.ZodString>;
+            startDate: z.ZodOptional<z.ZodString>;
+            endDate: z.ZodOptional<z.ZodString>;
+            userId: z.ZodOptional<z.ZodString>;
+        }, z.core.$strip>;
+    };
+};
+//# sourceMappingURL=validateRequest.d.ts.map

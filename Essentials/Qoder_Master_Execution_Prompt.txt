@@ -1,0 +1,152 @@
+🧭 QODER MASTER EXECUTION PROMPT
+Project: Surveyor Attendance Management System (v1)
+(Designed for low-credit, high-output execution)
+
+------------------------------------------------------
+PHASE 1 – PROJECT SETUP & ENVIRONMENT INITIALIZATION
+------------------------------------------------------
+Objective: Establish the complete monorepo structure, install all dependencies, and prepare environment configurations for mobile, backend, and web projects.
+
+Create a monorepo named `surveyor-attendance-system` with three subprojects:
+
+1. MOBILE APP (mobile-app) — Expo (React Native)
+   - Install: react-navigation, expo-camera, expo-location, axios, @reduxjs/toolkit, react-redux, yup, react-hook-form, @hookform/resolvers, lodash, dayjs
+   - Folder Structure: src/api, src/screens, src/components, src/hooks, src/utils, src/store
+   - Prepare .env file for API endpoint and Cloudinary credentials.
+
+2. BACKEND (backend) — Node.js + Express + Prisma + Supabase
+   - Install: express, cors, dotenv, @prisma/client, @supabase/supabase-js, typescript, ts-node, @types/node, @types/express, nodemon, bcryptjs, jsonwebtoken, multer, cloudinary
+   - Initialize Prisma (npx prisma init)
+   - Folder Structure: config, controllers, routes, services, middlewares, utils
+   - Prepare .env file with Supabase DB URL, Cloudinary keys, JWT secret.
+
+3. WEB ADMIN (web-admin) — Next.js + MUI
+   - Install: @mui/material, @emotion/react, @emotion/styled, @mui/x-data-grid, axios, dayjs, react-leaflet, leaflet
+   - Folder Structure: src/pages, src/components, src/services, src/hooks, src/utils, src/styles
+   - Prepare .env file with backend API URL and Cloudinary credentials.
+
+Output: Complete monorepo with dependencies installed, folder hierarchy structured, and .env templates ready across all subprojects.
+
+------------------------------------------------------
+PHASE 2 – DATABASE MODELING & PRISMA CONFIGURATION
+------------------------------------------------------
+Objective: Define and initialize the data schema in Prisma, connected to Supabase PostgreSQL.
+
+1. In backend/prisma/schema.prisma, define models:
+   - User
+   - Attendance
+   - BikeMeterReading
+   - GeoFence
+
+2. Ensure:
+   - User ↔ Attendance: One-to-many
+   - User ↔ BikeMeterReading: One-to-many
+   - User ↔ GeoFence: One-to-one
+
+3. Include enums for Role (ADMIN, SURVEYOR) and AttendanceType (MORNING, EVENING).
+
+4. Configure datasource for PostgreSQL (url = env("DATABASE_URL")).
+
+5. Run:
+   - npx prisma migrate dev --name init
+   - npx prisma generate
+   - Add seed script for default admin user.
+
+Output: Database schema synchronized with Supabase, Prisma client generated, and admin user seeded.
+
+------------------------------------------------------
+PHASE 3 – BACKEND API DEVELOPMENT
+------------------------------------------------------
+Objective: Implement all core REST APIs powering both mobile and web interfaces.
+
+Build Express server structure:
+config/, controllers/, routes/, services/, middlewares/, utils/
+
+Modules:
+A. Auth: /auth/register, /auth/login, /auth/profile
+B. Attendance: /attendance/mark (Cloudinary + GPS), /attendance/list?user_id&date
+C. Bike Meter: /bike/upload, /bike/list?user_id&date
+D. Geo-Fence: /geo-fence/:surveyorId (GET/PUT) — inactive for v1
+E. Surveyor CRUD: /surveyors/add, /surveyors/update/:id, /surveyors/delete/:id, /surveyors/list
+
+Integrate Cloudinary, JWT middleware, Prisma services, and unified error handling.
+
+Output: Functional backend API with Supabase + Cloudinary integration and all core routes implemented.
+
+------------------------------------------------------
+PHASE 4 – MOBILE APP IMPLEMENTATION (EXPO)
+------------------------------------------------------
+Objective: Build the surveyor-facing mobile app to capture attendance and bike readings.
+
+Screens:
+- LoginScreen (Auth)
+- DashboardScreen (4 cards: Attendance AM/PM, Bike Meter AM/PM)
+- AttendanceScreen (Selfie capture + GPS)
+- BikeMeterScreen (Odometer photo upload)
+- ProfileScreen (Surveyor info)
+
+Features:
+- Auth via /auth/login → store JWT (AsyncStorage)
+- Attendance → expo-camera + expo-location → /attendance/mark
+- Bike → camera upload → /bike/upload
+- Profile → static surveyor info
+- Utils: api.js (Axios instance), geoUtils.js (placeholder for v2 geo-fence)
+
+Output: Fully functional MVP app for attendance + bike meter capture with backend connectivity.
+
+------------------------------------------------------
+PHASE 5 – WEB ADMIN PORTAL IMPLEMENTATION (NEXT.JS)
+------------------------------------------------------
+Objective: Build the admin dashboard to manage surveyors, view attendance, and export reports.
+
+Pages:
+- login.tsx → /auth/login integration
+- index.tsx → summary dashboard
+- surveyors/index.tsx → CRUD table (MUI DataGrid)
+- attendance/index.tsx → list + photo preview
+- bike/index.tsx → bike meter photos + manual KM input
+- surveyors/[id].tsx → GeoFence editor (for v2)
+- reports/index.tsx → export to Excel/PDF
+
+Integrate axios, MUI, react-leaflet for GPS maps. Connect to backend endpoints for attendance, bike, surveyors, and geo-fence.
+
+Output: Fully functional admin portal for CRUD, viewing, and report generation.
+
+------------------------------------------------------
+PHASE 6 – DEPLOYMENT, TESTING & VERSION CONTROL
+------------------------------------------------------
+Objective: Deploy all modules on Qoder, connect Supabase & Cloudinary, and verify production flow.
+
+1. Create Dockerfiles:
+   - Backend → npm run start (port 5000)
+   - Web Admin → next build && next start (port 3000)
+   - Mobile → connect to backend URL via .env
+
+2. Deploy backend + web-admin to Qoder.
+3. Configure Supabase & Cloudinary env vars.
+4. Test full flow: Admin → Surveyor → Attendance → Admin Verification.
+5. Tag versions:
+   - v1 → MVP
+   - v2 → Geo-fencing
+   - v3 → OCR + analytics
+
+Output: All modules deployed, connected, and validated in production.
+
+------------------------------------------------------
+PHASE INTERLINK SUMMARY
+------------------------------------------------------
+1. Setup → foundation for all modules.
+2. Database → supports backend API logic.
+3. Backend → powers both mobile & web.
+4. Mobile → feeds data to admin portal.
+5. Web Admin → validates, manages, reports.
+6. Deployment → final integration and release.
+
+Each phase seamlessly connects to the next ensuring minimal rebuilds and efficient credit use.
+
+FINAL OUTCOME (v1 READY):
+✅ Monorepo ready
+✅ Supabase schema synced
+✅ APIs functional
+✅ Mobile + Web integrated
+✅ Qoder deployment complete

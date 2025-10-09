@@ -1,0 +1,173 @@
+Mobile App - React Native + Expo
+--------------------------------
+
+mobile-app/
+│── app.json
+│── package.json
+│── babel.config.js
+│── metro.config.js
+│
+├── assets/               # Static assets (icons, splash, logos)
+│   ├── fonts/
+│   ├── images/
+│
+├── src/
+│   ├── api/              # API call functions (attendance, bike meter, auth)
+│   │   ├── authService.js
+│   │   ├── attendanceService.js
+│   │   ├── bikeService.js
+│   │   └── index.js
+│   │
+│   ├── components/       # Reusable UI components
+│   │   ├── Button.js
+│   │   ├── InputField.js
+│   │   └── CameraPreview.js
+│   │
+│   ├── navigation/       # React Navigation setup
+│   │   ├── AppNavigator.js
+│   │   ├── AuthNavigator.js
+│   │   └── index.js
+│   │
+│   ├── screens/          # App Screens
+│   │   ├── Auth/
+│   │   │   ├── LoginScreen.js
+│   │   │
+│   │   ├── Dashboard/
+│   │   │   ├── DashboardScreen.js
+│   │   │   ├── AttendanceScreen.js
+│   │   │   └── BikeMeterScreen.js
+│   │   │
+│   │   ├── Profile/
+│   │   │   └── ProfileScreen.js
+│   │   │
+│   │   └── Reports/      # Optional for later
+│   │       └── ReportsScreen.js
+│   │
+│   ├── utils/            # Helper functions
+│   │   ├── validation.js
+│   │   ├── geoUtils.js   # point-in-polygon check
+│   │   └── constants.js
+│   │
+│   ├── hooks/            # Custom hooks (state mgmt, location, camera)
+│   │   ├── useAuth.js
+│   │   ├── useLocation.js
+│   │   └── useCamera.js
+│   │
+│   ├── store/            # Global state (Redux/Zustand/Context)
+│   │   ├── authSlice.js
+│   │   ├── attendanceSlice.js
+│   │   └── index.js
+│   │
+│   ├── theme/            # Styles and theming
+│   │   ├── colors.js
+│   │   └── typography.js
+│   │
+│   └── App.js            # App entry
+│
+└── .env                  # API keys, environment variables
+
+Backend - Node.js + Express + Prisma + Supabase
+-----------------------------------------------
+
+backend/
+│── package.json
+│── tsconfig.json
+│── .env
+│
+├── prisma/
+│   ├── schema.prisma     # DB schema
+│   └── migrations/       # Auto-generated migrations
+│
+├── src/
+│   ├── config/           # Config files
+│   │   ├── db.ts
+│   │   ├── cloudinary.ts
+│   │   └── index.ts
+│   │
+│   ├── middlewares/      # Express middlewares
+│   │   ├── authMiddleware.ts
+│   │   ├── errorHandler.ts
+│   │   └── validateRequest.ts
+│   │
+│   ├── models/           # Prisma models auto-generated
+│   │   └── (handled by prisma client)
+│   │
+│   ├── controllers/      # Business logic
+│   │   ├── authController.ts
+│   │   ├── attendanceController.ts
+│   │   ├── bikeController.ts
+│   │   └── geoFenceController.ts
+│   │
+│   ├── services/         # Service layer (DB ops, external APIs)
+│   │   ├── authService.ts
+│   │   ├── attendanceService.ts
+│   │   ├── bikeService.ts
+│   │   └── geoFenceService.ts
+│   │
+│   ├── routes/           # API endpoints
+│   │   ├── authRoutes.ts
+│   │   ├── attendanceRoutes.ts
+│   │   ├── bikeRoutes.ts
+│   │   ├── geoFenceRoutes.ts
+│   │   └── index.ts
+│   │
+│   ├── utils/            # Helper utilities
+│   │   ├── jwtUtils.ts
+│   │   ├── geoUtils.ts   # point-in-polygon
+│   │   └── response.ts
+│   │
+│   ├── index.ts          # Express entry
+│   └── server.ts         # Start server
+
+
+Web Admin - Next.js
+-------------------
+
+web-admin/
+│── package.json
+│── next.config.js
+│── .env
+│
+├── public/               # Static assets
+│   └── logo.png
+│
+├── src/
+│   ├── pages/            # Next.js routing
+│   │   ├── index.tsx     # Dashboard
+│   │   ├── login.tsx
+│   │   ├── surveyors/
+│   │   │   ├── index.tsx
+│   │   │   └── [id].tsx  # Edit Surveyor + GeoFence
+│   │   ├── attendance/
+│   │   │   └── index.tsx
+│   │   └── bike/
+│   │       └── index.tsx
+│   │
+│   ├── components/       # Reusable UI
+│   │   ├── Layout.tsx
+│   │   ├── DataTable.tsx
+│   │   └── MapViewer.tsx # show GPS coords
+│   │
+│   ├── services/         # API calls
+│   │   ├── authService.ts
+│   │   ├── surveyorService.ts
+│   │   ├── attendanceService.ts
+│   │   └── bikeService.ts
+│   │
+│   ├── utils/            # Helpers
+│   │   ├── request.ts
+│   │   ├── constants.ts
+│   │   └── dateUtils.ts
+│   │
+│   ├── hooks/            # React hooks
+│   │   ├── useAuth.ts
+│   │   └── useFetch.ts
+│   │
+│   ├── styles/           # Global styles (CSS/SCSS)
+│   │   └── globals.css
+│   │
+│   ├── context/          # React Context (Auth, Theme, etc.)
+│   │   └── AuthContext.tsx
+│   │
+│   └── lib/              # External libraries setup
+│       └── tesseract.ts  # OCR integration (future)
