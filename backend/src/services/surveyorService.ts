@@ -6,22 +6,22 @@ export interface CreateSurveyorData {
   name: string;
   mobileNumber: string;
   password: string;
-  project?: string;
-  location?: string;
+  projectId?: number;
+  locationId?: number;
 }
 
 export interface UpdateSurveyorData {
   name?: string;
   mobileNumber?: string;
-  project?: string;
-  location?: string;
+  projectId?: number;
+  locationId?: number;
   isActive?: boolean;
 }
 
 export interface SurveyorFilters {
   search?: string;
-  project?: string;
-  location?: string;
+  projectId?: number;
+  locationId?: number;
   isActive?: boolean;
   role?: Role;
 }
@@ -29,7 +29,7 @@ export interface SurveyorFilters {
 export class SurveyorService {
   // Create new surveyor (Admin only)
   static async createSurveyor(data: CreateSurveyorData) {
-    const { name, mobileNumber, password, project, location } = data;
+    const { name, mobileNumber, password, projectId, locationId } = data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -50,16 +50,28 @@ export class SurveyorService {
         mobileNumber,
         passwordHash,
         role: Role.SURVEYOR,
-        project,
-        location,
+        projectId,
+        locationId,
       },
       select: {
         id: true,
         name: true,
         mobileNumber: true,
         role: true,
-        project: true,
-        location: true,
+        projectId: true,
+        locationId: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -71,7 +83,7 @@ export class SurveyorService {
 
   // Get all surveyors with filters
   static async getSurveyors(filters: SurveyorFilters) {
-    const { search, project, location, isActive, role } = filters;
+    const { search, projectId, locationId, isActive, role } = filters;
 
     const where: any = {};
 
@@ -91,13 +103,13 @@ export class SurveyorService {
     }
 
     // Project filter
-    if (project) {
-      where.project = { contains: project, mode: 'insensitive' };
+    if (projectId) {
+      where.projectId = projectId;
     }
 
     // Location filter
-    if (location) {
-      where.location = { contains: location, mode: 'insensitive' };
+    if (locationId) {
+      where.locationId = locationId;
     }
 
     // Active status filter
@@ -112,8 +124,20 @@ export class SurveyorService {
         name: true,
         mobileNumber: true,
         role: true,
-        project: true,
-        location: true,
+        projectId: true,
+        locationId: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -134,7 +158,7 @@ export class SurveyorService {
   }
 
   // Get surveyor by ID
-  static async getSurveyorById(surveyorId: string) {
+  static async getSurveyorById(surveyorId: number) {
     const surveyor = await prisma.user.findUnique({
       where: { id: surveyorId },
       select: {
@@ -142,8 +166,20 @@ export class SurveyorService {
         name: true,
         mobileNumber: true,
         role: true,
-        project: true,
-        location: true,
+        projectId: true,
+        locationId: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -164,8 +200,8 @@ export class SurveyorService {
   }
 
   // Update surveyor (Admin only)
-  static async updateSurveyor(surveyorId: string, updateData: UpdateSurveyorData) {
-    const { name, mobileNumber, project, location, isActive } = updateData;
+  static async updateSurveyor(surveyorId: number, updateData: UpdateSurveyorData) {
+    const { name, mobileNumber, projectId, locationId, isActive } = updateData;
 
     // Check if surveyor exists
     const existingSurveyor = await prisma.user.findUnique({
@@ -193,8 +229,8 @@ export class SurveyorService {
       data: {
         ...(name && { name }),
         ...(mobileNumber && { mobileNumber }),
-        ...(project !== undefined && { project }),
-        ...(location !== undefined && { location }),
+        ...(projectId !== undefined && { projectId }),
+        ...(locationId !== undefined && { locationId }),
         ...(typeof isActive === 'boolean' && { isActive }),
       },
       select: {
@@ -202,8 +238,20 @@ export class SurveyorService {
         name: true,
         mobileNumber: true,
         role: true,
-        project: true,
-        location: true,
+        projectId: true,
+        locationId: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -214,7 +262,7 @@ export class SurveyorService {
   }
 
   // Delete surveyor (Admin only)
-  static async deleteSurveyor(surveyorId: string) {
+  static async deleteSurveyor(surveyorId: number) {
     // Check if surveyor exists
     const surveyor = await prisma.user.findUnique({
       where: { id: surveyorId },
@@ -237,7 +285,7 @@ export class SurveyorService {
   }
 
   // Reset surveyor password (Admin only)
-  static async resetSurveyorPassword(surveyorId: string, newPassword: string) {
+  static async resetSurveyorPassword(surveyorId: number, newPassword: string) {
     const surveyor = await prisma.user.findUnique({
       where: { id: surveyorId },
     });
@@ -259,15 +307,27 @@ export class SurveyorService {
   }
 
   // Get surveyor statistics
-  static async getSurveyorStatistics(surveyorId: string, startDate?: string, endDate?: string) {
+  static async getSurveyorStatistics(surveyorId: number, startDate?: string, endDate?: string) {
     const surveyor = await prisma.user.findUnique({
       where: { id: surveyorId },
       select: {
         id: true,
         name: true,
         mobileNumber: true,
-        project: true,
-        location: true,
+        projectId: true,
+        locationId: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

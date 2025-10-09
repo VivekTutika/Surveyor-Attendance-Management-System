@@ -6,49 +6,145 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-  // Create default admin user
+  // Create default admin users
   const hashedPassword = await bcrypt.hash('admin123', 12);
   
-  const adminUser = await prisma.user.upsert({
+  const adminA = await prisma.user.upsert({
     where: { mobileNumber: '+1234567890' },
     update: {},
     create: {
       role: Role.ADMIN,
-      name: 'System Administrator',
+      name: 'Admin A',
       mobileNumber: '+1234567890',
       passwordHash: hashedPassword,
-      project: 'System Admin',
-      location: 'Head Office',
       isActive: true,
     },
   });
 
-  console.log('✅ Created admin user:', {
-    id: adminUser.id,
-    name: adminUser.name,
-    mobileNumber: adminUser.mobileNumber,
-    role: adminUser.role,
+  console.log('✅ Created Admin A:', {
+    id: adminA.id,
+    name: adminA.name,
+    mobileNumber: adminA.mobileNumber,
+    role: adminA.role,
   });
 
-  // Create sample surveyor users for testing
+  const adminB = await prisma.user.upsert({
+    where: { mobileNumber: '+1234567891' },
+    update: {},
+    create: {
+      role: Role.ADMIN,
+      name: 'Admin B',
+      mobileNumber: '+1234567891',
+      passwordHash: hashedPassword,
+      isActive: true,
+    },
+  });
+
+  console.log('✅ Created Admin B:', {
+    id: adminB.id,
+    name: adminB.name,
+    mobileNumber: adminB.mobileNumber,
+    role: adminB.role,
+  });
+
+  // Create sample projects
+  const sampleProjects = [
+    {
+      name: 'Highway Survey Project',
+      description: 'Survey and mapping of national highway infrastructure',
+    },
+    {
+      name: 'Urban Planning Survey',
+      description: 'Comprehensive urban development and planning survey',
+    },
+    {
+      name: 'Rural Development Survey',
+      description: 'Rural infrastructure and development assessment',
+    },
+    {
+      name: 'Coastal Area Survey',
+      description: 'Environmental and infrastructure survey of coastal regions',
+    },
+  ];
+
+  const createdProjects = [];
+  for (const project of sampleProjects) {
+    const createdProject = await prisma.project.upsert({
+      where: { name: project.name },
+      update: {},
+      create: project,
+    });
+    createdProjects.push(createdProject);
+    console.log('✅ Created project:', {
+      id: createdProject.id,
+      name: createdProject.name,
+    });
+  }
+
+  // Create sample locations
+  const sampleLocations = [
+    {
+      name: 'Zone A - North District',
+    },
+    {
+      name: 'Zone B - Central District',
+    },
+    {
+      name: 'Zone C - South District',
+    },
+    {
+      name: 'Zone D - East District',
+    },
+    {
+      name: 'Zone E - West District',
+    },
+  ];
+
+  const createdLocations = [];
+  for (const location of sampleLocations) {
+    const createdLocation = await prisma.location.upsert({
+      where: { name: location.name },
+      update: {},
+      create: location,
+    });
+    createdLocations.push(createdLocation);
+    console.log('✅ Created location:', {
+      id: createdLocation.id,
+      name: createdLocation.name,
+    });
+  }
+
+  // Create sample surveyor users with project and location assignments
   const sampleSurveyors = [
     {
       name: 'John Smith',
-      mobileNumber: '+1234567891',
-      project: 'Highway Survey Project',
-      location: 'Zone A - North District',
+      mobileNumber: '+1234567892',
+      projectId: createdProjects[0].id, // Highway Survey Project
+      locationId: createdLocations[0].id, // Zone A - North District
     },
     {
       name: 'Sarah Johnson',
-      mobileNumber: '+1234567892',
-      project: 'Urban Planning Survey',
-      location: 'Zone B - Central District',
+      mobileNumber: '+1234567893',
+      projectId: createdProjects[1].id, // Urban Planning Survey
+      locationId: createdLocations[1].id, // Zone B - Central District
     },
     {
       name: 'Mike Wilson',
-      mobileNumber: '+1234567893',
-      project: 'Rural Development Survey',
-      location: 'Zone C - South District',
+      mobileNumber: '+1234567894',
+      projectId: createdProjects[2].id, // Rural Development Survey
+      locationId: createdLocations[2].id, // Zone C - South District
+    },
+    {
+      name: 'Emily Davis',
+      mobileNumber: '+1234567895',
+      projectId: createdProjects[3].id, // Coastal Area Survey
+      locationId: createdLocations[3].id, // Zone D - East District
+    },
+    {
+      name: 'David Brown',
+      mobileNumber: '+1234567896',
+      projectId: createdProjects[0].id, // Highway Survey Project
+      locationId: createdLocations[4].id, // Zone E - West District
     },
   ];
 
@@ -63,8 +159,8 @@ async function main() {
         name: surveyor.name,
         mobileNumber: surveyor.mobileNumber,
         passwordHash: hashedSurveyorPassword,
-        project: surveyor.project,
-        location: surveyor.location,
+        projectId: surveyor.projectId,
+        locationId: surveyor.locationId,
         isActive: true,
       },
     });
@@ -73,17 +169,25 @@ async function main() {
       id: surveyorUser.id,
       name: surveyorUser.name,
       mobileNumber: surveyorUser.mobileNumber,
-      project: surveyorUser.project,
+      projectId: surveyorUser.projectId,
+      locationId: surveyorUser.locationId,
     });
   }
 
   console.log('🎉 Database seeding completed successfully!');
   console.log('');
   console.log('📋 Default Login Credentials:');
-  console.log('👨‍💼 Admin: +1234567890 / admin123');
-  console.log('👷‍♂️ Surveyor (John): +1234567891 / surveyor123');
-  console.log('👷‍♀️ Surveyor (Sarah): +1234567892 / surveyor123');
-  console.log('👷‍♂️ Surveyor (Mike): +1234567893 / surveyor123');
+  console.log('👨‍💼 Admin A: +1234567890 / admin123');
+  console.log('👨‍💼 Admin B: +1234567891 / admin123');
+  console.log('👷‍♂️ Surveyor (John): +1234567892 / surveyor123');
+  console.log('👷‍♀️ Surveyor (Sarah): +1234567893 / surveyor123');
+  console.log('👷‍♂️ Surveyor (Mike): +1234567894 / surveyor123');
+  console.log('👷‍♀️ Surveyor (Emily): +1234567895 / surveyor123');
+  console.log('👷‍♂️ Surveyor (David): +1234567896 / surveyor123');
+  console.log('');
+  console.log('🏢 Created Projects:', createdProjects.length);
+  console.log('📍 Created Locations:', createdLocations.length);
+  console.log('👥 Created Users:', sampleSurveyors.length + 2, '(including 2 admins)');
 }
 
 main()

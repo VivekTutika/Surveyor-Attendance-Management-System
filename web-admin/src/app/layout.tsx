@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { AuthProvider } from '@/context/AuthContext'
 import theme from '@/lib/theme'
+import 'leaflet/dist/leaflet.css'
 
 const inter = Inter({ subsets: ['latin'] })
 

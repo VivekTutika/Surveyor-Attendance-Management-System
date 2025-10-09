@@ -8,8 +8,8 @@ export interface CreateUserData {
   mobileNumber: string;
   password: string;
   role?: Role;
-  project?: string;
-  location?: string;
+  projectId?: number;
+  locationId?: number;
 }
 
 export interface LoginData {
@@ -19,12 +19,20 @@ export interface LoginData {
 
 export interface AuthResponse {
   user: {
-    id: string;
+    id: number;
     name: string;
     mobileNumber: string;
     role: Role;
-    project: string | null;
-    location: string | null;
+    projectId: number | null;
+    locationId: number | null;
+    project?: {
+      id: number;
+      name: string;
+    } | null;
+    location?: {
+      id: number;
+      name: string;
+    } | null;
   };
   token: string;
 }
@@ -32,7 +40,7 @@ export interface AuthResponse {
 export class AuthService {
   // Register new user (Admin only)
   static async register(userData: CreateUserData): Promise<AuthResponse> {
-    const { name, mobileNumber, password, role = Role.SURVEYOR, project, location } = userData;
+    const { name, mobileNumber, password, role = Role.SURVEYOR, projectId, locationId } = userData;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -53,8 +61,22 @@ export class AuthService {
         mobileNumber,
         passwordHash,
         role,
-        project,
-        location,
+        projectId,
+        locationId,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -72,6 +94,8 @@ export class AuthService {
         name: user.name,
         mobileNumber: user.mobileNumber,
         role: user.role,
+        projectId: user.projectId,
+        locationId: user.locationId,
         project: user.project,
         location: user.location,
       },

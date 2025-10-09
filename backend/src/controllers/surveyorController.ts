@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { SurveyorService } from '../services/surveyorService';
 import { sendSuccess, sendError, sendCreated } from '../utils/response';
 import { asyncHandler } from '../middlewares/errorHandler';
+import { prisma } from '../config/db';
 
 export class SurveyorController {
   // POST /api/surveyors - Create new surveyor (Admin only)
@@ -26,7 +27,7 @@ export class SurveyorController {
   static getSurveyorById = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    const surveyor = await SurveyorService.getSurveyorById(id);
+    const surveyor = await SurveyorService.getSurveyorById(parseInt(id));
 
     sendSuccess(res, 'Surveyor retrieved successfully', surveyor);
   });
@@ -36,7 +37,7 @@ export class SurveyorController {
     const { id } = req.params;
     const updateData = req.body;
 
-    const updatedSurveyor = await SurveyorService.updateSurveyor(id, updateData);
+    const updatedSurveyor = await SurveyorService.updateSurveyor(parseInt(id), updateData);
 
     sendSuccess(res, 'Surveyor updated successfully', updatedSurveyor);
   });
@@ -45,7 +46,7 @@ export class SurveyorController {
   static deleteSurveyor = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    const result = await SurveyorService.deleteSurveyor(id);
+    const result = await SurveyorService.deleteSurveyor(parseInt(id));
 
     sendSuccess(res, result.message);
   });
@@ -59,7 +60,7 @@ export class SurveyorController {
       return sendError(res, 'Password must be at least 6 characters long', 400);
     }
 
-    const result = await SurveyorService.resetSurveyorPassword(id, newPassword);
+    const result = await SurveyorService.resetSurveyorPassword(parseInt(id), newPassword);
 
     sendSuccess(res, result.message);
   });
@@ -69,26 +70,51 @@ export class SurveyorController {
     const { id } = req.params;
     const { startDate, endDate } = req.query as any;
 
-    const statistics = await SurveyorService.getSurveyorStatistics(id, startDate, endDate);
+    const statistics = await SurveyorService.getSurveyorStatistics(parseInt(id), startDate, endDate);
 
     sendSuccess(res, 'Surveyor statistics retrieved successfully', statistics);
   });
 
   // GET /api/surveyors/projects - Get unique project names (Admin only)
   static getProjects = asyncHandler(async (req: Request, res: Response) => {
-    // This is a simple implementation - in a real app, you might have a separate projects table
-    const projects = await SurveyorService.getSurveyors({});
-    const uniqueProjects = [...new Set(projects.map(s => s.project).filter(Boolean))];
+    // Get all projects from the dedicated projects table
+    const projects = await prisma.project.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        _count: {
+          select: {
+            users: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
 
-    sendSuccess(res, 'Projects retrieved successfully', uniqueProjects);
+    sendSuccess(res, 'Projects retrieved successfully', projects);
   });
 
   // GET /api/surveyors/locations - Get unique location names (Admin only)
   static getLocations = asyncHandler(async (req: Request, res: Response) => {
-    // This is a simple implementation - in a real app, you might have a separate locations table
-    const surveyors = await SurveyorService.getSurveyors({});
-    const uniqueLocations = [...new Set(surveyors.map(s => s.location).filter(Boolean))];
+    // Get all locations from the dedicated locations table
+    const locations = await prisma.location.findMany({
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            users: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
 
-    sendSuccess(res, 'Locations retrieved successfully', uniqueLocations);
+    sendSuccess(res, 'Locations retrieved successfully', locations);
   });
 }

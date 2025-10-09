@@ -21,29 +21,29 @@ router.get('/projects', SurveyorController.getProjects);
 router.get('/locations', SurveyorController.getLocations);
 
 router.get('/:id',
-  validateRequest(schemas.idParam),
+  validateRequest(schemas.idParamInt),
   SurveyorController.getSurveyorById
 );
 
 router.put('/:id',
-  validateRequest(schemas.idParam),
+  validateRequest(schemas.idParamInt),
   validateRequest(schemas.updateSurveyor),
   SurveyorController.updateSurveyor
 );
 
 router.delete('/:id',
-  validateRequest(schemas.idParam),
+  validateRequest(schemas.idParamInt),
   SurveyorController.deleteSurveyor
 );
 
 // Additional operations
 router.post('/:id/reset-password',
-  validateRequest(schemas.idParam),
+  validateRequest(schemas.idParamInt),
   SurveyorController.resetSurveyorPassword
 );
 
 router.get('/:id/statistics',
-  validateRequest(schemas.idParam),
+  validateRequest(schemas.idParamInt),
   validateRequest(schemas.dateQuery),
   SurveyorController.getSurveyorStatistics
 );
