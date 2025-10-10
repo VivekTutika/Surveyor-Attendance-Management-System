@@ -161,12 +161,12 @@ export default function BikeReadingsPage() {
     setPage(0)
   }
 
-  const totalReadings = readings.length
-  const avgReading = readings.length > 0 
-    ? readings.reduce((sum, r) => sum + r.reading, 0) / readings.length 
+  const totalReadings = readings?.length || 0
+  const avgReading = readings?.length > 0 
+    ? readings.reduce((sum, r) => sum + (r.reading || 0), 0) / readings.length 
     : 0
-  const maxReading = readings.length > 0 
-    ? Math.max(...readings.map(r => r.reading)) 
+  const maxReading = readings?.length > 0 
+    ? Math.max(...readings.map(r => r.reading || 0)) 
     : 0
 
   if (loading && page === 0) {

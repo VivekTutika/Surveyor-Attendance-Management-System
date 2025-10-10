@@ -9,8 +9,8 @@ import {
   Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-// @ts-ignore
-import { Camera } from 'expo-camera';
+// Use CameraView for Expo SDK 54+/expo-camera v17
+import { CameraView } from 'expo-camera';
 import * as Location from 'expo-location';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -59,7 +59,8 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
   const requestPermissions = async () => {
     try {
       // Request camera permission
-      const cameraPermission = await Camera.requestCameraPermissionsAsync();
+      // Request camera permission via CameraView
+      const cameraPermission = await (await import('expo-camera')).Camera.requestCameraPermissionsAsync();
       if (cameraPermission.status !== 'granted') {
         Alert.alert(
           'Permission Required',
@@ -91,8 +92,16 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
   const getCurrentLocation = async () => {
     setLoadingLocation(true);
     try {
+      const hasProvider = await Location.hasServicesEnabledAsync();
+      if (!hasProvider) {
+        await Location.enableNetworkProviderAsync().catch(() => {});
+      }
+      // Request the most accurate location available and allow brief waiting
       const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
+        maximumAge: 0,
+        timeout: 15000,
       });
       setLocation(currentLocation.coords);
     } catch (error) {
@@ -221,17 +230,16 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       ) : (
         <View style={styles.cameraContainer}>
-          {/* @ts-ignore */}
-          <Camera
-            style={styles.camera}
-            type="front"
-            ref={(ref: any) => setCameraRef(ref)}
-          >
-            <View style={styles.cameraOverlay}>
+          <View style={styles.cameraWrapper}>
+            <CameraView
+              style={styles.camera}
+              facing="front"
+              ref={(ref: any) => setCameraRef(ref)}
+            />
+            <View pointerEvents="none" style={styles.cameraOverlayAbsolute}>
               <View style={styles.cameraFrame} />
             </View>
-          {/* @ts-ignore */}
-          </Camera>
+          </View>
           
           <View style={styles.cameraControls}>
             <TouchableOpacity
@@ -302,8 +310,11 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  cameraOverlay: {
+  cameraWrapper: {
     flex: 1,
+  },
+  cameraOverlayAbsolute: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -16,7 +16,10 @@ export const validateRequest = (schema: {
         req.params = schema.params.parse(req.params) as any;
       }
       if (schema.query) {
-        req.query = schema.query.parse(req.query) as any;
+        // Parse query but don't reassign to req.query (read-only)
+        const parsedQuery = schema.query.parse(req.query);
+        // Store parsed query in a custom property for controllers to use
+        (req as any).validatedQuery = parsedQuery;
       }
       next();
     } catch (error) {
@@ -61,8 +64,8 @@ export const schemas = {
   markAttendance: {
     body: z.object({
       type: z.enum(['MORNING', 'EVENING']),
-      latitude: z.number().min(-90).max(90),
-      longitude: z.number().min(-180).max(180),
+      latitude: z.coerce.number().min(-90).max(90),
+      longitude: z.coerce.number().min(-180).max(180),
     }),
   },
 
@@ -70,7 +73,7 @@ export const schemas = {
   uploadBikeMeter: {
     body: z.object({
       type: z.enum(['MORNING', 'EVENING']),
-      kmReading: z.number().positive().optional(),
+      kmReading: z.coerce.number().positive().optional(),
     }),
   },
 

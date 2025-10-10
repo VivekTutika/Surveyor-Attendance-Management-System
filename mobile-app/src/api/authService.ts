@@ -18,12 +18,18 @@ export const authService: AuthService = {
   // Login user
   login: async (mobileNumber: string, password: string) => {
     try {
+      // eslint-disable-next-line no-console
+      console.log('[AuthService] login attempt:', { mobileNumber });
       const response = await api.post('/auth/login', {
         mobileNumber,
         password,
       });
+      // eslint-disable-next-line no-console
+      console.log('[AuthService] login success');
       return response;
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log('[AuthService] login error:', error);
       throw error;
     }
   },

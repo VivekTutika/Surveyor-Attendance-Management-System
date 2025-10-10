@@ -8,6 +8,7 @@ import {
   User, 
   ApiResponse 
 } from '../types';
+import { normalizeUser } from '../utils/normalizers';
 
 // Async thunks
 export const loginUser = createAsyncThunk<
@@ -19,13 +20,18 @@ export const loginUser = createAsyncThunk<
   async ({ mobileNumber, password }, { rejectWithValue }) => {
     try {
       const response = await authService.login(mobileNumber, password);
+      // eslint-disable-next-line no-console
+      console.log('[AuthThunk] login response:', response ? Object.keys(response) : 'no response');
       
-      // Store token in AsyncStorage
-      await AsyncStorage.setItem('userToken', response.data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+      // Response is already the data object due to axios interceptor
+      const normalizedUser = normalizeUser(response.user);
+      await AsyncStorage.setItem('userToken', response.token);
+      await AsyncStorage.setItem('userData', JSON.stringify(normalizedUser));
       
-      return response.data;
+      return { ...response, user: normalizedUser } as LoginResponse;
     } catch (error: any) {
+      // eslint-disable-next-line no-console
+      console.log('[AuthThunk] login error:', error?.message || error);
       return rejectWithValue(error.message || 'Login failed');
     }
   }
@@ -62,9 +68,13 @@ export const loadStoredAuth = createAsyncThunk<
       const userData = await AsyncStorage.getItem('userData');
       
       if (token && userData) {
+        const parsed = JSON.parse(userData);
+        const normalized = normalizeUser(parsed);
+        // Ensure storage has the normalized version to avoid future crashes
+        await AsyncStorage.setItem('userData', JSON.stringify(normalized));
         return {
           token,
-          user: JSON.parse(userData) as User,
+          user: normalized,
         };
       }
       
@@ -84,7 +94,8 @@ export const getUserProfile = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const response = await authService.getProfile();
-      return response.data;
+      const normalized = normalizeUser(response);
+      return normalized;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get profile');
     }
@@ -100,11 +111,12 @@ export const updateUserProfile = createAsyncThunk<
   async (profileData, { rejectWithValue }) => {
     try {
       const response = await authService.updateProfile(profileData);
+      const normalized = normalizeUser(response);
       
       // Update stored user data
-      await AsyncStorage.setItem('userData', JSON.stringify(response.data));
+      await AsyncStorage.setItem('userData', JSON.stringify(normalized));
       
-      return response.data;
+      return normalized;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update profile');
     }
