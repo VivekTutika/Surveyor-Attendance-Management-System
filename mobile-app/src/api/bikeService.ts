@@ -21,8 +21,8 @@ export const bikeService: BikeService = {
     try {
       const formData = createFormData(
         {
-          type,
-          ...(kmReading && { kmReading: kmReading.toString() }),
+          type: type.toUpperCase(),
+          ...(kmReading != null ? { kmReading: String(kmReading) } : {}),
         },
         photoUri,
         `bike_meter_${type}_${Date.now()}.jpg`

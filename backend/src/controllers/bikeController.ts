@@ -53,7 +53,7 @@ export class BikeController {
   static getBikeMeterList = asyncHandler(async (req: Request, res: Response) => {
     const userRole = req.user!.role;
     const requestingUserId = req.user!.id;
-    const filters = req.query as any;
+    const filters = (req as any).validatedQuery || req.query;
 
     const bikeMeterReadings = await BikeService.getBikeMeterReadings(
       filters,
@@ -94,7 +94,7 @@ export class BikeController {
 
   // GET /api/bike/summary - Get bike meter summary for date range
   static getBikeMeterSummary = asyncHandler(async (req: Request, res: Response) => {
-    const { userId, startDate, endDate } = req.query as any;
+    const { userId, startDate, endDate } = (req as any).validatedQuery || req.query;
     const targetUserId = userId ? parseInt(userId) : req.user!.id;
 
     // If not admin and trying to access another user's data

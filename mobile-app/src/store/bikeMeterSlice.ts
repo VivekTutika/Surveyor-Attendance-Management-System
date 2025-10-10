@@ -16,7 +16,7 @@ export const uploadBikeMeterReading = createAsyncThunk<
   async ({ type, photoUri, reading, timestamp }, { rejectWithValue }) => {
     try {
       const response = await bikeService.uploadBikeMeterReading(type, photoUri, reading ?? null);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to upload bike meter reading');
     }
@@ -32,7 +32,7 @@ export const getTodayBikeMeterStatus = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const response = await bikeService.getTodayStatus();
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get bike meter status');
     }
@@ -48,7 +48,7 @@ export const getBikeMeterHistory = createAsyncThunk<
   async (filters, { rejectWithValue }) => {
     try {
       const response = await bikeService.getBikeMeterList(filters);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get bike meter history');
     }
@@ -64,7 +64,7 @@ export const getBikeMeterSummary = createAsyncThunk<
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
       const response = await bikeService.getBikeMeterSummary(startDate, endDate);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get bike meter summary');
     }

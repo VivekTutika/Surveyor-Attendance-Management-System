@@ -21,7 +21,7 @@ export const attendanceService: AttendanceService = {
     try {
       const formData = createFormData(
         {
-          type,
+          type: type.toUpperCase(),
           latitude: latitude.toString(),
           longitude: longitude.toString(),
         },

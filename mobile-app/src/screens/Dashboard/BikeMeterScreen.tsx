@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, LoadingSpinner, InputField } from '../../components';
+import { Button, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { uploadBikeMeterReading } from '../../store/bikeMeterSlice';
 import { RootState, DashboardStackParamList } from '../../types';
@@ -36,8 +37,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
   const readingType = route.params?.type || 'MORNING';
   
   const [capturedImage, setCapturedImage] = useState<any>(null);
-  const [kmReading, setKmReading] = useState('');
-  const [kmError, setKmError] = useState('');
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     requestPermissions();
@@ -53,6 +53,18 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }
+      // Get accurate location too (for parity with attendance)
+      const hasProvider = await Location.hasServicesEnabledAsync();
+      if (!hasProvider) {
+        await Location.enableNetworkProviderAsync().catch(() => {});
+      }
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
+        maximumAge: 0,
+        timeout: 15000,
+      });
+      setLocation({ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude });
     } catch (error) {
       console.error('Error requesting camera permission:', error);
     }
@@ -61,13 +73,12 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
   const openCamera = async () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
+        // Use MediaTypeOptions for compatibility across SDKs
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3] as [number, number],
-        quality: 0.8,
+        allowsEditing: false,
+        quality: 0.85,
       });
-
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         setCapturedImage(result.assets[0]);
       }
     } catch (error) {
@@ -76,49 +87,11 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const openGallery = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3] as [number, number],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        setCapturedImage(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Error opening gallery:', error);
-      Alert.alert('Error', 'Failed to open gallery. Please try again.');
-    }
-  };
-
-  const showImageOptions = () => {
-    Alert.alert(
-      'Select Image',
-      'Choose how you want to capture the bike meter reading',
-      [
-        { text: 'Camera', onPress: openCamera },
-        { text: 'Gallery', onPress: openGallery },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  };
-
   const removeImage = () => {
     setCapturedImage(null);
   };
 
-  const validateKmReading = (value: string) => {
-    setKmReading(value);
-    
-    if (value && (isNaN(Number(value)) || parseFloat(value) <= 0)) {
-      setKmError('Please enter a valid KM reading');
-    } else {
-      setKmError('');
-    }
-  };
+  // KM reading input removed as per requirement
 
   const submitReading = async () => {
     if (!capturedImage) {
@@ -145,7 +118,8 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
-      Alert.alert('Error', error || 'Failed to upload bike meter reading.');
+      const message = typeof error === 'string' ? error : (error?.message || 'Failed to upload bike meter reading.');
+      Alert.alert('Error', message);
     }
   };
 
@@ -168,10 +142,10 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
             <Image source={{ uri: capturedImage.uri }} style={styles.capturedImage} />
             <View style={styles.imageActions}>
               <Button
-                title="Change Photo"
+                title="Retake"
                 variant="outline"
                 size="small"
-                onPress={showImageOptions}
+                onPress={openCamera}
                 style={styles.imageActionButton}
               />
               <Button
@@ -187,7 +161,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.imagePlaceholder}>
             <TouchableOpacity
               style={styles.imageUploadButton}
-              onPress={showImageOptions}
+              onPress={openCamera}
             >
               <Ionicons name="camera" size={48} color={Colors.primary} />
               <Text style={styles.imageUploadText}>Tap to capture bike meter photo</Text>
@@ -195,25 +169,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         )}
 
-        {/* KM Reading Input */}
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Manual KM Reading (Optional)</Text>
-          <Text style={styles.sectionSubtitle}>
-            You can enter the KM reading manually for better accuracy
-          </Text>
-          
-          <InputField
-            label="KM Reading"
-            placeholder="Enter current KM reading"
-            value={kmReading}
-            onChangeText={validateKmReading}
-            keyboardType="numeric"
-            error={kmError}
-            leftIcon={
-              <Ionicons name="speedometer-outline" size={20} color={Colors.gray} />
-            }
-          />
-        </View>
+        {/* Manual KM Reading removed per requirements */}
 
         {/* Submit Button */}
         <View style={styles.actionSection}>

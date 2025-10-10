@@ -54,7 +54,7 @@ export class AttendanceController {
   static getAttendanceList = asyncHandler(async (req: Request, res: Response) => {
     const userRole = req.user!.role;
     const requestingUserId = req.user!.id;
-    const filters = req.query as any;
+    const filters = (req as any).validatedQuery || req.query;
 
     const attendanceRecords = await AttendanceService.getAttendanceRecords(
       filters,
@@ -81,7 +81,7 @@ export class AttendanceController {
 
   // GET /api/attendance/summary - Get attendance summary for date range
   static getAttendanceSummary = asyncHandler(async (req: Request, res: Response) => {
-    const { userId, startDate, endDate } = req.query as any;
+    const { userId, startDate, endDate } = (req as any).validatedQuery || req.query;
     const targetUserId = userId ? parseInt(userId) : req.user!.id;
 
     // If not admin and trying to access another user's data

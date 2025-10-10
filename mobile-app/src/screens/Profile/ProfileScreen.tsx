@@ -125,7 +125,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Project</Text>
-              <Text style={styles.infoValue}>{user?.project || 'Not Assigned'}</Text>
+              <Text style={styles.infoValue}>{
+                typeof user?.project === 'object'
+                  ? user?.project?.name || 'Not Assigned'
+                  : user?.project || 'Not Assigned'
+              }</Text>
             </View>
           </View>
 
@@ -135,7 +139,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Location</Text>
-              <Text style={styles.infoValue}>{user?.location || 'Not Assigned'}</Text>
+              <Text style={styles.infoValue}>{
+                typeof user?.location === 'object'
+                  ? user?.location?.name || 'Not Assigned'
+                  : user?.location || 'Not Assigned'
+              }</Text>
             </View>
           </View>
         </Card>
@@ -161,31 +169,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Last Updated</Text>
               <Text style={styles.infoValue}>{formatDate(user?.updatedAt)}</Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* App Information */}
-        <Card style={styles.infoCard}>
-          <Text style={styles.cardTitle}>App Information</Text>
-          
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="information-circle" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>App Version</Text>
-              <Text style={styles.infoValue}>1.0.0</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="business" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Company</Text>
-              <Text style={styles.infoValue}>LRMC Solutions</Text>
             </View>
           </View>
         </Card>
