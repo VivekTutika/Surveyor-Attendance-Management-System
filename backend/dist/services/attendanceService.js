@@ -13,7 +13,7 @@ class AttendanceService {
         const existingAttendance = await db_1.prisma.attendance.findUnique({
             where: {
                 userId_date_type: {
-                    userId,
+                    userId, // Now correctly typed as number
                     date: today,
                     type,
                 },
@@ -23,11 +23,11 @@ class AttendanceService {
             throw new Error(`${type} attendance already marked for today`);
         }
         // Upload photo to Cloudinary
-        const photoUrl = await (0, cloudinary_1.uploadAttendancePhoto)(photoBuffer, userId, 'attendance');
+        const photoUrl = await (0, cloudinary_1.uploadAttendancePhoto)(photoBuffer, userId.toString(), 'attendance'); // Convert to string for Cloudinary
         // Create attendance record
         const attendance = await db_1.prisma.attendance.create({
             data: {
-                userId,
+                userId, // Now correctly typed as number
                 type,
                 date: today,
                 latitude,
@@ -49,9 +49,9 @@ class AttendanceService {
         });
         return attendance;
     }
-    // Get attendance records with filters
+    // Get attendance records with filters and pagination
     static async getAttendanceRecords(filters, userRole, requestingUserId) {
-        const { userId, date, startDate, endDate, type } = filters;
+        const { userId, date, startDate, endDate, type, page = 1, limit = 10 } = filters;
         // Build where clause
         const where = {};
         // Role-based filtering
@@ -91,6 +91,11 @@ class AttendanceService {
         if (type) {
             where.type = type;
         }
+        // Get total count for pagination
+        const total = await db_1.prisma.attendance.count({ where });
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+        const pages = Math.ceil(total / limit);
         const attendanceRecords = await db_1.prisma.attendance.findMany({
             where,
             include: {
@@ -108,8 +113,15 @@ class AttendanceService {
                 { date: 'desc' },
                 { type: 'asc' },
             ],
+            skip,
+            take: limit,
         });
-        return attendanceRecords;
+        return {
+            attendance: attendanceRecords,
+            total,
+            page,
+            pages
+        };
     }
     // Get today's attendance status for a user
     static async getTodayAttendanceStatus(userId) {
@@ -117,7 +129,7 @@ class AttendanceService {
         today.setHours(0, 0, 0, 0);
         const attendanceRecords = await db_1.prisma.attendance.findMany({
             where: {
-                userId,
+                userId, // Now correctly typed as number
                 date: today,
             },
         });
@@ -148,7 +160,7 @@ class AttendanceService {
         end.setHours(23, 59, 59, 999);
         const attendanceRecords = await db_1.prisma.attendance.findMany({
             where: {
-                userId,
+                userId, // Now correctly typed as number
                 date: {
                     gte: start,
                     lte: end,

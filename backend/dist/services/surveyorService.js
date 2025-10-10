@@ -10,7 +10,7 @@ const db_1 = require("../config/db");
 class SurveyorService {
     // Create new surveyor (Admin only)
     static async createSurveyor(data) {
-        const { name, mobileNumber, password, project, location } = data;
+        const { name, mobileNumber, password, projectId, locationId } = data;
         // Check if user already exists
         const existingUser = await db_1.prisma.user.findUnique({
             where: { mobileNumber },
@@ -27,16 +27,28 @@ class SurveyorService {
                 mobileNumber,
                 passwordHash,
                 role: client_1.Role.SURVEYOR,
-                project,
-                location,
+                projectId,
+                locationId,
             },
             select: {
                 id: true,
                 name: true,
                 mobileNumber: true,
                 role: true,
-                project: true,
-                location: true,
+                projectId: true,
+                locationId: true,
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
@@ -46,7 +58,7 @@ class SurveyorService {
     }
     // Get all surveyors with filters
     static async getSurveyors(filters) {
-        const { search, project, location, isActive, role } = filters;
+        const { search, projectId, locationId, isActive, role } = filters;
         const where = {};
         // Role filter (default to surveyors, but allow admin filtering)
         if (role) {
@@ -63,12 +75,12 @@ class SurveyorService {
             ];
         }
         // Project filter
-        if (project) {
-            where.project = { contains: project, mode: 'insensitive' };
+        if (projectId) {
+            where.projectId = projectId;
         }
         // Location filter
-        if (location) {
-            where.location = { contains: location, mode: 'insensitive' };
+        if (locationId) {
+            where.locationId = locationId;
         }
         // Active status filter
         if (typeof isActive === 'boolean') {
@@ -81,8 +93,20 @@ class SurveyorService {
                 name: true,
                 mobileNumber: true,
                 role: true,
-                project: true,
-                location: true,
+                projectId: true,
+                locationId: true,
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
@@ -109,8 +133,20 @@ class SurveyorService {
                 name: true,
                 mobileNumber: true,
                 role: true,
-                project: true,
-                location: true,
+                projectId: true,
+                locationId: true,
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
@@ -129,7 +165,7 @@ class SurveyorService {
     }
     // Update surveyor (Admin only)
     static async updateSurveyor(surveyorId, updateData) {
-        const { name, mobileNumber, project, location, isActive } = updateData;
+        const { name, mobileNumber, projectId, locationId, isActive } = updateData;
         // Check if surveyor exists
         const existingSurveyor = await db_1.prisma.user.findUnique({
             where: { id: surveyorId },
@@ -152,8 +188,8 @@ class SurveyorService {
             data: {
                 ...(name && { name }),
                 ...(mobileNumber && { mobileNumber }),
-                ...(project !== undefined && { project }),
-                ...(location !== undefined && { location }),
+                ...(projectId !== undefined && { projectId }),
+                ...(locationId !== undefined && { locationId }),
                 ...(typeof isActive === 'boolean' && { isActive }),
             },
             select: {
@@ -161,8 +197,20 @@ class SurveyorService {
                 name: true,
                 mobileNumber: true,
                 role: true,
-                project: true,
-                location: true,
+                projectId: true,
+                locationId: true,
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
@@ -213,8 +261,20 @@ class SurveyorService {
                 id: true,
                 name: true,
                 mobileNumber: true,
-                project: true,
-                location: true,
+                projectId: true,
+                locationId: true,
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
             },
         });
         if (!surveyor) {

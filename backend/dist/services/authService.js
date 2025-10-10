@@ -8,14 +8,55 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const client_1 = require("@prisma/client");
 const db_1 = require("../config/db");
 const jwtUtils_1 = require("../utils/jwtUtils");
+// Helper function to normalize mobile numbers for comparison
+function normalizeMobileNumber(mobileNumber) {
+    // Remove all non-digit characters except the leading +
+    let normalized = mobileNumber.replace(/[^\d+]/g, '');
+    // Ensure + prefix
+    if (!normalized.startsWith('+')) {
+        // If it starts with a digit and looks like it might be missing the country code
+        // we'll add the + prefix
+        if (normalized.length >= 10) { // Assuming minimum length for a valid number
+            normalized = '+' + normalized;
+        }
+    }
+    return normalized;
+}
+// Helper function to create search variants for mobile number
+function getMobileNumberVariants(mobileNumber) {
+    const variants = new Set();
+    // Add the original number
+    variants.add(mobileNumber);
+    // Add normalized version
+    const normalized = normalizeMobileNumber(mobileNumber);
+    variants.add(normalized);
+    // Add version without + prefix
+    if (normalized.startsWith('+')) {
+        variants.add(normalized.substring(1));
+    }
+    // Add version with + prefix
+    if (!mobileNumber.startsWith('+')) {
+        variants.add('+' + mobileNumber);
+    }
+    return Array.from(variants);
+}
 class AuthService {
     // Register new user (Admin only)
     static async register(userData) {
-        const { name, mobileNumber, password, role = client_1.Role.SURVEYOR, project, location } = userData;
-        // Check if user already exists
-        const existingUser = await db_1.prisma.user.findUnique({
-            where: { mobileNumber },
-        });
+        const { name, mobileNumber, password, role = client_1.Role.SURVEYOR, projectId, locationId } = userData;
+        // Normalize mobile number for storage
+        const normalizedMobileNumber = normalizeMobileNumber(mobileNumber);
+        // Check if user already exists (check all variants)
+        const mobileVariants = getMobileNumberVariants(mobileNumber);
+        let existingUser = null;
+        for (const variant of mobileVariants) {
+            existingUser = await db_1.prisma.user.findUnique({
+                where: { mobileNumber: variant },
+            });
+            if (existingUser) {
+                break;
+            }
+        }
         if (existingUser) {
             throw new Error('User with this mobile number already exists');
         }
@@ -25,11 +66,25 @@ class AuthService {
         const user = await db_1.prisma.user.create({
             data: {
                 name,
-                mobileNumber,
+                mobileNumber: normalizedMobileNumber, // Store normalized version
                 passwordHash,
                 role,
-                project,
-                location,
+                projectId,
+                locationId,
+            },
+            include: {
+                project: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
             },
         });
         // Generate token
@@ -45,6 +100,8 @@ class AuthService {
                 name: user.name,
                 mobileNumber: user.mobileNumber,
                 role: user.role,
+                projectId: user.projectId,
+                locationId: user.locationId,
                 project: user.project,
                 location: user.location,
             },
@@ -54,10 +111,22 @@ class AuthService {
     // Login user
     static async login(loginData) {
         const { mobileNumber, password } = loginData;
-        // Find user
-        const user = await db_1.prisma.user.findUnique({
-            where: { mobileNumber },
-        });
+        // Get all possible variants of the mobile number
+        const mobileVariants = getMobileNumberVariants(mobileNumber);
+        // Try to find user with any of the variants
+        let user = null;
+        for (const variant of mobileVariants) {
+            user = await db_1.prisma.user.findUnique({
+                where: { mobileNumber: variant },
+                include: {
+                    project: true,
+                    location: true,
+                },
+            });
+            if (user) {
+                break;
+            }
+        }
         if (!user) {
             throw new Error('Invalid mobile number or password');
         }
@@ -83,8 +152,10 @@ class AuthService {
                 name: user.name,
                 mobileNumber: user.mobileNumber,
                 role: user.role,
-                project: user.project,
-                location: user.location,
+                projectId: user.projectId,
+                locationId: user.locationId,
+                project: user.project || null,
+                location: user.location || null,
             },
             token,
         };
@@ -92,7 +163,7 @@ class AuthService {
     // Get user profile
     static async getProfile(userId) {
         const user = await db_1.prisma.user.findUnique({
-            where: { id: userId },
+            where: { id: userId }, // Now correctly typed as number
             select: {
                 id: true,
                 name: true,
@@ -112,8 +183,9 @@ class AuthService {
     }
     // Update user profile (limited fields for surveyors)
     static async updateProfile(userId, updateData) {
+        // Only allow updating the name field for now
         const user = await db_1.prisma.user.update({
-            where: { id: userId },
+            where: { id: userId }, // Now correctly typed as number
             data: updateData,
             select: {
                 id: true,
@@ -131,7 +203,7 @@ class AuthService {
     // Change password
     static async changePassword(userId, currentPassword, newPassword) {
         const user = await db_1.prisma.user.findUnique({
-            where: { id: userId },
+            where: { id: userId }, // Now correctly typed as number
         });
         if (!user) {
             throw new Error('User not found');
@@ -145,7 +217,7 @@ class AuthService {
         const newPasswordHash = await bcryptjs_1.default.hash(newPassword, 12);
         // Update password
         await db_1.prisma.user.update({
-            where: { id: userId },
+            where: { id: userId }, // Now correctly typed as number
             data: { passwordHash: newPasswordHash },
         });
         return { message: 'Password updated successfully' };

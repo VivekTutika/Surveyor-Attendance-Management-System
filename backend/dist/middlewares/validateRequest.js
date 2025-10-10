@@ -48,8 +48,8 @@ exports.schemas = {
             name: zod_1.z.string().min(2, 'Name must be at least 2 characters'),
             mobileNumber: zod_1.z.string().min(10, 'Mobile number must be at least 10 characters'),
             password: zod_1.z.string().min(6, 'Password must be at least 6 characters'),
-            project: zod_1.z.string().optional(),
-            location: zod_1.z.string().optional(),
+            projectId: zod_1.z.number().int().positive().optional(),
+            locationId: zod_1.z.number().int().positive().optional(),
             role: zod_1.z.enum(['ADMIN', 'SURVEYOR']).optional(),
         }),
     },
@@ -74,16 +74,16 @@ exports.schemas = {
             name: zod_1.z.string().min(2, 'Name must be at least 2 characters'),
             mobileNumber: zod_1.z.string().min(10, 'Mobile number must be at least 10 characters'),
             password: zod_1.z.string().min(6, 'Password must be at least 6 characters'),
-            project: zod_1.z.string().optional(),
-            location: zod_1.z.string().optional(),
+            projectId: zod_1.z.number().int().positive().optional(),
+            locationId: zod_1.z.number().int().positive().optional(),
         }),
     },
     updateSurveyor: {
         body: zod_1.z.object({
             name: zod_1.z.string().min(2).optional(),
             mobileNumber: zod_1.z.string().min(10).optional(),
-            project: zod_1.z.string().optional(),
-            location: zod_1.z.string().optional(),
+            projectId: zod_1.z.number().int().positive().optional(),
+            locationId: zod_1.z.number().int().positive().optional(),
             isActive: zod_1.z.boolean().optional(),
         }),
     },
@@ -91,6 +91,35 @@ exports.schemas = {
     idParam: {
         params: zod_1.z.object({
             id: zod_1.z.string().uuid('Invalid ID format'),
+        }),
+    },
+    idParamInt: {
+        params: zod_1.z.object({
+            id: zod_1.z.string().refine(val => !isNaN(parseInt(val)), 'Invalid integer ID format'),
+        }),
+    },
+    // Project schemas
+    createProject: {
+        body: zod_1.z.object({
+            name: zod_1.z.string().min(2, 'Project name must be at least 2 characters'),
+            description: zod_1.z.string().optional(),
+        }),
+    },
+    updateProject: {
+        body: zod_1.z.object({
+            name: zod_1.z.string().min(2, 'Project name must be at least 2 characters').optional(),
+            description: zod_1.z.string().optional(),
+        }),
+    },
+    // Location schemas
+    createLocation: {
+        body: zod_1.z.object({
+            name: zod_1.z.string().min(2, 'Location name must be at least 2 characters'),
+        }),
+    },
+    updateLocation: {
+        body: zod_1.z.object({
+            name: zod_1.z.string().min(2, 'Location name must be at least 2 characters').optional(),
         }),
     },
     dateQuery: {

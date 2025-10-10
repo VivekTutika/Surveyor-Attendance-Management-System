@@ -23,7 +23,14 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await login(mobileNumber, password)
+    
+    // Ensure mobile number has + prefix
+    let formattedMobileNumber = mobileNumber.trim()
+    if (formattedMobileNumber && !formattedMobileNumber.startsWith('+')) {
+      formattedMobileNumber = '+' + formattedMobileNumber
+    }
+    
+    await login(formattedMobileNumber, password)
   }
 
   return (
@@ -79,7 +86,8 @@ export default function LoginPage() {
               margin="normal"
               required
               autoComplete="tel"
-              placeholder="Enter your mobile number"
+              placeholder="e.g., +1234567890"
+              helperText="Include country code with + prefix"
             />
 
             <TextField

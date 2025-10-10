@@ -4,8 +4,8 @@ export interface CreateUserData {
     mobileNumber: string;
     password: string;
     role?: Role;
-    project?: string;
-    location?: string;
+    projectId?: number;
+    locationId?: number;
 }
 export interface LoginData {
     mobileNumber: string;
@@ -13,44 +13,70 @@ export interface LoginData {
 }
 export interface AuthResponse {
     user: {
-        id: string;
+        id: number;
         name: string;
         mobileNumber: string;
         role: Role;
-        project: string | null;
-        location: string | null;
+        projectId: number | null;
+        locationId: number | null;
+        project?: {
+            id: number;
+            name: string;
+        } | null;
+        location?: {
+            id: number;
+            name: string;
+        } | null;
     };
     token: string;
 }
 export declare class AuthService {
     static register(userData: CreateUserData): Promise<AuthResponse>;
     static login(loginData: LoginData): Promise<AuthResponse>;
-    static getProfile(userId: string): Promise<{
+    static getProfile(userId: number): Promise<{
         name: string;
-        id: string;
-        role: import(".prisma/client").$Enums.Role;
-        mobileNumber: string;
-        project: string | null;
-        location: string | null;
-        isActive: boolean;
+        project: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-    }>;
-    static updateProfile(userId: string, updateData: {
-        name?: string;
-        project?: string;
-        location?: string;
-    }): Promise<{
-        name: string;
-        id: string;
         role: import(".prisma/client").$Enums.Role;
         mobileNumber: string;
-        project: string | null;
-        location: string | null;
         isActive: boolean;
-        updatedAt: Date;
+        location: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
     }>;
-    static changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{
+    static updateProfile(userId: number, updateData: {
+        name?: string;
+    }): Promise<{
+        name: string;
+        project: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        id: number;
+        updatedAt: Date;
+        role: import(".prisma/client").$Enums.Role;
+        mobileNumber: string;
+        isActive: boolean;
+        location: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+    }>;
+    static changePassword(userId: number, currentPassword: string, newPassword: string): Promise<{
         message: string;
     }>;
 }

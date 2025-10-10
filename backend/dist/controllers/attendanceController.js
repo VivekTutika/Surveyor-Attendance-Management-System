@@ -61,7 +61,7 @@ AttendanceController.getAttendanceList = (0, errorHandler_1.asyncHandler)(async 
 });
 // GET /api/attendance/today - Get today's attendance status
 AttendanceController.getTodayStatus = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const userId = req.query.userId || req.user.id;
+    const userId = req.query.userId ? parseInt(req.query.userId) : req.user.id;
     // If not admin and trying to access another user's data
     if (req.user.role !== 'ADMIN' && userId !== req.user.id) {
         return (0, response_1.sendError)(res, 'Access denied. You can only view your own attendance.', 403);
@@ -72,7 +72,7 @@ AttendanceController.getTodayStatus = (0, errorHandler_1.asyncHandler)(async (re
 // GET /api/attendance/summary - Get attendance summary for date range
 AttendanceController.getAttendanceSummary = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { userId, startDate, endDate } = req.query;
-    const targetUserId = userId || req.user.id;
+    const targetUserId = userId ? parseInt(userId) : req.user.id;
     // If not admin and trying to access another user's data
     if (req.user.role !== 'ADMIN' && targetUserId !== req.user.id) {
         return (0, response_1.sendError)(res, 'Access denied. You can only view your own attendance.', 403);

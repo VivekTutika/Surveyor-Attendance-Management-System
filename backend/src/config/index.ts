@@ -13,7 +13,7 @@ export const config = {
   
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'fallback_secret_key',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d', // Extended from 7d to 30d
   
   // Cloudinary
   cloudinary: {

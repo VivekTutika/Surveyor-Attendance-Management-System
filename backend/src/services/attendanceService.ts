@@ -3,7 +3,7 @@ import { prisma } from '../config/db';
 import { uploadAttendancePhoto } from '../config/cloudinary';
 
 export interface MarkAttendanceData {
-  userId: string;
+  userId: number;  // Changed from string to number
   type: AttendanceType;
   latitude: number;
   longitude: number;
@@ -11,11 +11,20 @@ export interface MarkAttendanceData {
 }
 
 export interface AttendanceFilters {
-  userId?: string;
+  userId?: number;  // Changed from string to number
   date?: string;
   startDate?: string;
   endDate?: string;
   type?: AttendanceType;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedAttendanceResult {
+  attendance: any[];
+  total: number;
+  page: number;
+  pages: number;
 }
 
 export class AttendanceService {
@@ -30,7 +39,7 @@ export class AttendanceService {
     const existingAttendance = await prisma.attendance.findUnique({
       where: {
         userId_date_type: {
-          userId,
+          userId,  // Now correctly typed as number
           date: today,
           type,
         },
@@ -42,12 +51,12 @@ export class AttendanceService {
     }
 
     // Upload photo to Cloudinary
-    const photoUrl = await uploadAttendancePhoto(photoBuffer, userId, 'attendance');
+    const photoUrl = await uploadAttendancePhoto(photoBuffer, userId.toString(), 'attendance');  // Convert to string for Cloudinary
 
     // Create attendance record
     const attendance = await prisma.attendance.create({
       data: {
-        userId,
+        userId,  // Now correctly typed as number
         type,
         date: today,
         latitude,
@@ -71,9 +80,9 @@ export class AttendanceService {
     return attendance;
   }
 
-  // Get attendance records with filters
-  static async getAttendanceRecords(filters: AttendanceFilters, userRole: string, requestingUserId: string) {
-    const { userId, date, startDate, endDate, type } = filters;
+  // Get attendance records with filters and pagination
+  static async getAttendanceRecords(filters: AttendanceFilters, userRole: string, requestingUserId: number) {  // Changed from string to number
+    const { userId, date, startDate, endDate, type, page = 1, limit = 10 } = filters;
 
     // Build where clause
     const where: any = {};
@@ -114,6 +123,13 @@ export class AttendanceService {
       where.type = type;
     }
 
+    // Get total count for pagination
+    const total = await prisma.attendance.count({ where });
+    
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    const pages = Math.ceil(total / limit);
+
     const attendanceRecords = await prisma.attendance.findMany({
       where,
       include: {
@@ -131,19 +147,26 @@ export class AttendanceService {
         { date: 'desc' },
         { type: 'asc' },
       ],
+      skip,
+      take: limit,
     });
 
-    return attendanceRecords;
+    return {
+      attendance: attendanceRecords,
+      total,
+      page,
+      pages
+    };
   }
 
   // Get today's attendance status for a user
-  static async getTodayAttendanceStatus(userId: string) {
+  static async getTodayAttendanceStatus(userId: number) {  // Changed from string to number
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const attendanceRecords = await prisma.attendance.findMany({
       where: {
-        userId,
+        userId,  // Now correctly typed as number
         date: today,
       },
     });
@@ -170,7 +193,7 @@ export class AttendanceService {
   }
 
   // Get attendance summary for a user in a date range
-  static async getAttendanceSummary(userId: string, startDate: string, endDate: string) {
+  static async getAttendanceSummary(userId: number, startDate: string, endDate: string) {  // Changed from string to number
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
     const end = new Date(endDate);
@@ -178,7 +201,7 @@ export class AttendanceService {
 
     const attendanceRecords = await prisma.attendance.findMany({
       where: {
-        userId,
+        userId,  // Now correctly typed as number
         date: {
           gte: start,
           lte: end,

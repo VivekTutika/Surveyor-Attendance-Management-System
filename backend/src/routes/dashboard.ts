@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/db';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // GET /dashboard/stats - Get dashboard statistics
 router.get('/stats', authMiddleware, async (req, res) => {

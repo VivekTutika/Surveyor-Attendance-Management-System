@@ -13,7 +13,7 @@ class BikeService {
         const existingReading = await db_1.prisma.bikeMeterReading.findUnique({
             where: {
                 userId_date_type: {
-                    userId,
+                    userId, // Now correctly typed as number
                     date: today,
                     type,
                 },
@@ -23,11 +23,11 @@ class BikeService {
             throw new Error(`${type} bike meter reading already uploaded for today`);
         }
         // Upload photo to Cloudinary
-        const photoUrl = await (0, cloudinary_1.uploadAttendancePhoto)(photoBuffer, userId, 'bike-meter');
+        const photoUrl = await (0, cloudinary_1.uploadAttendancePhoto)(photoBuffer, userId.toString(), 'bike-meter'); // Convert to string for Cloudinary
         // Create bike meter reading record
         const bikeMeterReading = await db_1.prisma.bikeMeterReading.create({
             data: {
-                userId,
+                userId, // Now correctly typed as number
                 type,
                 date: today,
                 photoPath: photoUrl,
@@ -116,7 +116,7 @@ class BikeService {
         today.setHours(0, 0, 0, 0);
         const readings = await db_1.prisma.bikeMeterReading.findMany({
             where: {
-                userId,
+                userId, // Now correctly typed as number
                 date: today,
             },
         });
@@ -176,7 +176,7 @@ class BikeService {
         end.setHours(23, 59, 59, 999);
         const readings = await db_1.prisma.bikeMeterReading.findMany({
             where: {
-                userId,
+                userId, // Now correctly typed as number
                 date: {
                     gte: start,
                     lte: end,

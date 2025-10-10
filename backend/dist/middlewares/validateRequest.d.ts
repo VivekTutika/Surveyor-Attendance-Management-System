@@ -17,8 +17,8 @@ export declare const schemas: {
             name: z.ZodString;
             mobileNumber: z.ZodString;
             password: z.ZodString;
-            project: z.ZodOptional<z.ZodString>;
-            location: z.ZodOptional<z.ZodString>;
+            projectId: z.ZodOptional<z.ZodNumber>;
+            locationId: z.ZodOptional<z.ZodNumber>;
             role: z.ZodOptional<z.ZodEnum<{
                 ADMIN: "ADMIN";
                 SURVEYOR: "SURVEYOR";
@@ -49,22 +49,49 @@ export declare const schemas: {
             name: z.ZodString;
             mobileNumber: z.ZodString;
             password: z.ZodString;
-            project: z.ZodOptional<z.ZodString>;
-            location: z.ZodOptional<z.ZodString>;
+            projectId: z.ZodOptional<z.ZodNumber>;
+            locationId: z.ZodOptional<z.ZodNumber>;
         }, z.core.$strip>;
     };
     updateSurveyor: {
         body: z.ZodObject<{
             name: z.ZodOptional<z.ZodString>;
             mobileNumber: z.ZodOptional<z.ZodString>;
-            project: z.ZodOptional<z.ZodString>;
-            location: z.ZodOptional<z.ZodString>;
+            projectId: z.ZodOptional<z.ZodNumber>;
+            locationId: z.ZodOptional<z.ZodNumber>;
             isActive: z.ZodOptional<z.ZodBoolean>;
         }, z.core.$strip>;
     };
     idParam: {
         params: z.ZodObject<{
             id: z.ZodString;
+        }, z.core.$strip>;
+    };
+    idParamInt: {
+        params: z.ZodObject<{
+            id: z.ZodString;
+        }, z.core.$strip>;
+    };
+    createProject: {
+        body: z.ZodObject<{
+            name: z.ZodString;
+            description: z.ZodOptional<z.ZodString>;
+        }, z.core.$strip>;
+    };
+    updateProject: {
+        body: z.ZodObject<{
+            name: z.ZodOptional<z.ZodString>;
+            description: z.ZodOptional<z.ZodString>;
+        }, z.core.$strip>;
+    };
+    createLocation: {
+        body: z.ZodObject<{
+            name: z.ZodString;
+        }, z.core.$strip>;
+    };
+    updateLocation: {
+        body: z.ZodObject<{
+            name: z.ZodOptional<z.ZodString>;
         }, z.core.$strip>;
     };
     dateQuery: {

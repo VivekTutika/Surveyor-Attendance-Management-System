@@ -95,7 +95,7 @@ export default function AttendancePage() {
   const fetchSurveyors = async () => {
     try {
       const data = await surveyorService.getAll()
-      setSurveyors(data.surveyors)
+      setSurveyors(data)
     } catch (error: any) {
       console.error('Failed to fetch surveyors:', error)
     }
@@ -205,11 +205,38 @@ export default function AttendancePage() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Attendance Reports
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" component="h1">
+            Attendance Records
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Map />}
+              onClick={handleViewAllLocations}
+              disabled={attendanceData.length === 0}
+            >
+              View All Locations
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Download />}
+              onClick={handleExportCSV}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Download />}
+              onClick={handleExportPDF}
+            >
+              Export PDF
+            </Button>
+          </Box>
+        </Box>
+
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          View and analyze surveyor attendance records with detailed filters and insights.
+          Track and manage attendance records submitted by surveyors.
         </Typography>
 
         {error && (
@@ -219,8 +246,8 @@ export default function AttendancePage() {
         )}
 
         {/* Stats Cards */}
-        <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
-          <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={4}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -238,8 +265,8 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Box>
-          <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          </Grid>
+          <Grid item xs={12} sm={4}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -251,14 +278,14 @@ export default function AttendancePage() {
                       {checkIns}
                     </Typography>
                     <Typography color="text.secondary">
-                      Check-ins
+                      Check Ins
                     </Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
-          </Box>
-          <Box sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          </Grid>
+          <Grid item xs={12} sm={4}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -270,106 +297,79 @@ export default function AttendancePage() {
                       {checkOuts}
                     </Typography>
                     <Typography color="text.secondary">
-                      Check-outs
+                      Check Outs
                     </Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
-          </Box>
-        </Box>
+          </Grid>
+        </Grid>
 
         {/* Filters */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <FilterList />
-            <Typography variant="h6">Filters</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-              <DatePicker
-                label="Start Date"
-                value={filters.startDate}
-                onChange={(value) => handleFilterChange('startDate', value)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-              />
-            </Box>
-            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-              <DatePicker
-                label="End Date"
-                value={filters.endDate}
-                onChange={(value) => handleFilterChange('endDate', value)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-              />
-            </Box>
-            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Surveyor</InputLabel>
-                <Select
-                  value={filters.userId}
-                  label="Surveyor"
-                  onChange={(e) => handleFilterChange('userId', e.target.value)}
-                >
-                  <MenuItem value="">All Surveyors</MenuItem>
-                  {surveyors.map((surveyor) => (
-                    <MenuItem key={surveyor.id} value={surveyor.id}>
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ mr: 2 }}>
+              Filters
+            </Typography>
+            
+            <DatePicker
+              label="Start Date"
+              value={filters.startDate}
+              onChange={(newValue) => handleFilterChange('startDate', newValue)}
+              format="DD/MM/YYYY"
+            />
+            
+            <DatePicker
+              label="End Date"
+              value={filters.endDate}
+              onChange={(newValue) => handleFilterChange('endDate', newValue)}
+              format="DD/MM/YYYY"
+            />
+            
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Surveyor</InputLabel>
+              <Select
+                value={filters.userId}
+                label="Surveyor"
+                onChange={(e) => handleFilterChange('userId', e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Surveyors</em>
+                </MenuItem>
+                {surveyors.map((surveyor) => (
+                  <MenuItem key={surveyor.id} value={surveyor.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person fontSize="small" />
                       {surveyor.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Type</InputLabel>
-                <Select
-                  value={filters.type}
-                  label="Type"
-                  onChange={(e) => handleFilterChange('type', e.target.value)}
-                >
-                  <MenuItem value="">All Types</MenuItem>
-                  <MenuItem value="CHECK_IN">Check In</MenuItem>
-                  <MenuItem value="CHECK_OUT">Check Out</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                onClick={clearFilters}
-                size="small"
-                sx={{ mr: 1 }}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={filters.type}
+                label="Type"
+                onChange={(e) => handleFilterChange('type', e.target.value)}
               >
-                Clear
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Map />}
-                size="small"
-                onClick={handleViewAllLocations}
-                sx={{ mr: 1 }}
-                disabled={attendanceData.length === 0}
-              >
-                View Map
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Download />}
-                size="small"
-                onClick={handleExportCSV}
-                sx={{ mr: 1 }}
-              >
-                CSV
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Download />}
-                size="small"
-                onClick={handleExportPDF}
-              >
-                PDF
-              </Button>
-            </Box>
+                <MenuItem value="">
+                  <em>All Types</em>
+                </MenuItem>
+                <MenuItem value="CHECK_IN">Check In</MenuItem>
+                <MenuItem value="CHECK_OUT">Check Out</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <Button
+              variant="outlined"
+              startIcon={<FilterList />}
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </Button>
           </Box>
         </Paper>
 
@@ -379,37 +379,34 @@ export default function AttendancePage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Photo</TableCell>
                   <TableCell>Surveyor</TableCell>
+                  <TableCell>Date & Time</TableCell>
                   <TableCell>Type</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Time</TableCell>
+                  <TableCell>Photo</TableCell>
                   <TableCell>Location</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {attendanceData.map((record) => (
+                {attendanceData
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((record) => (
                   <TableRow key={record.id} hover>
                     <TableCell>
-                      <Avatar
-                        src={record.photoPath}
-                        sx={{ 
-                          cursor: 'pointer',
-                          '&:hover': { opacity: 0.8 }
-                        }}
-                        onClick={() => handlePhotoClick(record.photoPath)}
-                      >
-                        <Person />
-                      </Avatar>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body1" fontWeight="medium">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Person fontSize="small" color="action" />
+                        <Typography variant="body2" fontWeight="medium">
                           {record.user.name}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {record.user.mobileNumber}
+                        <Typography variant="caption" color="text.secondary">
+                          ({record.user.mobileNumber})
                         </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CalendarToday fontSize="small" color="action" />
+                        {new Date(record.capturedAt).toLocaleString()}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -420,54 +417,47 @@ export default function AttendancePage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CalendarToday fontSize="small" color="action" />
-                        {dayjs(record.capturedAt).format('MMM DD, YYYY')}
-                      </Box>
+                      {record.photoPath && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handlePhotoClick(record.photoPath)}
+                        >
+                          View Photo
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {dayjs(record.capturedAt).format('hh:mm A')}
-                    </TableCell>
-                    <TableCell>
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 1,
-                          cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                            borderRadius: 1
-                          },
-                          p: 1,
-                          borderRadius: 1
-                        }}
+                      <IconButton
+                        size="small"
                         onClick={() => handleLocationClick(record)}
-                        title="Click to view on map"
+                        disabled={!record.latitude || !record.longitude}
                       >
-                        <LocationOn fontSize="small" color="primary" />
-                        <Box>
-                          <Typography variant="body2">
-                            {record.latitude.toFixed(6)}, {record.longitude.toFixed(6)}
-                          </Typography>
-                          <Typography variant="caption" color="primary">
-                            View on map
-                          </Typography>
-                        </Box>
-                      </Box>
+                        <LocationOn 
+                          color={record.latitude && record.longitude ? 'primary' : 'disabled'} 
+                        />
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handlePhotoClick(record.photoPath)}
+                        disabled={!record.photoPath}
+                      >
+                        <img 
+                          src={record.photoPath} 
+                          alt="Attendance" 
+                          style={{ width: 30, height: 30, objectFit: 'cover', borderRadius: 4 }}
+                        />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-          {loading && (
-            <Box display="flex" justifyContent="center" p={2}>
-              <CircularProgress size={24} />
-            </Box>
-          )}
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
+            rowsPerPageOptions={[5, 10, 25]}
             component="div"
             count={total}
             rowsPerPage={rowsPerPage}
@@ -477,39 +467,52 @@ export default function AttendancePage() {
           />
         </Paper>
 
-        {/* Map Dialog */}
-        <AttendanceMap
-          open={openMapDialog}
-          onClose={() => setOpenMapDialog(false)}
-          attendance={selectedAttendance}
-          title={mapTitle}
-        />
-
         {/* Photo Dialog */}
         <Dialog
           open={openPhotoDialog}
           onClose={() => setOpenPhotoDialog(false)}
           maxWidth="md"
+          fullWidth
         >
           <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Attendance Photo
-              <IconButton onClick={() => setOpenPhotoDialog(false)}>
-                <Close />
-              </IconButton>
-            </Box>
+            Attendance Photo
+            <IconButton
+              onClick={() => setOpenPhotoDialog(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <Close />
+            </IconButton>
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ textAlign: 'center' }}>
-              <img
-                src={selectedPhoto}
-                alt="Attendance photo"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '500px',
-                  objectFit: 'contain'
-                }}
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <img 
+                src={selectedPhoto} 
+                alt="Attendance" 
+                style={{ maxWidth: '100%', height: 'auto', borderRadius: 8 }}
               />
+            </Box>
+          </DialogContent>
+        </Dialog>
+
+        {/* Map Dialog */}
+        <Dialog
+          open={openMapDialog}
+          onClose={() => setOpenMapDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            {mapTitle}
+            <IconButton
+              onClick={() => setOpenMapDialog(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ height: 400 }}>
+              <AttendanceMap attendance={Array.isArray(selectedAttendance) ? selectedAttendance : [selectedAttendance]} />
             </Box>
           </DialogContent>
         </Dialog>

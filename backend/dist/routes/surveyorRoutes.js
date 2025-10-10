@@ -12,11 +12,11 @@ router.post('/', (0, validateRequest_1.validateRequest)(validateRequest_1.schema
 router.get('/', surveyorController_1.SurveyorController.getSurveyors);
 router.get('/projects', surveyorController_1.SurveyorController.getProjects);
 router.get('/locations', surveyorController_1.SurveyorController.getLocations);
-router.get('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParam), surveyorController_1.SurveyorController.getSurveyorById);
-router.put('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParam), (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.updateSurveyor), surveyorController_1.SurveyorController.updateSurveyor);
-router.delete('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParam), surveyorController_1.SurveyorController.deleteSurveyor);
+router.get('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), surveyorController_1.SurveyorController.getSurveyorById);
+router.put('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.updateSurveyor), surveyorController_1.SurveyorController.updateSurveyor);
+router.delete('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), surveyorController_1.SurveyorController.deleteSurveyor);
 // Additional operations
-router.post('/:id/reset-password', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParam), surveyorController_1.SurveyorController.resetSurveyorPassword);
-router.get('/:id/statistics', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParam), (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.dateQuery), surveyorController_1.SurveyorController.getSurveyorStatistics);
+router.post('/:id/reset-password', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), surveyorController_1.SurveyorController.resetSurveyorPassword);
+router.get('/:id/statistics', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.dateQuery), surveyorController_1.SurveyorController.getSurveyorStatistics);
 exports.default = router;
 //# sourceMappingURL=surveyorRoutes.js.map

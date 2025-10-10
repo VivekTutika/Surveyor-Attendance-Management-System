@@ -1,6 +1,6 @@
 import { Coordinate } from '../utils/geoUtils';
 export interface CreateGeoFenceData {
-    surveyorId: string;
+    surveyorId: number;
     coordinates: Coordinate[];
     isActive?: boolean;
 }
@@ -12,84 +12,134 @@ export declare class GeoFenceService {
     static createOrUpdateGeoFence(data: CreateGeoFenceData): Promise<{
         surveyor: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
-        id: string;
-        isActive: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        surveyorId: string;
+        isActive: boolean;
+        surveyorId: number;
         coordinates: import("@prisma/client/runtime/library").JsonValue;
     }>;
-    static getGeoFence(surveyorId: string): Promise<{
+    static getGeoFence(surveyorId: number): Promise<{
         surveyor: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
-        id: string;
-        isActive: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        surveyorId: string;
+        isActive: boolean;
+        surveyorId: number;
         coordinates: import("@prisma/client/runtime/library").JsonValue;
     }>;
-    static updateGeoFence(surveyorId: string, updateData: UpdateGeoFenceData): Promise<{
+    static updateGeoFence(surveyorId: number, updateData: UpdateGeoFenceData): Promise<{
         surveyor: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
-        id: string;
-        isActive: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        surveyorId: string;
+        isActive: boolean;
+        surveyorId: number;
         coordinates: import("@prisma/client/runtime/library").JsonValue;
     }>;
-    static deleteGeoFence(surveyorId: string): Promise<{
+    static deleteGeoFence(surveyorId: number): Promise<{
         message: string;
     }>;
     static getAllGeoFences(): Promise<({
         surveyor: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
-        id: string;
-        isActive: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        surveyorId: string;
+        isActive: boolean;
+        surveyorId: number;
         coordinates: import("@prisma/client/runtime/library").JsonValue;
     })[]>;
-    static toggleGeoFenceStatus(surveyorId: string): Promise<{
+    static toggleGeoFenceStatus(surveyorId: number): Promise<{
         surveyor: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
-        id: string;
-        isActive: boolean;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
-        surveyorId: string;
+        isActive: boolean;
+        surveyorId: number;
         coordinates: import("@prisma/client/runtime/library").JsonValue;
     }>;
 }

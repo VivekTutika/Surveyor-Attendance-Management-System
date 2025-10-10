@@ -14,7 +14,7 @@ export class GeoFenceController {
     }
 
     const geoFenceData = {
-      surveyorId,
+      surveyorId: parseInt(surveyorId),  // Convert to number
       coordinates,
       isActive,
     };
@@ -28,7 +28,7 @@ export class GeoFenceController {
   static getGeoFence = asyncHandler(async (req: Request, res: Response) => {
     const { surveyorId } = req.params;
 
-    const geoFence = await GeoFenceService.getGeoFence(surveyorId);
+    const geoFence = await GeoFenceService.getGeoFence(parseInt(surveyorId));  // Convert to number
 
     sendSuccess(res, 'Geo-fence retrieved successfully', geoFence);
   });
@@ -38,7 +38,7 @@ export class GeoFenceController {
     const { surveyorId } = req.params;
     const updateData = req.body;
 
-    const updatedGeoFence = await GeoFenceService.updateGeoFence(surveyorId, updateData);
+    const updatedGeoFence = await GeoFenceService.updateGeoFence(parseInt(surveyorId), updateData);  // Convert to number
 
     sendSuccess(res, 'Geo-fence updated successfully', updatedGeoFence);
   });
@@ -47,7 +47,7 @@ export class GeoFenceController {
   static deleteGeoFence = asyncHandler(async (req: Request, res: Response) => {
     const { surveyorId } = req.params;
 
-    const result = await GeoFenceService.deleteGeoFence(surveyorId);
+    const result = await GeoFenceService.deleteGeoFence(parseInt(surveyorId));  // Convert to number
 
     sendSuccess(res, result.message);
   });
@@ -63,7 +63,7 @@ export class GeoFenceController {
   static toggleGeoFenceStatus = asyncHandler(async (req: Request, res: Response) => {
     const { surveyorId } = req.params;
 
-    const updatedGeoFence = await GeoFenceService.toggleGeoFenceStatus(surveyorId);
+    const updatedGeoFence = await GeoFenceService.toggleGeoFenceStatus(parseInt(surveyorId));  // Convert to number
 
     sendSuccess(res, 'Geo-fence status toggled successfully', updatedGeoFence);
   });

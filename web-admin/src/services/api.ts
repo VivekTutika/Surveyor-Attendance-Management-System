@@ -1,7 +1,14 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import Cookies from 'js-cookie'
 
+// Debug environment variables
+console.log('NEXT_PUBLIC_API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL)
+console.log('API_BASE_URL:', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000')
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+
+// Debug axios instance creation
+console.log('Creating axios instance with baseURL:', API_BASE_URL)
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -15,19 +22,33 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    console.log('Making request to:', config.baseURL, config.url)
     const token = Cookies.get('adminToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('Request error:', error)
+    return Promise.reject(error)
+  }
 )
 
 // Response interceptor for error handling
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response) => {
+    console.log('Response received:', response.status, response.config.url)
+    return response
+  },
+  (error: AxiosError) => {
+    console.error('Response error:', error.response?.status, error.response?.data, error.config?.url)
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network error:', error.message)
+      return Promise.reject(new Error('Network error. Please check your connection.'))
+    }
+    
     if (error.response?.status === 401) {
       Cookies.remove('adminToken')
       window.location.href = '/login'
@@ -39,8 +60,8 @@ api.interceptors.response.use(
 // API response types
 interface ApiResponse<T = any> {
   success: boolean
+  message: string
   data?: T
-  message?: string
 }
 
 interface User {
@@ -50,6 +71,19 @@ interface User {
   role: 'ADMIN' | 'SURVEYOR'
   isActive: boolean
   createdAt: string
+  project?: {
+    id: number
+    name: string
+  }
+  location?: {
+    id: number
+    name: string
+  }
+}
+
+interface AuthResponse {
+  user: User
+  token: string
 }
 
 interface Attendance {
@@ -92,54 +126,94 @@ interface DashboardStats {
 // Auth Service
 export const authService = {
   login: async (mobileNumber: string, password: string) => {
-    const response: AxiosResponse<ApiResponse<{ token: string; user: User }>> = 
-      await api.post('/auth/login', { mobileNumber, password })
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<AuthResponse>> = 
+        await api.post('/api/auth/login', { mobileNumber, password })
+      return response.data.data!
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
+    }
   },
 
   getProfile: async () => {
-    const response: AxiosResponse<ApiResponse<{ user: User }>> = 
-      await api.get('/auth/profile')
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<User>> = 
+        await api.get('/api/auth/profile')
+      return response.data.data!
+    } catch (error) {
+      console.error('Get profile error:', error)
+      throw error
+    }
   },
 }
 
 // Surveyor Service
 export const surveyorService = {
   getAll: async () => {
-    const response: AxiosResponse<ApiResponse<{ surveyors: User[] }>> = 
-      await api.get('/surveyors')
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<User[]>> = 
+        await api.get('/api/surveyors')
+      return response.data.data!
+    } catch (error) {
+      console.error('Get surveyors error:', error)
+      throw error
+    }
   },
 
   getById: async (id: string) => {
-    const response: AxiosResponse<ApiResponse<{ surveyor: User }>> = 
-      await api.get(`/surveyors/${id}`)
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<User>> = 
+        await api.get(`/api/surveyors/${id}`)
+      return response.data.data!
+    } catch (error) {
+      console.error('Get surveyor by id error:', error)
+      throw error
+    }
   },
 
   create: async (userData: Partial<User>) => {
-    const response: AxiosResponse<ApiResponse<{ surveyor: User }>> = 
-      await api.post('/surveyors', userData)
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<User>> = 
+        await api.post('/api/surveyors', userData)
+      return response.data.data!
+    } catch (error) {
+      console.error('Create surveyor error:', error)
+      throw error
+    }
   },
 
   update: async (id: string, userData: Partial<User>) => {
-    const response: AxiosResponse<ApiResponse<{ surveyor: User }>> = 
-      await api.put(`/surveyors/${id}`, userData)
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<User>> = 
+        await api.put(`/api/surveyors/${id}`, userData)
+      return response.data.data!
+    } catch (error) {
+      console.error('Update surveyor error:', error)
+      throw error
+    }
   },
 
   delete: async (id: string) => {
-    const response: AxiosResponse<ApiResponse> = 
-      await api.delete(`/surveyors/${id}`)
-    return response.data
+    try {
+      const response: AxiosResponse<ApiResponse> = 
+        await api.delete(`/api/surveyors/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Delete surveyor error:', error)
+      throw error
+    }
   },
 
   toggleStatus: async (id: string) => {
-    const response: AxiosResponse<ApiResponse<{ surveyor: User }>> = 
-      await api.patch(`/surveyors/${id}/toggle-status`)
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<User>> = 
+        await api.patch(`/api/surveyors/${id}/toggle-status`)
+      return response.data.data!
+    } catch (error) {
+      console.error('Toggle surveyor status error:', error)
+      throw error
+    }
   },
 }
 
@@ -153,19 +227,29 @@ export const attendanceService = {
     page?: number;
     limit?: number;
   }) => {
-    const response: AxiosResponse<ApiResponse<{ 
-      attendance: Attendance[]; 
-      total: number; 
-      page: number; 
-      pages: number; 
-    }>> = await api.get('/attendance/list', { params })
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<{ 
+        attendance: Attendance[]; 
+        total: number; 
+        page: number; 
+        pages: number; 
+      }>> = await api.get('/api/attendance/list', { params })
+      return response.data.data!
+    } catch (error) {
+      console.error('Get attendance error:', error)
+      throw error
+    }
   },
 
   getByUserId: async (userId: string, params?: { startDate?: string; endDate?: string }) => {
-    const response: AxiosResponse<ApiResponse<{ attendance: Attendance[] }>> = 
-      await api.get(`/attendance/user/${userId}`, { params })
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<{ attendance: Attendance[] }>> = 
+        await api.get(`/api/attendance/user/${userId}`, { params })
+      return response.data.data!
+    } catch (error) {
+      console.error('Get attendance by user id error:', error)
+      throw error
+    }
   },
 }
 
@@ -178,28 +262,43 @@ export const bikeMeterService = {
     page?: number;
     limit?: number;
   }) => {
-    const response: AxiosResponse<ApiResponse<{ 
-      readings: BikeMeterReading[]; 
-      total: number; 
-      page: number; 
-      pages: number; 
-    }>> = await api.get('/bike/list', { params })
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<{ 
+        readings: BikeMeterReading[]; 
+        total: number; 
+        page: number; 
+        pages: number; 
+      }>> = await api.get('/api/bike/list', { params })
+      return response.data.data!
+    } catch (error) {
+      console.error('Get bike meter readings error:', error)
+      throw error
+    }
   },
 
   getByUserId: async (userId: string, params?: { startDate?: string; endDate?: string }) => {
-    const response: AxiosResponse<ApiResponse<{ readings: BikeMeterReading[] }>> = 
-      await api.get(`/bike/user/${userId}`, { params })
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<{ readings: BikeMeterReading[] }>> = 
+        await api.get(`/api/bike/user/${userId}`, { params })
+      return response.data.data!
+    } catch (error) {
+      console.error('Get bike meter readings by user id error:', error)
+      throw error
+    }
   },
 }
 
 // Dashboard Service
 export const dashboardService = {
   getStats: async () => {
-    const response: AxiosResponse<ApiResponse<DashboardStats>> = 
-      await api.get('/dashboard/stats')
-    return response.data.data!
+    try {
+      const response: AxiosResponse<ApiResponse<DashboardStats>> = 
+        await api.get('/api/dashboard/stats')
+      return response.data.data!
+    } catch (error) {
+      console.error('Get dashboard stats error:', error)
+      throw error
+    }
   },
 }
 

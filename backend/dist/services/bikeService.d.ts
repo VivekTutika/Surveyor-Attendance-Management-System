@@ -1,12 +1,12 @@
 import { AttendanceType } from '@prisma/client';
 export interface UploadBikeMeterData {
-    userId: string;
+    userId: number;
     type: AttendanceType;
     photoBuffer: Buffer;
     kmReading?: number;
 }
 export interface BikeMeterFilters {
-    userId?: string;
+    userId?: number;
     date?: string;
     startDate?: string;
     endDate?: string;
@@ -16,40 +16,60 @@ export declare class BikeService {
     static uploadBikeMeterReading(data: UploadBikeMeterData): Promise<{
         user: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
         id: string;
         createdAt: Date;
-        userId: string;
-        date: Date;
         type: import(".prisma/client").$Enums.AttendanceType;
+        kmReading: number | null;
+        date: Date;
+        userId: number;
         photoPath: string;
         capturedAt: Date;
-        kmReading: number | null;
     }>;
-    static getBikeMeterReadings(filters: BikeMeterFilters, userRole: string, requestingUserId: string): Promise<({
+    static getBikeMeterReadings(filters: BikeMeterFilters, userRole: string, requestingUserId: number): Promise<({
         user: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
         id: string;
         createdAt: Date;
-        userId: string;
-        date: Date;
         type: import(".prisma/client").$Enums.AttendanceType;
+        kmReading: number | null;
+        date: Date;
+        userId: number;
         photoPath: string;
         capturedAt: Date;
-        kmReading: number | null;
     })[]>;
-    static getTodayBikeMeterStatus(userId: string): Promise<{
+    static getTodayBikeMeterStatus(userId: number): Promise<{
         date: string;
         morningUploaded: boolean;
         eveningUploaded: boolean;
@@ -61,22 +81,32 @@ export declare class BikeService {
     static updateKmReading(readingId: string, kmReading: number): Promise<{
         user: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
         };
     } & {
         id: string;
         createdAt: Date;
-        userId: string;
-        date: Date;
         type: import(".prisma/client").$Enums.AttendanceType;
+        kmReading: number | null;
+        date: Date;
+        userId: number;
         photoPath: string;
         capturedAt: Date;
-        kmReading: number | null;
     }>;
-    static getBikeMeterSummary(userId: string, startDate: string, endDate: string): Promise<any[]>;
+    static getBikeMeterSummary(userId: number, startDate: string, endDate: string): Promise<any[]>;
     static deleteBikeMeterReading(readingId: string): Promise<{
         message: string;
     }>;

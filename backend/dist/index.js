@@ -14,7 +14,10 @@ const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const attendanceRoutes_1 = __importDefault(require("./routes/attendanceRoutes"));
 const bikeRoutes_1 = __importDefault(require("./routes/bikeRoutes"));
 const surveyorRoutes_1 = __importDefault(require("./routes/surveyorRoutes"));
+const projectRoutes_1 = __importDefault(require("./routes/projectRoutes"));
+const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
 const geoFenceRoutes_1 = __importDefault(require("./routes/geoFenceRoutes"));
+const dashboard_1 = __importDefault(require("./routes/dashboard"));
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -42,9 +45,12 @@ app.use('/api/auth', authRoutes_1.default);
 app.use('/api/attendance', authMiddleware_1.authMiddleware, attendanceRoutes_1.default);
 app.use('/api/bike', authMiddleware_1.authMiddleware, bikeRoutes_1.default);
 app.use('/api/surveyors', authMiddleware_1.authMiddleware, surveyorRoutes_1.default);
+app.use('/api/projects', authMiddleware_1.authMiddleware, projectRoutes_1.default);
+app.use('/api/locations', authMiddleware_1.authMiddleware, locationRoutes_1.default);
 app.use('/api/geo-fence', authMiddleware_1.authMiddleware, geoFenceRoutes_1.default);
+app.use('/api/dashboard', authMiddleware_1.authMiddleware, dashboard_1.default);
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         success: false,
         message: `Route ${req.originalUrl} not found`,
