@@ -66,7 +66,7 @@ export class BikeController {
 
   // GET /api/bike/today - Get today's bike meter reading status
   static getTodayStatus = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.query.userId as string || req.user!.id;
+    const userId = req.query.userId ? parseInt(req.query.userId as string) : req.user!.id;
 
     // If not admin and trying to access another user's data
     if (req.user!.role !== 'ADMIN' && userId !== req.user!.id) {
@@ -95,7 +95,7 @@ export class BikeController {
   // GET /api/bike/summary - Get bike meter summary for date range
   static getBikeMeterSummary = asyncHandler(async (req: Request, res: Response) => {
     const { userId, startDate, endDate } = req.query as any;
-    const targetUserId = userId || req.user!.id;
+    const targetUserId = userId ? parseInt(userId) : req.user!.id;
 
     // If not admin and trying to access another user's data
     if (req.user!.role !== 'ADMIN' && targetUserId !== req.user!.id) {

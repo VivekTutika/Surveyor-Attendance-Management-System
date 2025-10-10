@@ -2,12 +2,12 @@ import { prisma } from '../config/db';
 
 export interface CreateProjectData {
   name: string;
-  description?: string;
+  // description?: string; // Removed - not in schema
 }
 
 export interface UpdateProjectData {
   name?: string;
-  description?: string;
+  // description?: string; // Removed - not in schema
 }
 
 export interface ProjectFilters {
@@ -17,7 +17,7 @@ export interface ProjectFilters {
 export class ProjectService {
   // Create new project (Admin only)
   static async createProject(data: CreateProjectData) {
-    const { name, description } = data;
+    const { name } = data; // Removed description
 
     // Check if project with same name already exists
     const existingProject = await prisma.project.findUnique({
@@ -32,7 +32,7 @@ export class ProjectService {
     const project = await prisma.project.create({
       data: {
         name,
-        description,
+        // description, // Removed - not in schema
       },
       include: {
         _count: {
@@ -52,11 +52,11 @@ export class ProjectService {
 
     const where: any = {};
 
-    // Search filter (name or description)
+    // Search filter (name only - description removed)
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        // { description: { contains: search, mode: 'insensitive' } }, // Removed - not in schema
       ];
     }
 
@@ -99,7 +99,7 @@ export class ProjectService {
 
   // Update project (Admin only)
   static async updateProject(projectId: number, updateData: UpdateProjectData) {
-    const { name, description } = updateData;
+    const { name } = updateData; // Removed description
 
     // Check if project exists
     const existingProject = await prisma.project.findUnique({
@@ -126,7 +126,7 @@ export class ProjectService {
       where: { id: projectId },
       data: {
         ...(name && { name }),
-        ...(description !== undefined && { description }),
+        // ...(description !== undefined && { description }), // Removed - not in schema
       },
       include: {
         _count: {

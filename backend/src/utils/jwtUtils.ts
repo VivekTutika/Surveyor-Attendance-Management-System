@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import config from '../config';
 
 export interface JWTPayload {
-  userId: string;
+  userId: number;  // Changed from string to number to match Prisma schema
   mobileNumber: string;
   role: string;
 }

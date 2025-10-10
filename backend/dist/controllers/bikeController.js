@@ -60,7 +60,7 @@ BikeController.getBikeMeterList = (0, errorHandler_1.asyncHandler)(async (req, r
 });
 // GET /api/bike/today - Get today's bike meter reading status
 BikeController.getTodayStatus = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const userId = req.query.userId || req.user.id;
+    const userId = req.query.userId ? parseInt(req.query.userId) : req.user.id;
     // If not admin and trying to access another user's data
     if (req.user.role !== 'ADMIN' && userId !== req.user.id) {
         return (0, response_1.sendError)(res, 'Access denied. You can only view your own bike meter readings.', 403);
@@ -81,7 +81,7 @@ BikeController.updateKmReading = (0, errorHandler_1.asyncHandler)(async (req, re
 // GET /api/bike/summary - Get bike meter summary for date range
 BikeController.getBikeMeterSummary = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { userId, startDate, endDate } = req.query;
-    const targetUserId = userId || req.user.id;
+    const targetUserId = userId ? parseInt(userId) : req.user.id;
     // If not admin and trying to access another user's data
     if (req.user.role !== 'ADMIN' && targetUserId !== req.user.id) {
         return (0, response_1.sendError)(res, 'Access denied. You can only view your own bike meter readings.', 403);

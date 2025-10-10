@@ -3,89 +3,129 @@ export interface CreateSurveyorData {
     name: string;
     mobileNumber: string;
     password: string;
-    project?: string;
-    location?: string;
+    projectId?: number;
+    locationId?: number;
 }
 export interface UpdateSurveyorData {
     name?: string;
     mobileNumber?: string;
-    project?: string;
-    location?: string;
+    projectId?: number;
+    locationId?: number;
     isActive?: boolean;
 }
 export interface SurveyorFilters {
     search?: string;
-    project?: string;
-    location?: string;
+    projectId?: number;
+    locationId?: number;
     isActive?: boolean;
     role?: Role;
 }
 export declare class SurveyorService {
     static createSurveyor(data: CreateSurveyorData): Promise<{
         name: string;
-        id: string;
-        role: import(".prisma/client").$Enums.Role;
-        mobileNumber: string;
-        project: string | null;
-        location: string | null;
-        isActive: boolean;
+        project: {
+            name: string;
+            id: number;
+        } | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
+        role: import(".prisma/client").$Enums.Role;
+        mobileNumber: string;
+        projectId: number | null;
+        locationId: number | null;
+        isActive: boolean;
+        location: {
+            name: string;
+            id: number;
+        } | null;
     }>;
     static getSurveyors(filters: SurveyorFilters): Promise<{
         name: string;
-        id: string;
-        role: import(".prisma/client").$Enums.Role;
-        mobileNumber: string;
-        project: string | null;
-        location: string | null;
-        isActive: boolean;
+        project: {
+            name: string;
+            id: number;
+        } | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
+        role: import(".prisma/client").$Enums.Role;
+        mobileNumber: string;
+        projectId: number | null;
+        locationId: number | null;
+        isActive: boolean;
+        location: {
+            name: string;
+            id: number;
+        } | null;
         _count: {
             attendances: number;
             bikeMeterReadings: number;
         };
     }[]>;
-    static getSurveyorById(surveyorId: string): Promise<{
+    static getSurveyorById(surveyorId: number): Promise<{
         name: string;
-        id: string;
-        role: import(".prisma/client").$Enums.Role;
-        mobileNumber: string;
-        project: string | null;
-        location: string | null;
-        isActive: boolean;
+        project: {
+            name: string;
+            id: number;
+        } | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
+        role: import(".prisma/client").$Enums.Role;
+        mobileNumber: string;
+        projectId: number | null;
+        locationId: number | null;
+        isActive: boolean;
+        location: {
+            name: string;
+            id: number;
+        } | null;
         _count: {
             attendances: number;
             bikeMeterReadings: number;
         };
     }>;
-    static updateSurveyor(surveyorId: string, updateData: UpdateSurveyorData): Promise<{
+    static updateSurveyor(surveyorId: number, updateData: UpdateSurveyorData): Promise<{
         name: string;
-        id: string;
-        role: import(".prisma/client").$Enums.Role;
-        mobileNumber: string;
-        project: string | null;
-        location: string | null;
-        isActive: boolean;
+        project: {
+            name: string;
+            id: number;
+        } | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
+        role: import(".prisma/client").$Enums.Role;
+        mobileNumber: string;
+        projectId: number | null;
+        locationId: number | null;
+        isActive: boolean;
+        location: {
+            name: string;
+            id: number;
+        } | null;
     }>;
-    static deleteSurveyor(surveyorId: string): Promise<{
+    static deleteSurveyor(surveyorId: number): Promise<{
         message: string;
     }>;
-    static resetSurveyorPassword(surveyorId: string, newPassword: string): Promise<{
+    static resetSurveyorPassword(surveyorId: number, newPassword: string): Promise<{
         message: string;
     }>;
-    static getSurveyorStatistics(surveyorId: string, startDate?: string, endDate?: string): Promise<{
+    static getSurveyorStatistics(surveyorId: number, startDate?: string, endDate?: string): Promise<{
         surveyor: {
             name: string;
-            id: string;
+            project: {
+                name: string;
+                id: number;
+            } | null;
+            id: number;
             mobileNumber: string;
-            project: string | null;
-            location: string | null;
+            projectId: number | null;
+            locationId: number | null;
+            location: {
+                name: string;
+                id: number;
+            } | null;
         };
         statistics: {
             attendance: {

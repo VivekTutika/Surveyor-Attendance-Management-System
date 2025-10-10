@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { ThemeProvider } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter'
 import { AuthProvider } from '@/context/AuthContext'
-import theme from '@/lib/theme'
+import ThemeProvider from '@/components/ThemeProvider'
 import 'leaflet/dist/leaflet.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -21,12 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeProvider>
+        <AppRouterCacheProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </ThemeProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   )

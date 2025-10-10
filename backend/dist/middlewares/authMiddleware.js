@@ -22,7 +22,7 @@ const authMiddleware = async (req, res, next) => {
             const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwtSecret);
             // Fetch user from database to ensure they still exist
             const user = await db_1.prisma.user.findUnique({
-                where: { id: decoded.userId },
+                where: { id: decoded.userId }, // Now correctly using number type
                 select: {
                     id: true,
                     role: true,
@@ -46,7 +46,7 @@ const authMiddleware = async (req, res, next) => {
             }
             // Attach user to request
             req.user = {
-                id: user.id,
+                id: user.id, // Now correctly typed as number
                 role: user.role,
                 mobileNumber: user.mobileNumber,
             };

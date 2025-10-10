@@ -37,15 +37,68 @@ export interface AuthResponse {
   token: string;
 }
 
+// Helper function to normalize mobile numbers for comparison
+function normalizeMobileNumber(mobileNumber: string): string {
+  // Remove all non-digit characters except the leading +
+  let normalized = mobileNumber.replace(/[^\d+]/g, '');
+  
+  // Ensure + prefix
+  if (!normalized.startsWith('+')) {
+    // If it starts with a digit and looks like it might be missing the country code
+    // we'll add the + prefix
+    if (normalized.length >= 10) { // Assuming minimum length for a valid number
+      normalized = '+' + normalized;
+    }
+  }
+  
+  return normalized;
+}
+
+// Helper function to create search variants for mobile number
+function getMobileNumberVariants(mobileNumber: string): string[] {
+  const variants = new Set<string>();
+  
+  // Add the original number
+  variants.add(mobileNumber);
+  
+  // Add normalized version
+  const normalized = normalizeMobileNumber(mobileNumber);
+  variants.add(normalized);
+  
+  // Add version without + prefix
+  if (normalized.startsWith('+')) {
+    variants.add(normalized.substring(1));
+  }
+  
+  // Add version with + prefix
+  if (!mobileNumber.startsWith('+')) {
+    variants.add('+' + mobileNumber);
+  }
+  
+  return Array.from(variants);
+}
+
 export class AuthService {
   // Register new user (Admin only)
   static async register(userData: CreateUserData): Promise<AuthResponse> {
     const { name, mobileNumber, password, role = Role.SURVEYOR, projectId, locationId } = userData;
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { mobileNumber },
-    });
+    // Normalize mobile number for storage
+    const normalizedMobileNumber = normalizeMobileNumber(mobileNumber);
+
+    // Check if user already exists (check all variants)
+    const mobileVariants = getMobileNumberVariants(mobileNumber);
+    let existingUser = null;
+    
+    for (const variant of mobileVariants) {
+      existingUser = await prisma.user.findUnique({
+        where: { mobileNumber: variant },
+      });
+      
+      if (existingUser) {
+        break;
+      }
+    }
 
     if (existingUser) {
       throw new Error('User with this mobile number already exists');
@@ -58,7 +111,7 @@ export class AuthService {
     const user = await prisma.user.create({
       data: {
         name,
-        mobileNumber,
+        mobileNumber: normalizedMobileNumber, // Store normalized version
         passwordHash,
         role,
         projectId,
@@ -107,10 +160,24 @@ export class AuthService {
   static async login(loginData: LoginData): Promise<AuthResponse> {
     const { mobileNumber, password } = loginData;
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { mobileNumber },
-    });
+    // Get all possible variants of the mobile number
+    const mobileVariants = getMobileNumberVariants(mobileNumber);
+    
+    // Try to find user with any of the variants
+    let user = null;
+    for (const variant of mobileVariants) {
+      user = await prisma.user.findUnique({
+        where: { mobileNumber: variant },
+        include: {
+          project: true,
+          location: true,
+        },
+      });
+      
+      if (user) {
+        break;
+      }
+    }
 
     if (!user) {
       throw new Error('Invalid mobile number or password');
@@ -141,17 +208,19 @@ export class AuthService {
         name: user.name,
         mobileNumber: user.mobileNumber,
         role: user.role,
-        project: user.project,
-        location: user.location,
+        projectId: user.projectId,
+        locationId: user.locationId,
+        project: user.project || null,
+        location: user.location || null,
       },
       token,
     };
   }
 
   // Get user profile
-  static async getProfile(userId: string) {
+  static async getProfile(userId: number) {  // Changed from string to number
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId },  // Now correctly typed as number
       select: {
         id: true,
         name: true,
@@ -173,13 +242,12 @@ export class AuthService {
   }
 
   // Update user profile (limited fields for surveyors)
-  static async updateProfile(userId: string, updateData: {
+  static async updateProfile(userId: number, updateData: {  // Changed from string to number
     name?: string;
-    project?: string;
-    location?: string;
   }) {
+    // Only allow updating the name field for now
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId },  // Now correctly typed as number
       data: updateData,
       select: {
         id: true,
@@ -197,9 +265,9 @@ export class AuthService {
   }
 
   // Change password
-  static async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  static async changePassword(userId: number, currentPassword: string, newPassword: string) {  // Changed from string to number
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId },  // Now correctly typed as number
     });
 
     if (!user) {
@@ -217,7 +285,7 @@ export class AuthService {
 
     // Update password
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId },  // Now correctly typed as number
       data: { passwordHash: newPasswordHash },
     });
 

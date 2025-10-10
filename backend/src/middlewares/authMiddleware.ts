@@ -2,13 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db';
 import config from '../config';
+import { JWTPayload } from '../utils/jwtUtils';
 
 // Extend Request interface to include user
 declare global {
   namespace Express {
     interface Request {
       user?: {
-        id: string;
+        id: number;  // Changed from string to number to match Prisma schema
         role: string;
         mobileNumber: string;
       };
@@ -35,11 +36,11 @@ export const authMiddleware = async (
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     try {
-      const decoded = jwt.verify(token, config.jwtSecret) as any;
+      const decoded = jwt.verify(token, config.jwtSecret) as JWTPayload;
       
       // Fetch user from database to ensure they still exist
       const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
+        where: { id: decoded.userId },  // Now correctly using number type
         select: {
           id: true,
           role: true,
@@ -66,7 +67,7 @@ export const authMiddleware = async (
 
       // Attach user to request
       req.user = {
-        id: user.id,
+        id: user.id,  // Now correctly typed as number
         role: user.role,
         mobileNumber: user.mobileNumber,
       };

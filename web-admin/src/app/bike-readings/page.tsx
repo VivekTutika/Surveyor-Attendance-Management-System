@@ -13,6 +13,7 @@ import {
   TablePagination,
   Typography,
   Avatar,
+  Chip,
   FormControl,
   InputLabel,
   Select,
@@ -27,22 +28,19 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  ImageList,
-  ImageListItem,
-  Chip,
+  TextField,
 } from '@mui/material'
 import {
   DirectionsBike,
   Speed,
-  TrendingUp,
   FilterList,
   Download,
   Close,
   CalendarToday,
   Person,
-  ZoomIn,
-  GridView,
   TableRows,
+  GridView,
+  Image,
 } from '@mui/icons-material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -90,7 +88,7 @@ export default function BikeReadingsPage() {
   const fetchSurveyors = async () => {
     try {
       const data = await surveyorService.getAll()
-      setSurveyors(data.surveyors)
+      setSurveyors(data)
     } catch (error: any) {
       console.error('Failed to fetch surveyors:', error)
     }
@@ -261,14 +259,14 @@ export default function BikeReadingsPage() {
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Avatar sx={{ bgcolor: 'warning.main' }}>
-                    <TrendingUp />
+                    <Speed />
                   </Avatar>
                   <Box>
                     <Typography variant="h5" component="div">
-                      {maxReading.toFixed(1)} KM
+                      {maxReading} KM
                     </Typography>
                     <Typography color="text.secondary">
-                      Highest Reading
+                      Maximum Reading
                     </Typography>
                   </Box>
                 </Box>
@@ -278,136 +276,142 @@ export default function BikeReadingsPage() {
         </Grid>
 
         {/* Filters */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <FilterList />
-            <Typography variant="h6">Filters</Typography>
-          </Box>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <DatePicker
-                label="Start Date"
-                value={filters.startDate}
-                onChange={(value) => handleFilterChange('startDate', value)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <DatePicker
-                label="End Date"
-                value={filters.endDate}
-                onChange={(value) => handleFilterChange('endDate', value)}
-                slotProps={{ textField: { fullWidth: true, size: 'small' } }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Surveyor</InputLabel>
-                <Select
-                  value={filters.userId}
-                  label="Surveyor"
-                  onChange={(e) => handleFilterChange('userId', e.target.value)}
-                >
-                  <MenuItem value="">All Surveyors</MenuItem>
-                  {surveyors.map((surveyor) => (
-                    <MenuItem key={surveyor.id} value={surveyor.id}>
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ mr: 2 }}>
+              Filters
+            </Typography>
+            
+            <DatePicker
+              label="Start Date"
+              value={filters.startDate}
+              onChange={(newValue) => handleFilterChange('startDate', newValue)}
+              format="DD/MM/YYYY"
+            />
+            
+            <DatePicker
+              label="End Date"
+              value={filters.endDate}
+              onChange={(newValue) => handleFilterChange('endDate', newValue)}
+              format="DD/MM/YYYY"
+            />
+            
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Surveyor</InputLabel>
+              <Select
+                value={filters.userId}
+                label="Surveyor"
+                onChange={(e) => handleFilterChange('userId', e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Surveyors</em>
+                </MenuItem>
+                {surveyors.map((surveyor) => (
+                  <MenuItem key={surveyor.id} value={surveyor.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person fontSize="small" />
                       {surveyor.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  onClick={clearFilters}
-                  size="small"
-                  fullWidth
-                >
-                  Clear
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  size="small"
-                  fullWidth
-                  onClick={handleExportCSV}
-                >
-                  Export
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <Button
+              variant="outlined"
+              startIcon={<FilterList />}
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </Button>
+            
+            <Button
+              variant="outlined"
+              startIcon={<Download />}
+              onClick={handleExportCSV}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Download />}
+              onClick={handleExportPDF}
+            >
+              Export PDF
+            </Button>
+          </Box>
         </Paper>
 
-        {/* Content based on view mode */}
         {viewMode === 'table' ? (
+          /* Bike Readings Table */
           <Paper>
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Photo</TableCell>
                     <TableCell>Surveyor</TableCell>
+                    <TableCell>Date & Time</TableCell>
                     <TableCell>Reading (KM)</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Time</TableCell>
+                    <TableCell>Photo</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {readings.map((reading) => (
+                  {readings
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((reading) => (
                     <TableRow key={reading.id} hover>
                       <TableCell>
-                        <Avatar
-                          src={reading.photoPath}
-                          sx={{ 
-                            cursor: 'pointer',
-                            '&:hover': { opacity: 0.8 }
-                          }}
-                          onClick={() => handlePhotoClick(reading)}
-                        >
-                          <DirectionsBike />
-                        </Avatar>
-                      </TableCell>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body1" fontWeight="medium">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Person fontSize="small" color="action" />
+                          <Typography variant="body2" fontWeight="medium">
                             {reading.user.name}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {reading.user.mobileNumber}
+                          <Typography variant="caption" color="text.secondary">
+                            ({reading.user.mobileNumber})
                           </Typography>
                         </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={`${reading.reading} KM`}
-                          color="primary"
-                          variant="outlined"
-                        />
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <CalendarToday fontSize="small" color="action" />
-                          {dayjs(reading.capturedAt).format('MMM DD, YYYY')}
+                          {new Date(reading.capturedAt).toLocaleString()}
                         </Box>
                       </TableCell>
                       <TableCell>
-                        {dayjs(reading.capturedAt).format('hh:mm A')}
+                        <Typography variant="h6" fontWeight="bold" color="primary">
+                          {reading.reading}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {reading.photoPath && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handlePhotoClick(reading)}
+                          >
+                            View Photo
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => handlePhotoClick(reading)}
+                          disabled={!reading.photoPath}
+                        >
+                          <Image 
+                            color={reading.photoPath ? 'primary' : 'disabled'} 
+                          />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
-            {loading && (
-              <Box display="flex" justifyContent="center" p={2}>
-                <CircularProgress size={24} />
-              </Box>
-            )}
             <TablePagination
-              rowsPerPageOptions={[5, 10, 25, 50]}
+              rowsPerPageOptions={[5, 10, 25]}
               component="div"
               count={total}
               rowsPerPage={rowsPerPage}
@@ -417,62 +421,86 @@ export default function BikeReadingsPage() {
             />
           </Paper>
         ) : (
-          <Paper sx={{ p: 2 }}>
-            <ImageList variant="masonry" cols={4} gap={8}>
-              {readings.map((reading) => (
-                <ImageListItem key={reading.id}>
-                  <img
-                    src={reading.photoPath}
-                    alt={`Reading by ${reading.user.name}`}
-                    loading="lazy"
-                    style={{
-                      cursor: 'pointer',
-                      borderRadius: 8,
-                      transition: 'transform 0.2s',
-                    }}
-                    onClick={() => handlePhotoClick(reading)}
-                    onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
-                    onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                  />
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                      color: 'white',
-                      p: 1,
-                      borderRadius: '0 0 8px 8px',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight="bold">
-                      {reading.user.name}
-                    </Typography>
-                    <Typography variant="caption" display="block">
-                      {reading.reading} KM • {dayjs(reading.capturedAt).format('MMM DD, YYYY')}
-                    </Typography>
-                  </Box>
-                </ImageListItem>
-              ))}
-            </ImageList>
-            {loading && (
-              <Box display="flex" justifyContent="center" p={2}>
-                <CircularProgress size={24} />
-              </Box>
+          /* Gallery View */
+          <Box>
+            {readings.length === 0 ? (
+              <Alert severity="info">No bike readings found.</Alert>
+            ) : (
+              <>
+                <Grid container spacing={3}>
+                  {readings
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((reading) => (
+                    <Grid item xs={12} sm={6} md={4} key={reading.id}>
+                      <Card>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Box>
+                              <Typography variant="h6" fontWeight="bold">
+                                {reading.reading} KM
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {reading.user.name}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={new Date(reading.capturedAt).toLocaleDateString()}
+                              size="small"
+                            />
+                          </Box>
+                          
+                          {reading.photoPath && (
+                            <Box 
+                              sx={{ 
+                                width: '100%', 
+                                height: 200, 
+                                borderRadius: 2, 
+                                overflow: 'hidden',
+                                mb: 2,
+                                cursor: 'pointer',
+                                '&:hover': { opacity: 0.8 }
+                              }}
+                              onClick={() => handlePhotoClick(reading)}
+                            >
+                              <img 
+                                src={reading.photoPath} 
+                                alt="Bike reading" 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            </Box>
+                          )}
+                          
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(reading.capturedAt).toLocaleTimeString()}
+                            </Typography>
+                            <Button 
+                              size="small" 
+                              variant="outlined"
+                              onClick={() => handlePhotoClick(reading)}
+                              disabled={!reading.photoPath}
+                            >
+                              View Photo
+                            </Button>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+                
+                <TablePagination
+                  rowsPerPageOptions={[6, 12, 24]}
+                  component="div"
+                  count={total}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                />
+              </>
             )}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <TablePagination
-                rowsPerPageOptions={[12, 24, 48]}
-                component="div"
-                count={total}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
-            </Box>
-          </Paper>
+          </Box>
         )}
 
         {/* Photo Dialog */}
@@ -480,34 +508,35 @@ export default function BikeReadingsPage() {
           open={openPhotoDialog}
           onClose={() => setOpenPhotoDialog(false)}
           maxWidth="md"
+          fullWidth
         >
           <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="h6">Bike Meter Reading</Typography>
-                {selectedReading && (
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedReading.user.name} • {selectedReading.reading} KM • {dayjs(selectedReading.capturedAt).format('MMM DD, YYYY hh:mm A')}
-                  </Typography>
-                )}
-              </Box>
-              <IconButton onClick={() => setOpenPhotoDialog(false)}>
-                <Close />
-              </IconButton>
-            </Box>
+            Bike Reading Photo
+            <IconButton
+              onClick={() => setOpenPhotoDialog(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <Close />
+            </IconButton>
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ textAlign: 'center' }}>
-              <img
-                src={selectedPhoto}
-                alt="Bike meter reading"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '500px',
-                  objectFit: 'contain'
-                }}
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+              <img 
+                src={selectedPhoto} 
+                alt="Bike reading" 
+                style={{ maxWidth: '100%', height: 'auto', borderRadius: 8 }}
               />
             </Box>
+            {selectedReading && (
+              <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <Typography variant="h6" fontWeight="bold">
+                  {selectedReading.reading} KM
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedReading.user.name} • {new Date(selectedReading.capturedAt).toLocaleString()}
+                </Typography>
+              </Box>
+            )}
           </DialogContent>
         </Dialog>
       </Box>

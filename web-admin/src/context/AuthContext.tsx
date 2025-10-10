@@ -10,6 +10,16 @@ interface User {
   name: string
   mobileNumber: string
   role: 'ADMIN' | 'SURVEYOR'
+  isActive: boolean
+  createdAt: string
+  project?: {
+    id: number
+    name: string
+  }
+  location?: {
+    id: number
+    name: string
+  }
 }
 
 interface AuthContextType {
@@ -28,22 +38,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  // Check for existing token on mount
+  // Check for existing token on mount and set up token refresh interval
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = Cookies.get('adminToken')
         if (token) {
+          // Validate token by fetching profile
           const profile = await authService.getProfile()
-          if (profile.user.role === 'ADMIN') {
-            setUser(profile.user)
+          if (profile.role === 'ADMIN') {
+            setUser(profile)
           } else {
             // Not an admin, clear token
             Cookies.remove('adminToken')
             setUser(null)
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth check failed:', error)
         Cookies.remove('adminToken')
         setUser(null)
@@ -53,23 +64,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     checkAuth()
-  }, [])
+
+    // Set up interval to periodically refresh auth state
+    const interval = setInterval(() => {
+      if (user) {
+        authService.getProfile().catch((error) => {
+          console.error('Token refresh failed:', error)
+          Cookies.remove('adminToken')
+          setUser(null)
+          router.push('/login')
+        })
+      }
+    }, 15 * 60 * 1000) // Refresh every 15 minutes
+
+    return () => clearInterval(interval)
+  }, [user, router])
 
   const login = async (mobileNumber: string, password: string) => {
     try {
       setLoading(true)
       setError(null)
+      console.log('Attempting login with:', mobileNumber)
 
       const response = await authService.login(mobileNumber, password)
+      console.log('Login response:', response)
       
       // Check if user is admin
       if (response.user.role !== 'ADMIN') {
         throw new Error('Access denied. Admin privileges required.')
       }
 
-      // Store token in HTTP-only cookie
+      // Store token in cookie with longer expiration
       Cookies.set('adminToken', response.token, {
-        expires: 7, // 7 days
+        expires: 30, // 30 days
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
       })
@@ -77,7 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(response.user)
       router.push('/dashboard')
     } catch (error: any) {
-      setError(error.message || 'Login failed')
+      console.error('Login error:', error)
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed'
+      setError(errorMessage)
       throw error
     } finally {
       setLoading(false)

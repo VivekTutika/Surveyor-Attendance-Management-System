@@ -51,23 +51,19 @@ async function main() {
   const sampleProjects = [
     {
       name: 'Highway Survey Project',
-      description: 'Survey and mapping of national highway infrastructure',
     },
     {
       name: 'Urban Planning Survey',
-      description: 'Comprehensive urban development and planning survey',
     },
     {
       name: 'Rural Development Survey',
-      description: 'Rural infrastructure and development assessment',
     },
     {
       name: 'Coastal Area Survey',
-      description: 'Environmental and infrastructure survey of coastal regions',
     },
   ];
 
-  const createdProjects = [];
+  const createdProjects: any[] = [];
   for (const project of sampleProjects) {
     const createdProject = await prisma.project.upsert({
       where: { name: project.name },
@@ -100,7 +96,7 @@ async function main() {
     },
   ];
 
-  const createdLocations = [];
+  const createdLocations: any[] = [];
   for (const location of sampleLocations) {
     const createdLocation = await prisma.location.upsert({
       where: { name: location.name },

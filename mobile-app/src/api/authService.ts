@@ -1,4 +1,4 @@
-import api from './index';
+import api, { apiFormData } from './index';
 import { 
   LoginRequest, 
   LoginResponse, 
@@ -7,10 +7,10 @@ import {
 } from '../types';
 
 export interface AuthService {
-  login: (mobileNumber: string, password: string) => Promise<any>;
-  getProfile: () => Promise<any>;
-  updateProfile: (profileData: Partial<User>) => Promise<any>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<any>;
+  login: (mobileNumber: string, password: string) => Promise<LoginResponse>;
+  getProfile: () => Promise<User>;
+  updateProfile: (profileData: Partial<User>) => Promise<User>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<ApiResponse>;
   logout: () => Promise<{ success: boolean }>;
 }
 

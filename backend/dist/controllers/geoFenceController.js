@@ -17,7 +17,7 @@ GeoFenceController.createOrUpdateGeoFence = (0, errorHandler_1.asyncHandler)(asy
         return (0, response_1.sendError)(res, 'Coordinates array is required', 400);
     }
     const geoFenceData = {
-        surveyorId,
+        surveyorId: parseInt(surveyorId), // Convert to number
         coordinates,
         isActive,
     };
@@ -27,20 +27,20 @@ GeoFenceController.createOrUpdateGeoFence = (0, errorHandler_1.asyncHandler)(asy
 // GET /api/geo-fence/:surveyorId - Get geo-fence for a surveyor
 GeoFenceController.getGeoFence = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { surveyorId } = req.params;
-    const geoFence = await geoFenceService_1.GeoFenceService.getGeoFence(surveyorId);
+    const geoFence = await geoFenceService_1.GeoFenceService.getGeoFence(parseInt(surveyorId)); // Convert to number
     (0, response_1.sendSuccess)(res, 'Geo-fence retrieved successfully', geoFence);
 });
 // PUT /api/geo-fence/:surveyorId - Update geo-fence (Admin only)
 GeoFenceController.updateGeoFence = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { surveyorId } = req.params;
     const updateData = req.body;
-    const updatedGeoFence = await geoFenceService_1.GeoFenceService.updateGeoFence(surveyorId, updateData);
+    const updatedGeoFence = await geoFenceService_1.GeoFenceService.updateGeoFence(parseInt(surveyorId), updateData); // Convert to number
     (0, response_1.sendSuccess)(res, 'Geo-fence updated successfully', updatedGeoFence);
 });
 // DELETE /api/geo-fence/:surveyorId - Delete geo-fence (Admin only)
 GeoFenceController.deleteGeoFence = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { surveyorId } = req.params;
-    const result = await geoFenceService_1.GeoFenceService.deleteGeoFence(surveyorId);
+    const result = await geoFenceService_1.GeoFenceService.deleteGeoFence(parseInt(surveyorId)); // Convert to number
     (0, response_1.sendSuccess)(res, result.message);
 });
 // GET /api/geo-fence - Get all geo-fences (Admin only)
@@ -51,7 +51,7 @@ GeoFenceController.getAllGeoFences = (0, errorHandler_1.asyncHandler)(async (req
 // PATCH /api/geo-fence/:surveyorId/toggle - Toggle geo-fence status (Admin only)
 GeoFenceController.toggleGeoFenceStatus = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { surveyorId } = req.params;
-    const updatedGeoFence = await geoFenceService_1.GeoFenceService.toggleGeoFenceStatus(surveyorId);
+    const updatedGeoFence = await geoFenceService_1.GeoFenceService.toggleGeoFenceStatus(parseInt(surveyorId)); // Convert to number
     (0, response_1.sendSuccess)(res, 'Geo-fence status toggled successfully', updatedGeoFence);
 });
 //# sourceMappingURL=geoFenceController.js.map

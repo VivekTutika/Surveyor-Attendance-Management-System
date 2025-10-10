@@ -4,14 +4,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon src/server.ts",
     "build": "tsc",
     "db:migrate": "npx prisma migrate dev",
     "db:generate": "npx prisma generate",
-    "db:seed": "ts-node prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "db:seed": "npx prisma db seed"
   },
   "keywords": [],
   "author": "",

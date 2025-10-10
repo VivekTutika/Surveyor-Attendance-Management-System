@@ -19,7 +19,7 @@ class GeoFenceService {
         });
         // Check if surveyor exists
         const surveyor = await db_1.prisma.user.findUnique({
-            where: { id: surveyorId },
+            where: { id: surveyorId }, // Now correctly typed as number
         });
         if (!surveyor) {
             throw new Error('Surveyor not found');
@@ -29,13 +29,13 @@ class GeoFenceService {
         }
         // Create or update geo-fence
         const geoFence = await db_1.prisma.geoFence.upsert({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
             update: {
                 coordinates: coordinates,
                 isActive,
             },
             create: {
-                surveyorId,
+                surveyorId, // Now correctly typed as number
                 coordinates: coordinates,
                 isActive,
             },
@@ -56,7 +56,7 @@ class GeoFenceService {
     // Get geo-fence for a surveyor
     static async getGeoFence(surveyorId) {
         const geoFence = await db_1.prisma.geoFence.findUnique({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
             include: {
                 surveyor: {
                     select: {
@@ -79,7 +79,7 @@ class GeoFenceService {
         const { coordinates, isActive } = updateData;
         // Check if geo-fence exists
         const existingGeoFence = await db_1.prisma.geoFence.findUnique({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
         });
         if (!existingGeoFence) {
             throw new Error('Geo-fence not found for this surveyor');
@@ -97,7 +97,7 @@ class GeoFenceService {
         }
         // Update geo-fence
         const updatedGeoFence = await db_1.prisma.geoFence.update({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
             data: {
                 ...(coordinates && { coordinates: coordinates }),
                 ...(typeof isActive === 'boolean' && { isActive }),
@@ -119,13 +119,13 @@ class GeoFenceService {
     // Delete geo-fence (Admin only)
     static async deleteGeoFence(surveyorId) {
         const geoFence = await db_1.prisma.geoFence.findUnique({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
         });
         if (!geoFence) {
             throw new Error('Geo-fence not found for this surveyor');
         }
         await db_1.prisma.geoFence.delete({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
         });
         return { message: 'Geo-fence deleted successfully' };
     }
@@ -153,13 +153,13 @@ class GeoFenceService {
     // Toggle geo-fence status (Admin only)
     static async toggleGeoFenceStatus(surveyorId) {
         const geoFence = await db_1.prisma.geoFence.findUnique({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
         });
         if (!geoFence) {
             throw new Error('Geo-fence not found for this surveyor');
         }
         const updatedGeoFence = await db_1.prisma.geoFence.update({
-            where: { surveyorId },
+            where: { surveyorId }, // Now correctly typed as number
             data: { isActive: !geoFence.isActive },
             include: {
                 surveyor: {

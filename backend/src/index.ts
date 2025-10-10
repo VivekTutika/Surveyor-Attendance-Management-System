@@ -53,7 +53,7 @@ app.use('/api/geo-fence', authMiddleware, geoFenceRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.originalUrl} not found`,

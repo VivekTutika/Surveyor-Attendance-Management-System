@@ -2,7 +2,7 @@ import { prisma } from '../config/db';
 import { Coordinate, isValidCoordinate } from '../utils/geoUtils';
 
 export interface CreateGeoFenceData {
-  surveyorId: string;
+  surveyorId: number;  // Changed from string to number
   coordinates: Coordinate[];
   isActive?: boolean;
 }
@@ -31,7 +31,7 @@ export class GeoFenceService {
 
     // Check if surveyor exists
     const surveyor = await prisma.user.findUnique({
-      where: { id: surveyorId },
+      where: { id: surveyorId },  // Now correctly typed as number
     });
 
     if (!surveyor) {
@@ -44,13 +44,13 @@ export class GeoFenceService {
 
     // Create or update geo-fence
     const geoFence = await prisma.geoFence.upsert({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
       update: {
         coordinates: coordinates as any,
         isActive,
       },
       create: {
-        surveyorId,
+        surveyorId,  // Now correctly typed as number
         coordinates: coordinates as any,
         isActive,
       },
@@ -71,9 +71,9 @@ export class GeoFenceService {
   }
 
   // Get geo-fence for a surveyor
-  static async getGeoFence(surveyorId: string) {
+  static async getGeoFence(surveyorId: number) {  // Changed from string to number
     const geoFence = await prisma.geoFence.findUnique({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
       include: {
         surveyor: {
           select: {
@@ -95,12 +95,12 @@ export class GeoFenceService {
   }
 
   // Update geo-fence (Admin only)
-  static async updateGeoFence(surveyorId: string, updateData: UpdateGeoFenceData) {
+  static async updateGeoFence(surveyorId: number, updateData: UpdateGeoFenceData) {  // Changed from string to number
     const { coordinates, isActive } = updateData;
 
     // Check if geo-fence exists
     const existingGeoFence = await prisma.geoFence.findUnique({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
     });
 
     if (!existingGeoFence) {
@@ -122,7 +122,7 @@ export class GeoFenceService {
 
     // Update geo-fence
     const updatedGeoFence = await prisma.geoFence.update({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
       data: {
         ...(coordinates && { coordinates: coordinates as any }),
         ...(typeof isActive === 'boolean' && { isActive }),
@@ -144,9 +144,9 @@ export class GeoFenceService {
   }
 
   // Delete geo-fence (Admin only)
-  static async deleteGeoFence(surveyorId: string) {
+  static async deleteGeoFence(surveyorId: number) {  // Changed from string to number
     const geoFence = await prisma.geoFence.findUnique({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
     });
 
     if (!geoFence) {
@@ -154,7 +154,7 @@ export class GeoFenceService {
     }
 
     await prisma.geoFence.delete({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
     });
 
     return { message: 'Geo-fence deleted successfully' };
@@ -184,9 +184,9 @@ export class GeoFenceService {
   }
 
   // Toggle geo-fence status (Admin only)
-  static async toggleGeoFenceStatus(surveyorId: string) {
+  static async toggleGeoFenceStatus(surveyorId: number) {  // Changed from string to number
     const geoFence = await prisma.geoFence.findUnique({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
     });
 
     if (!geoFence) {
@@ -194,7 +194,7 @@ export class GeoFenceService {
     }
 
     const updatedGeoFence = await prisma.geoFence.update({
-      where: { surveyorId },
+      where: { surveyorId },  // Now correctly typed as number
       data: { isActive: !geoFence.isActive },
       include: {
         surveyor: {

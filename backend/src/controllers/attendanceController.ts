@@ -67,7 +67,7 @@ export class AttendanceController {
 
   // GET /api/attendance/today - Get today's attendance status
   static getTodayStatus = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.query.userId as string || req.user!.id;
+    const userId = req.query.userId ? parseInt(req.query.userId as string) : req.user!.id;
 
     // If not admin and trying to access another user's data
     if (req.user!.role !== 'ADMIN' && userId !== req.user!.id) {
@@ -82,7 +82,7 @@ export class AttendanceController {
   // GET /api/attendance/summary - Get attendance summary for date range
   static getAttendanceSummary = asyncHandler(async (req: Request, res: Response) => {
     const { userId, startDate, endDate } = req.query as any;
-    const targetUserId = userId || req.user!.id;
+    const targetUserId = userId ? parseInt(userId) : req.user!.id;
 
     // If not admin and trying to access another user's data
     if (req.user!.role !== 'ADMIN' && targetUserId !== req.user!.id) {

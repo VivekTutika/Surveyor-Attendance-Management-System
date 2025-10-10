@@ -25,6 +25,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  SelectChangeEvent,
   Alert,
   CircularProgress,
   Tooltip,
@@ -81,7 +82,7 @@ export default function SurveyorsPage() {
       setLoading(true)
       setError(null)
       const data = await surveyorService.getAll()
-      setSurveyors(data.surveyors)
+      setSurveyors(data)
     } catch (error: any) {
       setError(error.message || 'Failed to fetch surveyors')
     } finally {
@@ -173,6 +174,13 @@ export default function SurveyorsPage() {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10))
     setPage(0)
+  }
+
+  const handleStatusChange = (event: SelectChangeEvent<string>) => {
+    setFormData({ 
+      ...formData, 
+      isActive: event.target.value === 'true'
+    })
   }
 
   const activeSurveyors = surveyors.filter(s => s.isActive).length
@@ -399,12 +407,12 @@ export default function SurveyorsPage() {
             <FormControl fullWidth margin="normal">
               <InputLabel>Status</InputLabel>
               <Select
-                value={formData.isActive}
+                value={formData.isActive ? 'true' : 'false'}
                 label="Status"
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.value as boolean })}
+                onChange={handleStatusChange}
               >
-                <MenuItem value={true}>Active</MenuItem>
-                <MenuItem value={false}>Inactive</MenuItem>
+                <MenuItem value="true">Active</MenuItem>
+                <MenuItem value="false">Inactive</MenuItem>
               </Select>
             </FormControl>
           </Box>

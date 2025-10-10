@@ -82,7 +82,6 @@ export class SurveyorController {
       select: {
         id: true,
         name: true,
-        description: true,
         _count: {
           select: {
             users: true,

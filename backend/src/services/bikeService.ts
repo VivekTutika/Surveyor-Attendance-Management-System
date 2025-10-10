@@ -3,14 +3,14 @@ import { prisma } from '../config/db';
 import { uploadAttendancePhoto } from '../config/cloudinary';
 
 export interface UploadBikeMeterData {
-  userId: string;
+  userId: number;  // Changed from string to number
   type: AttendanceType;
   photoBuffer: Buffer;
   kmReading?: number;
 }
 
 export interface BikeMeterFilters {
-  userId?: string;
+  userId?: number;  // Changed from string to number
   date?: string;
   startDate?: string;
   endDate?: string;
@@ -29,7 +29,7 @@ export class BikeService {
     const existingReading = await prisma.bikeMeterReading.findUnique({
       where: {
         userId_date_type: {
-          userId,
+          userId,  // Now correctly typed as number
           date: today,
           type,
         },
@@ -41,12 +41,12 @@ export class BikeService {
     }
 
     // Upload photo to Cloudinary
-    const photoUrl = await uploadAttendancePhoto(photoBuffer, userId, 'bike-meter');
+    const photoUrl = await uploadAttendancePhoto(photoBuffer, userId.toString(), 'bike-meter');  // Convert to string for Cloudinary
 
     // Create bike meter reading record
     const bikeMeterReading = await prisma.bikeMeterReading.create({
       data: {
-        userId,
+        userId,  // Now correctly typed as number
         type,
         date: today,
         photoPath: photoUrl,
@@ -70,7 +70,7 @@ export class BikeService {
   }
 
   // Get bike meter readings with filters
-  static async getBikeMeterReadings(filters: BikeMeterFilters, userRole: string, requestingUserId: string) {
+  static async getBikeMeterReadings(filters: BikeMeterFilters, userRole: string, requestingUserId: number) {  // Changed from string to number
     const { userId, date, startDate, endDate, type } = filters;
 
     // Build where clause
@@ -135,13 +135,13 @@ export class BikeService {
   }
 
   // Get today's bike meter reading status for a user
-  static async getTodayBikeMeterStatus(userId: string) {
+  static async getTodayBikeMeterStatus(userId: number) {  // Changed from string to number
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const readings = await prisma.bikeMeterReading.findMany({
       where: {
-        userId,
+        userId,  // Now correctly typed as number
         date: today,
       },
     });
@@ -201,7 +201,7 @@ export class BikeService {
   }
 
   // Get bike meter summary for a user in a date range
-  static async getBikeMeterSummary(userId: string, startDate: string, endDate: string) {
+  static async getBikeMeterSummary(userId: number, startDate: string, endDate: string) {  // Changed from string to number
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
     const end = new Date(endDate);
@@ -209,7 +209,7 @@ export class BikeService {
 
     const readings = await prisma.bikeMeterReading.findMany({
       where: {
-        userId,
+        userId,  // Now correctly typed as number
         date: {
           gte: start,
           lte: end,
