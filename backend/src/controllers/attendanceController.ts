@@ -110,4 +110,15 @@ export class AttendanceController {
 
     sendSuccess(res, result.message);
   });
+
+  // POST /api/attendance/:id/approve - Approve attendance (Admin only)
+  static approveAttendance = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const adminId = req.user!.id;
+
+    const result = await AttendanceService.approveAttendance(id, adminId);
+
+    const message = result.approved ? 'Attendance approved successfully' : 'Attendance disapproved successfully';
+    sendSuccess(res, message, result);
+  });
 }

@@ -9,6 +9,11 @@ class AttendanceService {
         const { userId, type, latitude, longitude, photoBuffer } = data;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        // Ensure user is active
+        const user = await db_1.prisma.user.findUnique({ where: { id: userId } });
+        if (!user || !user.isActive) {
+            throw new Error('Surveyor is inactive or not found');
+        }
         // Check if attendance already marked for this type today
         const existingAttendance = await db_1.prisma.attendance.findUnique({
             where: {
@@ -200,6 +205,41 @@ class AttendanceService {
             where: { id: attendanceId },
         });
         return { message: 'Attendance record deleted successfully' };
+    }
+    // Approve attendance (Admin only)
+    static async approveAttendance(attendanceId, adminId) {
+        const attendance = await db_1.prisma.attendance.findUnique({ where: { id: attendanceId } });
+        if (!attendance) {
+            throw new Error('Attendance record not found');
+        }
+        // Toggle approval: if currently approved -> disapprove, else approve
+        const isCurrentlyApproved = !!attendance.approved;
+        const updated = await db_1.prisma.attendance.update({
+            where: { id: attendanceId },
+            data: isCurrentlyApproved
+                ? {
+                    approved: false,
+                    approvedBy: null,
+                    approvedAt: null,
+                }
+                : {
+                    approved: true,
+                    approvedBy: adminId,
+                    approvedAt: new Date(),
+                },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        mobileNumber: true,
+                        project: true,
+                        location: true,
+                    },
+                },
+            },
+        });
+        return updated;
     }
 }
 exports.AttendanceService = AttendanceService;

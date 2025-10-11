@@ -30,8 +30,15 @@ router.get('/summary',
 // Delete attendance record (Admin only)
 router.delete('/:id',
   adminMiddleware,
-  validateRequest(schemas.idParam),
+  validateRequest(schemas.idParamAny),
   AttendanceController.deleteAttendance
+);
+
+// Approve attendance (Admin only)
+router.post('/:id/approve',
+  adminMiddleware,
+  validateRequest(schemas.idParamAny),
+  AttendanceController.approveAttendance
 );
 
 export default router;

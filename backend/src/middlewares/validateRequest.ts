@@ -95,6 +95,7 @@ export const schemas = {
       projectId: z.number().int().positive().optional(),
       locationId: z.number().int().positive().optional(),
       isActive: z.boolean().optional(),
+      hasBike: z.boolean().optional(),
     }),
   },
 
@@ -102,6 +103,12 @@ export const schemas = {
   idParam: {
     params: z.object({
       id: z.string().uuid('Invalid ID format'),
+    }),
+  },
+
+  idParamAny: {
+    params: z.object({
+      id: z.string().min(1, 'Invalid ID'),
     }),
   },
 

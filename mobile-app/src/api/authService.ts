@@ -26,7 +26,9 @@ export const authService: AuthService = {
       });
       // eslint-disable-next-line no-console
       console.log('[AuthService] login success');
-      return response;
+      // The api interceptor already returns response.data or response.data.data
+      // Cast to LoginResponse to keep callers strongly typed
+  return (response as unknown) as LoginResponse;
     } catch (error) {
       // eslint-disable-next-line no-console
       console.log('[AuthService] login error:', error);
@@ -38,7 +40,7 @@ export const authService: AuthService = {
   getProfile: async () => {
     try {
       const response = await api.get('/auth/profile');
-      return response;
+  return (response as unknown) as User;
     } catch (error) {
       throw error;
     }
@@ -48,7 +50,7 @@ export const authService: AuthService = {
   updateProfile: async (profileData: Partial<User>) => {
     try {
       const response = await api.put('/auth/profile', profileData);
-      return response;
+  return (response as unknown) as User;
     } catch (error) {
       throw error;
     }
@@ -61,7 +63,7 @@ export const authService: AuthService = {
         currentPassword,
         newPassword,
       });
-      return response;
+  return (response as unknown) as ApiResponse;
     } catch (error) {
       throw error;
     }

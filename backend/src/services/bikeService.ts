@@ -1,5 +1,6 @@
 import { AttendanceType } from '@prisma/client';
 import { prisma } from '../config/db';
+import { BikeTripService } from './bikeTripService';
 import { uploadAttendancePhoto } from '../config/cloudinary';
 
 export interface UploadBikeMeterData {
@@ -24,6 +25,17 @@ export class BikeService {
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Ensure user is active
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.isActive) {
+      throw new Error('Surveyor is inactive or not found');
+    }
+
+    // Ensure user has a bike before allowing bike meter uploads
+    if ((user as any).hasBike === false) {
+      throw new Error('Surveyor does not have a bike');
+    }
 
     // Check if bike meter reading already uploaded for this type today
     const existingReading = await prisma.bikeMeterReading.findUnique({
@@ -65,6 +77,15 @@ export class BikeService {
         },
       },
     });
+
+    // Upsert corresponding bike trip record asynchronously (don't block primary flow)
+    try {
+      // pass the created reading to the trip service to link/create trips
+      void BikeTripService.upsertTripForReading(bikeMeterReading as any);
+    } catch (err) {
+      // swallow errors to avoid breaking upload; log in future
+      // console.error('BikeTrip upsert failed', err);
+    }
 
     return bikeMeterReading;
   }
@@ -196,6 +217,13 @@ export class BikeService {
         },
       },
     });
+
+    // After updating the km reading, upsert bike trip to recompute computedKm/finalKm
+    try {
+      void BikeTripService.upsertTripForReading(updatedReading as any);
+    } catch (err) {
+      // swallow for now
+    }
 
     return updatedReading;
   }

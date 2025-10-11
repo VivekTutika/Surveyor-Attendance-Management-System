@@ -6,5 +6,6 @@ export declare class AttendanceController {
     static getTodayStatus: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static getAttendanceSummary: (req: Request, res: Response, next: import("express").NextFunction) => void;
     static deleteAttendance: (req: Request, res: Response, next: import("express").NextFunction) => void;
+    static approveAttendance: (req: Request, res: Response, next: import("express").NextFunction) => void;
 }
 //# sourceMappingURL=attendanceController.d.ts.map

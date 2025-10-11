@@ -18,5 +18,7 @@ router.delete('/:id', (0, validateRequest_1.validateRequest)(validateRequest_1.s
 // Additional operations
 router.post('/:id/reset-password', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), surveyorController_1.SurveyorController.resetSurveyorPassword);
 router.get('/:id/statistics', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.dateQuery), surveyorController_1.SurveyorController.getSurveyorStatistics);
+// Toggle active/inactive status
+router.patch('/:id/toggle-status', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamInt), surveyorController_1.SurveyorController.toggleStatus);
 exports.default = router;
 //# sourceMappingURL=surveyorRoutes.js.map

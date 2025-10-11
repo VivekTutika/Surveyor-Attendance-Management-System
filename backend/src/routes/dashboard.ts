@@ -55,6 +55,40 @@ router.get('/stats', authMiddleware, async (req, res) => {
       })
     ]);
 
+    // Counts for surveyors with and without bikes
+    // Use `any`-typed temporaries to avoid excess property checks against generated
+    // Prisma types while we ensure the client/types are fully available.
+    const whereSurveyorsWithBike: any = { role: 'SURVEYOR', hasBike: true };
+    const whereSurveyorsWithoutBike: any = { role: 'SURVEYOR', hasBike: false };
+
+    const [surveyorsWithBikes, surveyorsWithoutBikes] = await Promise.all([
+      prisma.user.count({ where: whereSurveyorsWithBike }),
+      prisma.user.count({ where: whereSurveyorsWithoutBike }),
+    ]);
+
+    // Today's counts by type
+    const [todayAttendanceByType, todayBikeByType] = await Promise.all([
+      prisma.attendance.groupBy({
+        by: ['type'],
+        where: {
+          capturedAt: { gte: today, lt: tomorrow }
+        },
+        _count: { id: true }
+      }),
+      prisma.bikeMeterReading.groupBy({
+        by: ['type'],
+        where: {
+          capturedAt: { gte: today, lt: tomorrow }
+        },
+        _count: { id: true }
+      })
+    ]);
+
+    const todayAttendanceMorning = todayAttendanceByType.find(t => t.type === 'MORNING')?._count.id || 0;
+    const todayAttendanceEvening = todayAttendanceByType.find(t => t.type === 'EVENING')?._count.id || 0;
+    const todayBikeMorning = todayBikeByType.find(t => t.type === 'MORNING')?._count.id || 0;
+    const todayBikeEvening = todayBikeByType.find(t => t.type === 'EVENING')?._count.id || 0;
+
     // Get weekly attendance data
     const weeklyAttendance = await prisma.attendance.groupBy({
       by: ['date'],
@@ -144,8 +178,14 @@ router.get('/stats', authMiddleware, async (req, res) => {
     const dashboardStats = {
       totalSurveyors,
       activeSurveyors,
+      surveyorsWithBikes,
+      surveyorsWithoutBikes,
       todayAttendance,
       todayBikeReadings,
+      todayAttendanceMorning,
+      todayAttendanceEvening,
+      todayBikeMorning,
+      todayBikeEvening,
       weeklyAttendance: completeWeeklyAttendance,
       monthlyStats
     };

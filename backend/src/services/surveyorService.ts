@@ -16,6 +16,7 @@ export interface UpdateSurveyorData {
   projectId?: number;
   locationId?: number;
   isActive?: boolean;
+  hasBike?: boolean;
 }
 
 export interface SurveyorFilters {
@@ -53,6 +54,9 @@ export class SurveyorService {
         projectId,
         locationId,
       },
+      // Cast select to any because generated Prisma client types may not yet include
+      // the `hasBike` field. This preserves runtime selection while avoiding
+      // TypeScript compile errors until prisma generate is run.
       select: {
         id: true,
         name: true,
@@ -73,9 +77,10 @@ export class SurveyorService {
           },
         },
         isActive: true,
+        hasBike: true,
         createdAt: true,
         updatedAt: true,
-      },
+      } as any,
     });
 
     return surveyor;
@@ -139,6 +144,7 @@ export class SurveyorService {
           },
         },
         isActive: true,
+        hasBike: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -147,7 +153,7 @@ export class SurveyorService {
             bikeMeterReadings: true,
           },
         },
-      },
+      } as any,
       orderBy: [
         { isActive: 'desc' },
         { name: 'asc' },
@@ -181,6 +187,7 @@ export class SurveyorService {
           },
         },
         isActive: true,
+        hasBike: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -189,7 +196,7 @@ export class SurveyorService {
             bikeMeterReadings: true,
           },
         },
-      },
+      } as any,
     });
 
     if (!surveyor) {
@@ -201,7 +208,7 @@ export class SurveyorService {
 
   // Update surveyor (Admin only)
   static async updateSurveyor(surveyorId: number, updateData: UpdateSurveyorData) {
-    const { name, mobileNumber, projectId, locationId, isActive } = updateData;
+  const { name, mobileNumber, projectId, locationId, isActive, hasBike } = updateData;
 
     // Check if surveyor exists
     const existingSurveyor = await prisma.user.findUnique({
@@ -232,6 +239,7 @@ export class SurveyorService {
         ...(projectId !== undefined && { projectId }),
         ...(locationId !== undefined && { locationId }),
         ...(typeof isActive === 'boolean' && { isActive }),
+        ...(typeof hasBike === 'boolean' && { hasBike }),
       },
       select: {
         id: true,
@@ -253,9 +261,10 @@ export class SurveyorService {
           },
         },
         isActive: true,
+        hasBike: true,
         createdAt: true,
         updatedAt: true,
-      },
+      } as any,
     });
 
     return updatedSurveyor;

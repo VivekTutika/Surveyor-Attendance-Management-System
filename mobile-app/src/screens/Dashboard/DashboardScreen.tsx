@@ -20,7 +20,7 @@ import { Card, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { getTodayAttendanceStatus } from '../../store/attendanceSlice';
 import { getTodayBikeMeterStatus } from '../../store/bikeMeterSlice';
-import { logoutUser } from '../../store/authSlice';
+import { logoutUser, getUserProfile } from '../../store/authSlice';
 import { RootState, DashboardStackParamList } from '../../types';
 
 type DashboardScreenNavigationProp = StackNavigationProp<DashboardStackParamList, 'DashboardMain'>;
@@ -52,6 +52,15 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   const loadTodayStatus = async () => {
     try {
+      // If hasBike is undefined on the stored user, try fetching profile once to populate it.
+      if (user && (user as any).hasBike === undefined) {
+        try {
+          await dispatch(getUserProfile()).unwrap();
+        } catch (e) {
+          // ignore profile fetch failure and continue
+        }
+      }
+
       await Promise.all([
         dispatch(getTodayAttendanceStatus()),
         dispatch(getTodayBikeMeterStatus()),
@@ -90,6 +99,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getBikeMeterCardColor = (type: 'morning' | 'evening'): string => {
+    if (!user || !Boolean((user as any).hasBike)) return Colors.gray;
     if (type === 'morning') {
       return bikeMeterStatus?.morning ? Colors.info : Colors.gray;
     }
@@ -137,6 +147,12 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const navigateToBikeMeter = (type: 'morning' | 'evening') => {
+    // If user doesn't have a bike, prevent navigation
+    if (!user || !Boolean((user as any).hasBike)) {
+      Alert.alert('Unavailable', 'Bike meter feature is unavailable for you. Please contact admin to enable.', [{ text: 'OK' }]);
+      return;
+    }
+
     if (canUploadBikeMeter(type)) {
       navigation.navigate('BikeMeter', { type: type.toUpperCase() });
     } else {
@@ -261,52 +277,54 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             </Card>
           </View>
 
-          {/* Bike Meter Cards */}
-          <View style={styles.cardRow}>
-            <Card
-              style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('morning') }]}
-              onPress={() => navigateToBikeMeter('morning')}
-              disabled={!canUploadBikeMeter('morning')}
-            >
-              <View style={styles.cardContent}>
-                <Ionicons 
-                  name="bicycle" 
-                  size={32} 
-                  color={Colors.white} 
-                  style={styles.cardIcon}
-                />
-                <Text style={styles.cardTitle}>Morning{'\n'}Bike Meter</Text>
-                <Text style={styles.cardStatus}>{getBikeMeterStatus('morning')}</Text>
-                {bikeMeterStatus?.morning && (
-                  <Text style={styles.cardTime}>
-                    {formatTime(bikeMeterStatus.morning.capturedAt)}
-                  </Text>
-                )}
-              </View>
-            </Card>
+          {/* Bike Meter Cards (visible only if user.hasBike === true); otherwise show placeholder */}
+          {user && Boolean((user as any).hasBike) ? (
+            <View style={styles.cardRow}>
+              <Card
+                style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('morning') }]}
+                onPress={() => navigateToBikeMeter('morning')}
+                disabled={!canUploadBikeMeter('morning')}
+              >
+                <View style={styles.cardContent}>
+                  <Ionicons 
+                    name="bicycle" 
+                    size={32} 
+                    color={Colors.white} 
+                    style={styles.cardIcon}
+                  />
+                  <Text style={styles.cardTitle}>Morning{'\n'}Bike Meter</Text>
+                  <Text style={styles.cardStatus}>{getBikeMeterStatus('morning')}</Text>
+                  {bikeMeterStatus?.morning && (
+                    <Text style={styles.cardTime}>
+                      {formatTime(bikeMeterStatus.morning.capturedAt)}
+                    </Text>
+                  )}
+                </View>
+              </Card>
 
-            <Card
-              style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('evening') }]}
-              onPress={() => navigateToBikeMeter('evening')}
-              disabled={!canUploadBikeMeter('evening')}
-            >
-              <View style={styles.cardContent}>
-                <Ionicons 
-                  name="bicycle" 
-                  size={32} 
-                  color={Colors.white} 
-                  style={styles.cardIcon}
-                />
-                <Text style={styles.cardTitle}>Evening{'\n'}Bike Meter</Text>
-                <Text style={styles.cardStatus}>{getBikeMeterStatus('evening')}</Text>
-                {bikeMeterStatus?.evening && (
-                  <Text style={styles.cardTime}>
-                    {formatTime(bikeMeterStatus.evening.capturedAt)}
-                  </Text>
-                )}
-              </View>
-            </Card>
-          </View>
+              <Card
+                style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('evening') }]}
+                onPress={() => navigateToBikeMeter('evening')}
+                disabled={!canUploadBikeMeter('evening')}
+              >
+                <View style={styles.cardContent}>
+                  <Ionicons 
+                    name="bicycle" 
+                    size={32} 
+                    color={Colors.white} 
+                    style={styles.cardIcon}
+                  />
+                  <Text style={styles.cardTitle}>Evening{'\n'}Bike Meter</Text>
+                  <Text style={styles.cardStatus}>{getBikeMeterStatus('evening')}</Text>
+                  {bikeMeterStatus?.evening && (
+                    <Text style={styles.cardTime}>
+                      {formatTime(bikeMeterStatus.evening.capturedAt)}
+                    </Text>
+                  )}
+                </View>
+              </Card>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>

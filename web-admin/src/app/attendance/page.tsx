@@ -47,6 +47,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
 import { attendanceService, surveyorService, Attendance, User } from '@/services/api'
+import { useAuth } from '@/context/AuthContext'
 import { exportAttendanceToCSV, exportAttendanceToPDF } from '@/utils/exportUtils'
 import AttendanceMap from '@/components/AttendanceMap'
 import '@/utils/leafletSetup'
@@ -69,7 +70,8 @@ export default function AttendancePage() {
   
   // Filter states
   const [filters, setFilters] = useState<AttendanceFilters>({
-    startDate: dayjs().subtract(7, 'day'),
+    // Default to today's date only (admin dashboard should show today's attendance by default)
+    startDate: dayjs(),
     endDate: dayjs(),
     userId: '',
     type: '',
@@ -78,6 +80,10 @@ export default function AttendancePage() {
   // Photo dialog
   const [openPhotoDialog, setOpenPhotoDialog] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<string>('')
+  // Approve confirmation dialog
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false)
+  const [approveTargetId, setApproveTargetId] = useState<string | null>(null)
+  const [approveTargetApproved, setApproveTargetApproved] = useState<boolean | null>(null)
   
   // Map dialog
   const [openMapDialog, setOpenMapDialog] = useState(false)
@@ -154,9 +160,32 @@ export default function AttendancePage() {
     setOpenPhotoDialog(true)
   }
 
+  const { user } = useAuth()
+
+  const handleApprove = async (id: string) => {
+    try {
+      setLoading(true)
+      await attendanceService.approve(id)
+      // Refetch updated list
+      await fetchAttendance()
+    } catch (error: any) {
+      console.error('Approve failed:', error)
+      setError(error.message || 'Approve failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Open approve dialog with current approved state
+  const openApproveDialog = (id: string, currentlyApproved: boolean) => {
+    setApproveTargetId(id)
+    setApproveTargetApproved(currentlyApproved)
+    setApproveDialogOpen(true)
+  }
+
   const handleLocationClick = (record: Attendance) => {
     setSelectedAttendance(record)
-    setMapTitle(`${record.user.name} - ${record.type === 'CHECK_IN' ? 'Check In' : 'Check Out'}`)
+    setMapTitle(`${record.user.name} - ${record.type === 'MORNING' ? 'Check In' : 'Check Out'}`)
     setOpenMapDialog(true)
   }
 
@@ -184,15 +213,17 @@ export default function AttendancePage() {
   }
 
   const getAttendanceTypeColor = (type: string) => {
-    return type === 'CHECK_IN' ? 'success' : 'warning'
+    // Backend returns 'MORNING' or 'EVENING'
+    return type === 'MORNING' ? 'success' : 'warning'
   }
 
+  // Counts should reflect the current attendanceData (which is filtered by selected dates)
   const todayAttendance = attendanceData.filter(item => 
     dayjs(item.capturedAt).isSame(dayjs(), 'day')
   ).length
 
-  const checkIns = attendanceData.filter(item => item.type === 'CHECK_IN').length
-  const checkOuts = attendanceData.filter(item => item.type === 'CHECK_OUT').length
+  const checkIns = attendanceData.filter(item => item.type === 'MORNING').length
+  const checkOuts = attendanceData.filter(item => item.type === 'EVENING').length
 
   if (loading && page === 0) {
     return (
@@ -245,9 +276,9 @@ export default function AttendancePage() {
           </Alert>
         )}
 
-        {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={4}>
+        {/* Stats Cards (flex layout) */}
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3 }}>
+          <Box sx={{ flex: '1 1 300px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -265,8 +296,9 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          </Box>
+
+          <Box sx={{ flex: '1 1 300px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -284,8 +316,9 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          </Box>
+
+          <Box sx={{ flex: '1 1 300px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -303,8 +336,8 @@ export default function AttendancePage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -358,8 +391,8 @@ export default function AttendancePage() {
                 <MenuItem value="">
                   <em>All Types</em>
                 </MenuItem>
-                <MenuItem value="CHECK_IN">Check In</MenuItem>
-                <MenuItem value="CHECK_OUT">Check Out</MenuItem>
+                <MenuItem value="MORNING">Check In</MenuItem>
+                <MenuItem value="EVENING">Check Out</MenuItem>
               </Select>
             </FormControl>
             
@@ -411,7 +444,7 @@ export default function AttendancePage() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={record.type === 'CHECK_IN' ? 'Check In' : 'Check Out'}
+                        label={record.type === 'MORNING' ? 'Check In' : 'Check Out'}
                         color={getAttendanceTypeColor(record.type)}
                         size="small"
                       />
@@ -439,17 +472,18 @@ export default function AttendancePage() {
                       </IconButton>
                     </TableCell>
                     <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handlePhotoClick(record.photoPath)}
-                        disabled={!record.photoPath}
-                      >
-                        <img 
-                          src={record.photoPath} 
-                          alt="Attendance" 
-                          style={{ width: 30, height: 30, objectFit: 'cover', borderRadius: 4 }}
-                        />
-                      </IconButton>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        {user?.role === 'ADMIN' && (
+                          <Button
+                            size="small"
+                            variant={record.approved ? 'contained' : 'outlined'}
+                            color={record.approved ? 'success' : 'primary'}
+                            onClick={() => openApproveDialog(record.id, !!record.approved)}
+                          >
+                            {record.approved ? 'Approved' : 'Approve'}
+                          </Button>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -494,28 +528,43 @@ export default function AttendancePage() {
           </DialogContent>
         </Dialog>
 
-        {/* Map Dialog */}
+        {/* Approve Confirmation Dialog */}
         <Dialog
-          open={openMapDialog}
-          onClose={() => setOpenMapDialog(false)}
-          maxWidth="md"
+          open={approveDialogOpen}
+          onClose={() => { setApproveDialogOpen(false); setApproveTargetId(null); setApproveTargetApproved(null); }}
+          maxWidth="xs"
           fullWidth
         >
-          <DialogTitle>
-            {mapTitle}
-            <IconButton
-              onClick={() => setOpenMapDialog(false)}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <Close />
-            </IconButton>
-          </DialogTitle>
+          <DialogTitle>{approveTargetApproved ? 'Confirm Disapproval' : 'Confirm Approval'}</DialogTitle>
           <DialogContent>
-            <Box sx={{ height: 400 }}>
-              <AttendanceMap attendance={Array.isArray(selectedAttendance) ? selectedAttendance : [selectedAttendance]} />
+            <Box sx={{ p: 2 }}>
+              <Typography>
+                {approveTargetApproved
+                  ? 'Are you sure you want to disapprove this attendance record?'
+                  : 'Are you sure you want to approve this attendance record?'
+                }
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+                <Button onClick={() => { setApproveDialogOpen(false); setApproveTargetId(null); setApproveTargetApproved(null); }}>Cancel</Button>
+                <Button variant="contained" onClick={async () => {
+                  if (!approveTargetId) return;
+                  setApproveDialogOpen(false);
+                  await handleApprove(approveTargetId);
+                  setApproveTargetId(null);
+                  setApproveTargetApproved(null);
+                }}>Confirm</Button>
+              </Box>
             </Box>
           </DialogContent>
         </Dialog>
+
+        {/* Map Dialog: use AttendanceMap's own dialog props */}
+        <AttendanceMap
+          open={openMapDialog}
+          onClose={() => setOpenMapDialog(false)}
+          attendance={Array.isArray(selectedAttendance) ? selectedAttendance : [selectedAttendance]}
+          title={mapTitle}
+        />
       </Box>
     </LocalizationProvider>
   )

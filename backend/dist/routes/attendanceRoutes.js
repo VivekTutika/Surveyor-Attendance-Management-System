@@ -14,6 +14,8 @@ router.get('/today', attendanceController_1.AttendanceController.getTodayStatus)
 // Get attendance summary for date range
 router.get('/summary', (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.dateQuery), attendanceController_1.AttendanceController.getAttendanceSummary);
 // Delete attendance record (Admin only)
-router.delete('/:id', authMiddleware_1.adminMiddleware, (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParam), attendanceController_1.AttendanceController.deleteAttendance);
+router.delete('/:id', authMiddleware_1.adminMiddleware, (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamAny), attendanceController_1.AttendanceController.deleteAttendance);
+// Approve attendance (Admin only)
+router.post('/:id/approve', authMiddleware_1.adminMiddleware, (0, validateRequest_1.validateRequest)(validateRequest_1.schemas.idParamAny), attendanceController_1.AttendanceController.approveAttendance);
 exports.default = router;
 //# sourceMappingURL=attendanceRoutes.js.map

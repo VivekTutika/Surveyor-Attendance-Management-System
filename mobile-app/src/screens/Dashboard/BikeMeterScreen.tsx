@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 // @ts-ignore
@@ -37,7 +36,6 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
   const readingType = route.params?.type || 'MORNING';
   
   const [capturedImage, setCapturedImage] = useState<any>(null);
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     requestPermissions();
@@ -53,19 +51,8 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       }
-      // Get accurate location too (for parity with attendance)
-      const hasProvider = await Location.hasServicesEnabledAsync();
-      if (!hasProvider) {
-        await Location.enableNetworkProviderAsync().catch(() => {});
-      }
-      const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.BestForNavigation,
-        mayShowUserSettingsDialog: true,
-        maximumAge: 0,
-        timeout: 15000,
-      });
-      setLocation({ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude });
     } catch (error) {
+      // Only camera permission is required for bike meter. Log errors for debugging.
       console.error('Error requesting camera permission:', error);
     }
   };
@@ -99,16 +86,15 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
       return;
     }
 
-    if (kmReading && kmError) {
-      Alert.alert('Error', 'Please enter a valid KM reading.');
-      return;
-    }
-
+    // No manual KM input required here; just ensure an image exists
     try {
+      // Normalize type to 'Morning' | 'Evening' regardless of incoming casing (e.g., 'MORNING')
+      const normalizedType = String(readingType).charAt(0) + String(readingType).slice(1).toLowerCase();
+
       await dispatch(uploadBikeMeterReading({
-        type: readingType as 'Morning' | 'Evening',
+        type: normalizedType as 'Morning' | 'Evening',
         photoUri: capturedImage.uri,
-        reading: kmReading ? parseFloat(kmReading) : undefined,
+        reading: undefined,
         timestamp: new Date().toISOString(),
       })).unwrap();
 

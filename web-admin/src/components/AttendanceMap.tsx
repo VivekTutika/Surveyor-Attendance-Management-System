@@ -94,25 +94,30 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
         sx: { height: fullScreen ? '100%' : '80vh' }
       }}
     >
-      <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <LocationOn color="primary" />
-            <Typography variant="h6">{title}</Typography>
-            {attendanceArray.length > 1 && (
-              <Chip 
-                label={`${attendanceArray.length} locations`} 
-                size="small" 
-                color="primary" 
-                variant="outlined" 
-              />
-            )}
-          </Box>
-          <IconButton onClick={onClose} edge="end">
-            <Close />
-          </IconButton>
-        </Box>
-      </DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LocationOn color="primary" />
+                <Typography variant="h6">{title}</Typography>
+                {attendanceArray.length === 1 && (attendanceArray[0].user as any)?.location?.name && (
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ ml: 1 }}>
+                    {`(${(attendanceArray[0].user as any).location.name})`}
+                  </Typography>
+                )}
+                {attendanceArray.length > 1 && (
+                  <Chip 
+                    label={`${attendanceArray.length} locations`} 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined" 
+                  />
+                )}
+              </Box>
+              <IconButton onClick={onClose} edge="end">
+                <Close />
+              </IconButton>
+            </Box>
+          </DialogTitle>
       
       <DialogContent sx={{ p: 0, height: '100%' }}>
         <Box sx={{ height: '100%', width: '100%' }}>
@@ -132,7 +137,7 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
               <Marker
                 key={record.id}
                 position={[record.latitude, record.longitude]}
-                icon={record.type === 'CHECK_IN' ? checkInIcon : checkOutIcon}
+                icon={record.type === 'MORNING' ? checkInIcon : checkOutIcon}
               >
                 <Popup>
                   <Box sx={{ p: 1, minWidth: 200 }}>
@@ -157,8 +162,8 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
                     {/* Attendance Details */}
                     <Box sx={{ mb: 1 }}>
                       <Chip
-                        label={record.type === 'CHECK_IN' ? 'Check In' : 'Check Out'}
-                        color={record.type === 'CHECK_IN' ? 'success' : 'warning'}
+                        label={record.type === 'MORNING' ? 'Check In' : 'Check Out'}
+                        color={record.type === 'MORNING' ? 'success' : 'warning'}
                         size="small"
                         sx={{ mb: 1 }}
                       />

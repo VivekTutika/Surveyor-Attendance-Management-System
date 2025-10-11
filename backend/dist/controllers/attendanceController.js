@@ -55,7 +55,7 @@ AttendanceController.markAttendance = (0, errorHandler_1.asyncHandler)(async (re
 AttendanceController.getAttendanceList = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const userRole = req.user.role;
     const requestingUserId = req.user.id;
-    const filters = req.query;
+    const filters = req.validatedQuery || req.query;
     const attendanceRecords = await attendanceService_1.AttendanceService.getAttendanceRecords(filters, userRole, requestingUserId);
     (0, response_1.sendSuccess)(res, 'Attendance records retrieved successfully', attendanceRecords);
 });
@@ -71,7 +71,7 @@ AttendanceController.getTodayStatus = (0, errorHandler_1.asyncHandler)(async (re
 });
 // GET /api/attendance/summary - Get attendance summary for date range
 AttendanceController.getAttendanceSummary = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { userId, startDate, endDate } = req.query;
+    const { userId, startDate, endDate } = req.validatedQuery || req.query;
     const targetUserId = userId ? parseInt(userId) : req.user.id;
     // If not admin and trying to access another user's data
     if (req.user.role !== 'ADMIN' && targetUserId !== req.user.id) {
@@ -88,5 +88,13 @@ AttendanceController.deleteAttendance = (0, errorHandler_1.asyncHandler)(async (
     const { id } = req.params;
     const result = await attendanceService_1.AttendanceService.deleteAttendance(id);
     (0, response_1.sendSuccess)(res, result.message);
+});
+// POST /api/attendance/:id/approve - Approve attendance (Admin only)
+AttendanceController.approveAttendance = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const adminId = req.user.id;
+    const result = await attendanceService_1.AttendanceService.approveAttendance(id, adminId);
+    const message = result.approved ? 'Attendance approved successfully' : 'Attendance disapproved successfully';
+    (0, response_1.sendSuccess)(res, message, result);
 });
 //# sourceMappingURL=attendanceController.js.map

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { BikeController } from '../controllers/bikeController';
+import { BikeTripController } from '../controllers/bikeTripController';
 import { validateRequest, schemas } from '../middlewares/validateRequest';
 import { adminMiddleware } from '../middlewares/authMiddleware';
 
@@ -39,6 +40,24 @@ router.delete('/:id',
   adminMiddleware,
   validateRequest(schemas.idParam),
   BikeController.deleteBikeMeterReading
+);
+
+// Bike trip routes (Admin only for modifications)
+router.get('/trips',
+  validateRequest(schemas.dateQuery),
+  BikeTripController.listTrips
+);
+
+router.put('/trips/:id/final-km',
+  adminMiddleware,
+  validateRequest(schemas.idParamInt),
+  BikeTripController.setFinalKm
+);
+
+router.put('/trips/:id/toggle-approve',
+  adminMiddleware,
+  validateRequest(schemas.idParamInt),
+  BikeTripController.toggleApprove
 );
 
 export default router;

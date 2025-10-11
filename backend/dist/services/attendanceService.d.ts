@@ -50,6 +50,9 @@ export declare class AttendanceService {
         userId: number;
         photoPath: string;
         capturedAt: Date;
+        approved: boolean;
+        approvedAt: Date | null;
+        approvedBy: number | null;
     }>;
     static getAttendanceRecords(filters: AttendanceFilters, userRole: string, requestingUserId: number): Promise<{
         attendance: ({
@@ -80,6 +83,9 @@ export declare class AttendanceService {
             userId: number;
             photoPath: string;
             capturedAt: Date;
+            approved: boolean;
+            approvedAt: Date | null;
+            approvedBy: number | null;
         })[];
         total: number;
         page: number;
@@ -95,6 +101,38 @@ export declare class AttendanceService {
     static getAttendanceSummary(userId: number, startDate: string, endDate: string): Promise<any[]>;
     static deleteAttendance(attendanceId: string): Promise<{
         message: string;
+    }>;
+    static approveAttendance(attendanceId: string, adminId: number): Promise<{
+        user: {
+            name: string;
+            project: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+            id: number;
+            mobileNumber: string;
+            location: {
+                name: string;
+                id: number;
+                createdAt: Date;
+                updatedAt: Date;
+            } | null;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        type: import(".prisma/client").$Enums.AttendanceType;
+        latitude: number;
+        longitude: number;
+        date: Date;
+        userId: number;
+        photoPath: string;
+        capturedAt: Date;
+        approved: boolean;
+        approvedAt: Date | null;
+        approvedBy: number | null;
     }>;
 }
 //# sourceMappingURL=attendanceService.d.ts.map

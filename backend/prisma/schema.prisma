@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,26 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
-enum Role {
-  ADMIN
-  SURVEYOR
-}
-
-enum AttendanceType {
-  MORNING
-  EVENING
-}
-
-// Models
 model Project {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  createdAt   DateTime@default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  users User[]
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  users     User[]
 
   @@map("projects")
 }
@@ -39,48 +22,47 @@ model Location {
   name      String   @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  users User[]
+  users     User[]
 
   @@map("locations")
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  role         Role     @default(SURVEYOR)
-  name         String
-  mobileNumber String   @unique @map("mobile_number")
-  passwordHash String   @map("password_hash")
-  projectId    Int?     @map("project_id")
-  locationId   Int?     @map("location_id")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  project           Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  location          Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  id                Int                @id @default(autoincrement())
+  role              Role               @default(SURVEYOR)
+  name              String
+  mobileNumber      String             @unique @map("mobile_number")
+  passwordHash      String             @map("password_hash")
+  projectId         Int?               @map("project_id")
+  locationId        Int?               @map("location_id")
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  hasBike           Boolean            @default(false) @map("has_bike")
   attendances       Attendance[]
   bikeMeterReadings BikeMeterReading[]
+  bikeTrips         BikeTrip[]
   geoFence          GeoFence?
+  location          Location?          @relation(fields: [locationId], references: [id])
+  project           Project?           @relation(fields: [projectId], references: [id])
 
   @@map("users")
 }
 
 model Attendance {
-  id          String         @id @default(cuid())
-  userId      Int            @map("user_id")
-  date        DateTime       @db.Date
-  type        AttendanceType
-  photoPath   String         @map("photo_path")
-  latitude    Float
-  longitude   Float
-  capturedAt  DateTime       @map("captured_at")
-  createdAt   DateTime       @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String         @id @default(cuid())
+  userId     Int            @map("user_id")
+  date       DateTime       @db.Date
+  type       AttendanceType
+  photoPath  String         @map("photo_path")
+  latitude   Float
+  longitude  Float
+  capturedAt DateTime       @map("captured_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  approved   Boolean        @default(false) @map("approved")
+  approvedAt DateTime?      @map("approved_at")
+  approvedBy Int?           @map("approved_by")
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, type])
   @@map("attendance")
@@ -92,40 +74,68 @@ model BikeMeterReading {
   date       DateTime       @db.Date
   type       AttendanceType
   photoPath  String         @map("photo_path")
-  kmReading  Float?         @map("km_reading") // Manual entry option
+  kmReading  Float?         @map("km_reading")
   capturedAt DateTime       @map("captured_at")
   createdAt  DateTime       @default(now()) @map("created_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, type])
   @@map("bike_meter_readings")
 }
 
+model BikeTrip {
+  id               Int      @id @default(autoincrement())
+  surveyorId       Int      @map("surveyor_id")
+  date             DateTime @db.Date
+  morningReadingId String?  @map("morning_reading_id")
+  eveningReadingId String?  @map("evening_reading_id")
+  morningKm        Float?   @map("morning_km")
+  eveningKm        Float?   @map("evening_km")
+  computedKm       Float?   @map("computed_km")
+  finalKm          Float?   @map("final_km")
+  isApproved       Boolean  @default(false) @map("is_approved")
+  approvedBy       Int?     @map("approved_by")
+  approvedAt       DateTime? @map("approved_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  surveyor         User     @relation(fields: [surveyorId], references: [id], onDelete: Cascade)
+
+  @@unique([surveyorId, date])
+  @@map("bike_trips")
+}
+
 model GeoFence {
   id          Int      @id @default(autoincrement())
   surveyorId  Int      @unique @map("surveyor_id")
-  coordinates Json     // Store polygon coordinates as JSON
+  coordinates Json
   isActive    Boolean  @default(false) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  surveyor User @relation(fields: [surveyorId], references: [id], onDelete: Cascade)
+  surveyor    User     @relation(fields: [surveyorId], references: [id], onDelete: Cascade)
 
   @@map("geo_fences")
 }
 
 model Report {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @map("user_id")
-  reportType String   @map("report_type") // 'Monthly_Attendance' or 'Fortnightly_KM'
-  startDate  DateTime @map("start_date") @db.Date
-  endDate    DateTime @map("end_date") @db.Date
-  filePath   String?  @map("file_path")
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  reportType  String   @map("report_type")
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime @map("end_date") @db.Date
+  filePath    String?  @map("file_path")
   generatedAt DateTime @default(now()) @map("generated_at")
-  createdBy  Int      @map("created_by") // Admin user ID
+  createdBy   Int      @map("created_by")
 
   @@map("reports")
+}
+
+enum Role {
+  ADMIN
+  SURVEYOR
+}
+
+enum AttendanceType {
+  MORNING
+  EVENING
 }
