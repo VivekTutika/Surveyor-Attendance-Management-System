@@ -54,7 +54,7 @@ BikeController.uploadBikeMeter = (0, errorHandler_1.asyncHandler)(async (req, re
 BikeController.getBikeMeterList = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const userRole = req.user.role;
     const requestingUserId = req.user.id;
-    const filters = req.query;
+    const filters = req.validatedQuery || req.query;
     const bikeMeterReadings = await bikeService_1.BikeService.getBikeMeterReadings(filters, userRole, requestingUserId);
     (0, response_1.sendSuccess)(res, 'Bike meter readings retrieved successfully', bikeMeterReadings);
 });
@@ -80,7 +80,7 @@ BikeController.updateKmReading = (0, errorHandler_1.asyncHandler)(async (req, re
 });
 // GET /api/bike/summary - Get bike meter summary for date range
 BikeController.getBikeMeterSummary = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { userId, startDate, endDate } = req.query;
+    const { userId, startDate, endDate } = req.validatedQuery || req.query;
     const targetUserId = userId ? parseInt(userId) : req.user.id;
     // If not admin and trying to access another user's data
     if (req.user.role !== 'ADMIN' && targetUserId !== req.user.id) {

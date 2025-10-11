@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BikeService = void 0;
 const db_1 = require("../config/db");
+const bikeTripService_1 = require("./bikeTripService");
 const cloudinary_1 = require("../config/cloudinary");
 class BikeService {
     // Upload bike meter reading with photo
@@ -9,6 +10,15 @@ class BikeService {
         const { userId, type, photoBuffer, kmReading } = data;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        // Ensure user is active
+        const user = await db_1.prisma.user.findUnique({ where: { id: userId } });
+        if (!user || !user.isActive) {
+            throw new Error('Surveyor is inactive or not found');
+        }
+        // Ensure user has a bike before allowing bike meter uploads
+        if (user.hasBike === false) {
+            throw new Error('Surveyor does not have a bike');
+        }
         // Check if bike meter reading already uploaded for this type today
         const existingReading = await db_1.prisma.bikeMeterReading.findUnique({
             where: {
@@ -46,6 +56,15 @@ class BikeService {
                 },
             },
         });
+        // Upsert corresponding bike trip record asynchronously (don't block primary flow)
+        try {
+            // pass the created reading to the trip service to link/create trips
+            void bikeTripService_1.BikeTripService.upsertTripForReading(bikeMeterReading);
+        }
+        catch (err) {
+            // swallow errors to avoid breaking upload; log in future
+            // console.error('BikeTrip upsert failed', err);
+        }
         return bikeMeterReading;
     }
     // Get bike meter readings with filters
@@ -166,6 +185,13 @@ class BikeService {
                 },
             },
         });
+        // After updating the km reading, upsert bike trip to recompute computedKm/finalKm
+        try {
+            void bikeTripService_1.BikeTripService.upsertTripForReading(updatedReading);
+        }
+        catch (err) {
+            // swallow for now
+        }
         return updatedReading;
     }
     // Get bike meter summary for a user in a date range

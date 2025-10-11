@@ -70,6 +70,7 @@ interface User {
   mobileNumber: string
   role: 'ADMIN' | 'SURVEYOR'
   isActive: boolean
+  hasBike?: boolean
   createdAt: string
   project?: {
     id: number
@@ -90,7 +91,8 @@ interface Attendance {
   id: string
   userId: string
   date: string
-  type: 'CHECK_IN' | 'CHECK_OUT'
+  // Backend uses AttendanceType enum: MORNING | EVENING
+  type: 'MORNING' | 'EVENING'
   photoPath: string
   latitude: number
   longitude: number
@@ -99,6 +101,7 @@ interface Attendance {
     name: string
     mobileNumber: string
   }
+  approved?: boolean
 }
 
 interface BikeMeterReading {
@@ -119,6 +122,11 @@ interface DashboardStats {
   activeSurveyors: number
   todayAttendance: number
   todayBikeReadings: number
+  // Separate counts
+  todayAttendanceMorning?: number
+  todayAttendanceEvening?: number
+  todayBikeMorning?: number
+  todayBikeEvening?: number
   weeklyAttendance: Array<{ date: string; count: number }>
   monthlyStats: Array<{ month: string; attendance: number; bikeReadings: number }>
 }
@@ -251,6 +259,16 @@ export const attendanceService = {
       throw error
     }
   },
+  // Approve attendance (Admin only) - backend endpoint may need to be added
+  approve: async (attendanceId: string) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.post(`/api/attendance/${attendanceId}/approve`)
+      return response.data.data
+    } catch (error) {
+      console.error('Approve attendance error:', error)
+      throw error
+    }
+  },
 }
 
 // Bike Meter Service
@@ -269,7 +287,18 @@ export const bikeMeterService = {
         page: number; 
         pages: number; 
       }>> = await api.get('/api/bike/list', { params })
-      return response.data.data!
+      const d = response.data.data!
+      // Backend may return either a paginated object or a plain array.
+      // Normalize to { readings, total, page, pages } for the UI.
+      if (Array.isArray(d)) {
+        return {
+          readings: d,
+          total: d.length,
+          page: 1,
+          pages: 1,
+        }
+      }
+      return d
     } catch (error) {
       console.error('Get bike meter readings error:', error)
       throw error

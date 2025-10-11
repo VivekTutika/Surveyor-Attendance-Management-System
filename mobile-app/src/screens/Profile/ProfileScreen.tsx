@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, LoadingSpinner, Card } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { getUserProfile, logoutUser } from '../../store/authSlice';
+import { getTodayBikeMeterStatus } from '../../store/bikeMeterSlice';
 import { RootState, ProfileStackParamList } from '../../types';
 
 type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
@@ -127,8 +128,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.infoLabel}>Project</Text>
               <Text style={styles.infoValue}>{
                 typeof user?.project === 'object'
-                  ? user?.project?.name || 'Not Assigned'
-                  : user?.project || 'Not Assigned'
+                  ? ((user?.project as any)?.name || 'Not Assigned')
+                  : (user?.project || 'Not Assigned')
               }</Text>
             </View>
           </View>
@@ -141,8 +142,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.infoLabel}>Location</Text>
               <Text style={styles.infoValue}>{
                 typeof user?.location === 'object'
-                  ? user?.location?.name || 'Not Assigned'
-                  : user?.location || 'Not Assigned'
+                  ? ((user?.location as any)?.name || 'Not Assigned')
+                  : (user?.location || 'Not Assigned')
               }</Text>
             </View>
           </View>
@@ -178,7 +179,16 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Button
             title="Refresh Profile"
             variant="outline"
-            onPress={() => dispatch(getUserProfile())}
+            onPress={async () => {
+              try {
+                await dispatch(getUserProfile()).unwrap();
+                // After profile refresh, refresh today's bike meter status so UI updates immediately
+                await dispatch(getTodayBikeMeterStatus()).unwrap();
+                Alert.alert('Refreshed', 'Profile and today status refreshed.');
+              } catch (err: any) {
+                Alert.alert('Error', err?.message || 'Failed to refresh profile');
+              }
+            }}
             loading={loading}
             style={styles.actionButton}
             icon={<Ionicons name="refresh" size={16} color={Colors.primary} />}

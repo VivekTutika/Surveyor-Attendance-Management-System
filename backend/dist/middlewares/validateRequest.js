@@ -13,7 +13,10 @@ const validateRequest = (schema) => {
                 req.params = schema.params.parse(req.params);
             }
             if (schema.query) {
-                req.query = schema.query.parse(req.query);
+                // Parse query but don't reassign to req.query (read-only)
+                const parsedQuery = schema.query.parse(req.query);
+                // Store parsed query in a custom property for controllers to use
+                req.validatedQuery = parsedQuery;
             }
             next();
         }
@@ -57,15 +60,15 @@ exports.schemas = {
     markAttendance: {
         body: zod_1.z.object({
             type: zod_1.z.enum(['MORNING', 'EVENING']),
-            latitude: zod_1.z.number().min(-90).max(90),
-            longitude: zod_1.z.number().min(-180).max(180),
+            latitude: zod_1.z.coerce.number().min(-90).max(90),
+            longitude: zod_1.z.coerce.number().min(-180).max(180),
         }),
     },
     // Bike meter schemas
     uploadBikeMeter: {
         body: zod_1.z.object({
             type: zod_1.z.enum(['MORNING', 'EVENING']),
-            kmReading: zod_1.z.number().positive().optional(),
+            kmReading: zod_1.z.coerce.number().positive().optional(),
         }),
     },
     // Surveyor schemas
@@ -85,12 +88,18 @@ exports.schemas = {
             projectId: zod_1.z.number().int().positive().optional(),
             locationId: zod_1.z.number().int().positive().optional(),
             isActive: zod_1.z.boolean().optional(),
+            hasBike: zod_1.z.boolean().optional(),
         }),
     },
     // Common schemas
     idParam: {
         params: zod_1.z.object({
             id: zod_1.z.string().uuid('Invalid ID format'),
+        }),
+    },
+    idParamAny: {
+        params: zod_1.z.object({
+            id: zod_1.z.string().min(1, 'Invalid ID'),
         }),
     },
     idParamInt: {

@@ -30,6 +30,9 @@ class SurveyorService {
                 projectId,
                 locationId,
             },
+            // Cast select to any because generated Prisma client types may not yet include
+            // the `hasBike` field. This preserves runtime selection while avoiding
+            // TypeScript compile errors until prisma generate is run.
             select: {
                 id: true,
                 name: true,
@@ -50,6 +53,7 @@ class SurveyorService {
                     },
                 },
                 isActive: true,
+                hasBike: true,
                 createdAt: true,
                 updatedAt: true,
             },
@@ -108,6 +112,7 @@ class SurveyorService {
                     },
                 },
                 isActive: true,
+                hasBike: true,
                 createdAt: true,
                 updatedAt: true,
                 _count: {
@@ -148,6 +153,7 @@ class SurveyorService {
                     },
                 },
                 isActive: true,
+                hasBike: true,
                 createdAt: true,
                 updatedAt: true,
                 _count: {
@@ -165,7 +171,7 @@ class SurveyorService {
     }
     // Update surveyor (Admin only)
     static async updateSurveyor(surveyorId, updateData) {
-        const { name, mobileNumber, projectId, locationId, isActive } = updateData;
+        const { name, mobileNumber, projectId, locationId, isActive, hasBike } = updateData;
         // Check if surveyor exists
         const existingSurveyor = await db_1.prisma.user.findUnique({
             where: { id: surveyorId },
@@ -191,6 +197,7 @@ class SurveyorService {
                 ...(projectId !== undefined && { projectId }),
                 ...(locationId !== undefined && { locationId }),
                 ...(typeof isActive === 'boolean' && { isActive }),
+                ...(typeof hasBike === 'boolean' && { hasBike }),
             },
             select: {
                 id: true,
@@ -212,6 +219,7 @@ class SurveyorService {
                     },
                 },
                 isActive: true,
+                hasBike: true,
                 createdAt: true,
                 updatedAt: true,
             },

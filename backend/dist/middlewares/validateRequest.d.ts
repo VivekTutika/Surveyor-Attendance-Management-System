@@ -31,8 +31,8 @@ export declare const schemas: {
                 MORNING: "MORNING";
                 EVENING: "EVENING";
             }>;
-            latitude: z.ZodNumber;
-            longitude: z.ZodNumber;
+            latitude: z.ZodCoercedNumber<unknown>;
+            longitude: z.ZodCoercedNumber<unknown>;
         }, z.core.$strip>;
     };
     uploadBikeMeter: {
@@ -41,7 +41,7 @@ export declare const schemas: {
                 MORNING: "MORNING";
                 EVENING: "EVENING";
             }>;
-            kmReading: z.ZodOptional<z.ZodNumber>;
+            kmReading: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
         }, z.core.$strip>;
     };
     createSurveyor: {
@@ -60,9 +60,15 @@ export declare const schemas: {
             projectId: z.ZodOptional<z.ZodNumber>;
             locationId: z.ZodOptional<z.ZodNumber>;
             isActive: z.ZodOptional<z.ZodBoolean>;
+            hasBike: z.ZodOptional<z.ZodBoolean>;
         }, z.core.$strip>;
     };
     idParam: {
+        params: z.ZodObject<{
+            id: z.ZodString;
+        }, z.core.$strip>;
+    };
+    idParamAny: {
         params: z.ZodObject<{
             id: z.ZodString;
         }, z.core.$strip>;

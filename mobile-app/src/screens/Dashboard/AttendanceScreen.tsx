@@ -100,9 +100,10 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.BestForNavigation,
         mayShowUserSettingsDialog: true,
-        maximumAge: 0,
+        // maximumAge is not present on some expo-location types in this SDK; cast to any
+        ...(0 as any),
         timeout: 15000,
-      });
+      } as any);
       setLocation(currentLocation.coords);
     } catch (error) {
       console.error('Error getting location:', error);

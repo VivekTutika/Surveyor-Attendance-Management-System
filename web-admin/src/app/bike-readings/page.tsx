@@ -19,7 +19,6 @@ import {
   Select,
   MenuItem,
   Button,
-  Grid,
   Card,
   CardContent,
   Alert,
@@ -28,7 +27,6 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  TextField,
 } from '@mui/material'
 import {
   DirectionsBike,
@@ -145,11 +143,11 @@ export default function BikeReadingsPage() {
   }
 
   const handleExportCSV = () => {
-    exportBikeReadingsToCSV(readings)
+    exportBikeReadingsToCSV(readings ?? [])
   }
 
   const handleExportPDF = () => {
-    exportBikeReadingsToPDF(readings)
+    exportBikeReadingsToPDF(readings ?? [])
   }
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -215,8 +213,8 @@ export default function BikeReadingsPage() {
         )}
 
         {/* Stats Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={4}>
+        <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+          <Box sx={{ flex: '1 1 240px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -234,8 +232,9 @@ export default function BikeReadingsPage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          </Box>
+
+          <Box sx={{ flex: '1 1 240px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -253,8 +252,9 @@ export default function BikeReadingsPage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
+          </Box>
+
+          <Box sx={{ flex: '1 1 240px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -272,8 +272,8 @@ export default function BikeReadingsPage() {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -357,7 +357,7 @@ export default function BikeReadingsPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {readings
+                  {(readings ?? [])
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((reading) => (
                     <TableRow key={reading.id} hover>
@@ -423,15 +423,15 @@ export default function BikeReadingsPage() {
         ) : (
           /* Gallery View */
           <Box>
-            {readings.length === 0 ? (
+              {(readings ?? []).length === 0 ? (
               <Alert severity="info">No bike readings found.</Alert>
             ) : (
               <>
-                <Grid container spacing={3}>
-                  {readings
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((reading) => (
-                    <Grid item xs={12} sm={6} md={4} key={reading.id}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+                    {(readings ?? [])
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((reading) => (
+                    <Box key={reading.id}>
                       <Card>
                         <CardContent>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -485,9 +485,9 @@ export default function BikeReadingsPage() {
                           </Box>
                         </CardContent>
                       </Card>
-                    </Grid>
+                    </Box>
                   ))}
-                </Grid>
+                </Box>
                 
                 <TablePagination
                   rowsPerPageOptions={[6, 12, 24]}

@@ -50,6 +50,7 @@ interface SurveyorFormData {
   mobileNumber: string
   password: string
   isActive: boolean
+  hasBike?: boolean
 }
 
 export default function SurveyorsPage() {
@@ -64,6 +65,11 @@ export default function SurveyorsPage() {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create')
   const [selectedSurveyor, setSelectedSurveyor] = useState<User | null>(null)
   const [dialogLoading, setDialogLoading] = useState(false)
+  // Confirmation dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmTitle, setConfirmTitle] = useState('')
+  const [confirmContent, setConfirmContent] = useState('')
+  const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null)
   
   // Form data
   const [formData, setFormData] = useState<SurveyorFormData>({
@@ -71,6 +77,7 @@ export default function SurveyorsPage() {
     mobileNumber: '',
     password: '',
     isActive: true,
+    hasBike: false,
   })
 
   useEffect(() => {
@@ -100,6 +107,7 @@ export default function SurveyorsPage() {
         mobileNumber: surveyor.mobileNumber,
         password: '', // Don't populate password for editing
         isActive: surveyor.isActive,
+        hasBike: !!surveyor.hasBike,
       })
     } else {
       setFormData({
@@ -107,6 +115,7 @@ export default function SurveyorsPage() {
         mobileNumber: '',
         password: '',
         isActive: true,
+        hasBike: false,
       })
     }
     
@@ -121,6 +130,7 @@ export default function SurveyorsPage() {
       mobileNumber: '',
       password: '',
       isActive: true,
+      hasBike: false,
     })
   }
 
@@ -129,13 +139,13 @@ export default function SurveyorsPage() {
       setDialogLoading(true)
       
       if (dialogMode === 'create') {
-        await surveyorService.create(formData)
+        await surveyorService.create(formData as any)
       } else if (selectedSurveyor) {
         const updateData = { ...formData }
         if (!updateData.password) {
           delete (updateData as any).password // Don't update password if empty
         }
-        await surveyorService.update(selectedSurveyor.id, updateData)
+        await surveyorService.update(selectedSurveyor.id, updateData as any)
       }
       
       await fetchSurveyors()
@@ -157,14 +167,20 @@ export default function SurveyorsPage() {
   }
 
   const handleDelete = async (surveyor: User) => {
-    if (window.confirm(`Are you sure you want to delete ${surveyor.name}?`)) {
-      try {
-        await surveyorService.delete(surveyor.id)
-        await fetchSurveyors()
-      } catch (error: any) {
-        setError(error.message || 'Failed to delete surveyor')
-      }
+    try {
+      await surveyorService.delete(surveyor.id)
+      await fetchSurveyors()
+    } catch (error: any) {
+      setError(error.message || 'Failed to delete surveyor')
     }
+  }
+
+  // Helpers to open confirmation dialogs
+  const confirmAndExecute = (title: string, content: string, action: () => Promise<void>) => {
+    setConfirmTitle(title)
+    setConfirmContent(content)
+    setConfirmAction(() => action)
+    setConfirmOpen(true)
   }
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -185,6 +201,8 @@ export default function SurveyorsPage() {
 
   const activeSurveyors = surveyors.filter(s => s.isActive).length
   const inactiveSurveyors = surveyors.filter(s => !s.isActive).length
+  const withBikeCount = surveyors.filter(s => s.role === 'SURVEYOR' && s.hasBike).length
+  const withoutBikeCount = surveyors.filter(s => s.role === 'SURVEYOR' && !s.hasBike).length
 
   if (loading) {
     return (
@@ -216,8 +234,8 @@ export default function SurveyorsPage() {
       )}
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
+      <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ flex: '1 1 240px' }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -235,8 +253,9 @@ export default function SurveyorsPage() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
+        </Box>
+
+        <Box sx={{ flex: '1 1 240px' }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -254,8 +273,9 @@ export default function SurveyorsPage() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
+        </Box>
+
+        <Box sx={{ flex: '1 1 240px' }}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -273,8 +293,8 @@ export default function SurveyorsPage() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Surveyors Table */}
       <Paper>
@@ -286,6 +306,7 @@ export default function SurveyorsPage() {
                 <TableCell>Name</TableCell>
                 <TableCell>Mobile Number</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Bike</TableCell>
                 <TableCell>Created At</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -319,6 +340,13 @@ export default function SurveyorsPage() {
                     />
                   </TableCell>
                   <TableCell>
+                    <Chip
+                      label={surveyor.hasBike ? 'Yes' : 'No'}
+                      color={surveyor.hasBike ? 'primary' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <CalendarToday fontSize="small" color="action" />
                       {new Date(surveyor.createdAt).toLocaleDateString()}
@@ -326,18 +354,29 @@ export default function SurveyorsPage() {
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Edit Surveyor">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog('edit', surveyor)}
-                        >
-                          <Edit />
-                        </IconButton>
+                      <Tooltip title={surveyor.isActive ? 'Edit Surveyor' : 'Edit disabled for inactive'}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => confirmAndExecute(
+                              'Edit Surveyor',
+                              `Open edit dialog for ${surveyor.name}?`,
+                              async () => { handleOpenDialog('edit', surveyor) }
+                            )}
+                            disabled={!surveyor.isActive}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title={surveyor.isActive ? 'Deactivate' : 'Activate'}>
                         <IconButton
                           size="small"
-                          onClick={() => handleToggleStatus(surveyor)}
+                          onClick={() => confirmAndExecute(
+                            surveyor.isActive ? 'Deactivate Surveyor' : 'Activate Surveyor',
+                            `${surveyor.isActive ? 'Deactivate' : 'Activate'} ${surveyor.name}?`,
+                            async () => { await handleToggleStatus(surveyor) }
+                          )}
                           color={surveyor.isActive ? 'warning' : 'success'}
                         >
                           {surveyor.isActive ? <PersonOff /> : <PersonAdd />}
@@ -346,7 +385,11 @@ export default function SurveyorsPage() {
                       <Tooltip title="Delete Surveyor">
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(surveyor)}
+                          onClick={() => confirmAndExecute(
+                            'Delete Surveyor',
+                            `Are you sure you want to delete ${surveyor.name}? This action cannot be undone.`,
+                            async () => { await handleDelete(surveyor) }
+                          )}
                           color="error"
                         >
                           <Delete />
@@ -369,6 +412,22 @@ export default function SurveyorsPage() {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
+
+      {/* Generic Confirmation Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>{confirmTitle}</DialogTitle>
+        <DialogContent>
+          <Typography>{confirmContent}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={async () => {
+            setConfirmOpen(false)
+            if (confirmAction) await confirmAction()
+            setConfirmAction(null)
+          }} variant="contained" color="primary">Confirm</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
@@ -413,6 +472,17 @@ export default function SurveyorsPage() {
               >
                 <MenuItem value="true">Active</MenuItem>
                 <MenuItem value="false">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Bike</InputLabel>
+              <Select
+                value={formData.hasBike ? 'true' : 'false'}
+                label="Bike"
+                onChange={(e) => setFormData({ ...formData, hasBike: e.target.value === 'true' })}
+              >
+                <MenuItem value="true">Yes</MenuItem>
+                <MenuItem value="false">No</MenuItem>
               </Select>
             </FormControl>
           </Box>

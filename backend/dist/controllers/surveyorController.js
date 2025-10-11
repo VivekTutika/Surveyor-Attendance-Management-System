@@ -96,4 +96,17 @@ SurveyorController.getLocations = (0, errorHandler_1.asyncHandler)(async (req, r
     });
     (0, response_1.sendSuccess)(res, 'Locations retrieved successfully', locations);
 });
+// PATCH /api/surveyors/:id/toggle-status - Toggle active status (Admin only)
+SurveyorController.toggleStatus = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { id } = req.params;
+    const surveyorId = parseInt(id);
+    // Fetch existing surveyor
+    const existing = await db_1.prisma.user.findUnique({ where: { id: surveyorId } });
+    if (!existing) {
+        return (0, response_1.sendError)(res, 'Surveyor not found', 404);
+    }
+    // Toggle isActive
+    const updatedSurveyor = await surveyorService_1.SurveyorService.updateSurveyor(surveyorId, { isActive: !existing.isActive });
+    (0, response_1.sendSuccess)(res, 'Surveyor status updated successfully', updatedSurveyor);
+});
 //# sourceMappingURL=surveyorController.js.map

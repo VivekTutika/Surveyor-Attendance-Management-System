@@ -48,4 +48,10 @@ router.get('/:id/statistics',
   SurveyorController.getSurveyorStatistics
 );
 
+// Toggle active/inactive status
+router.patch('/:id/toggle-status',
+  validateRequest(schemas.idParamInt),
+  SurveyorController.toggleStatus
+);
+
 export default router;

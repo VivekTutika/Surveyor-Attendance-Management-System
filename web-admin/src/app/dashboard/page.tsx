@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -125,54 +124,80 @@ export default function DashboardPage() {
       </Typography>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Total Surveyors"
-            value={stats.totalSurveyors}
-            icon={<People />}
-            color="primary.main"
-            subtitle="Registered in system"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Active Surveyors"
-            value={stats.activeSurveyors}
-            icon={<PersonAdd />}
-            color="success.main"
-            subtitle="Currently active"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Today's Attendance"
-            value={stats.todayAttendance}
-            icon={<CheckCircle />}
-            color="info.main"
-            subtitle="Check-ins recorded"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatsCard
-            title="Bike Readings"
-            value={stats.todayBikeReadings}
-            icon={<DirectionsBike />}
-            color="warning.main"
-            subtitle="Submitted today"
-          />
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
+        <StatsCard
+          title="Total Surveyors"
+          value={stats.totalSurveyors}
+          icon={<People />}
+          color="primary.main"
+          subtitle="Registered in system"
+        />
+
+        <StatsCard
+          title="Active Surveyors"
+          value={stats.activeSurveyors}
+          icon={<PersonAdd />}
+          color="success.main"
+          subtitle="Currently active"
+        />
+
+        <StatsCard
+          title="Surveyors with Bikes"
+          value={(stats as any).surveyorsWithBikes ?? 0}
+          icon={<DirectionsBike />}
+          color="primary.main"
+          subtitle="Surveyors who have bikes"
+        />
+
+        <StatsCard
+          title="Surveyors without Bikes"
+          value={(stats as any).surveyorsWithoutBikes ?? 0}
+          icon={<DirectionsBike />}
+          color="warning.main"
+          subtitle="Surveyors who don't have bikes"
+        />
+
+        <StatsCard
+          title="Attendance Check-ins (Morning)"
+          value={stats.todayAttendanceMorning ?? 0}
+          icon={<CheckCircle />}
+          color="primary.main"
+          subtitle="Morning check-ins today"
+        />
+
+        <StatsCard
+          title="Attendance Check-outs (Evening)"
+          value={stats.todayAttendanceEvening ?? 0}
+          icon={<CheckCircle />}
+          color="secondary.main"
+          subtitle="Evening check-outs today"
+        />
+
+        <StatsCard
+          title="Bike Readings (Morning)"
+          value={stats.todayBikeMorning ?? 0}
+          icon={<DirectionsBike />}
+          color="warning.main"
+          subtitle="Morning bike readings"
+        />
+
+        <StatsCard
+          title="Bike Readings (Evening)"
+          value={stats.todayBikeEvening ?? 0}
+          icon={<DirectionsBike />}
+          color="warning.dark"
+          subtitle="Evening bike readings"
+        />
+      </Box>
 
       {/* Charts */}
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
         {/* Weekly Attendance Chart */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Weekly Attendance Trend
             </Typography>
-            <Box sx={{ width: '100%', height: 300 }}>
+          <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
                 <LineChart data={stats.weeklyAttendance}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -204,11 +229,9 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </Box>
           </Paper>
-        </Grid>
 
         {/* Monthly Stats Chart */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Monthly Statistics
             </Typography>
@@ -226,37 +249,28 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </Box>
           </Paper>
-        </Grid>
 
         {/* System Status */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              System Status
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircle color="success" />
-                  <Typography variant="body2">API Server: Online</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircle color="success" />
-                  <Typography variant="body2">Database: Connected</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircle color="success" />
-                  <Typography variant="body2">File Storage: Available</Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
-      </Grid>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            System Status
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+            <Box sx={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircle color="success" />
+              <Typography variant="body2">API Server: Online</Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircle color="success" />
+              <Typography variant="body2">Database: Connected</Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircle color="success" />
+              <Typography variant="body2">File Storage: Available</Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
     </Box>
   )
 }

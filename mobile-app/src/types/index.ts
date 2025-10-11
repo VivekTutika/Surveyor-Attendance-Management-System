@@ -6,6 +6,7 @@ export interface User {
   role: 'Admin' | 'Surveyor';
   project?: string;
   location?: string;
+  hasBike?: boolean;
   createdAt: string;
   updatedAt: string;
 }
