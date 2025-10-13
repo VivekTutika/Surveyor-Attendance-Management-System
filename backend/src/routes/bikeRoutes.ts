@@ -31,15 +31,24 @@ router.get('/summary',
 // Update KM reading manually (Admin only)
 router.put('/:id/km-reading',
   adminMiddleware,
-  validateRequest(schemas.idParam),
+  // BikeMeterReading IDs are prisma generated CUIDs, not UUIDs — accept any non-empty id
+  validateRequest(schemas.idParamAny),
   BikeController.updateKmReading
 );
 
 // Delete bike meter reading (Admin only)
 router.delete('/:id',
   adminMiddleware,
-  validateRequest(schemas.idParam),
+  // Deletion may also receive cuid ids
+  validateRequest(schemas.idParamAny),
   BikeController.deleteBikeMeterReading
+);
+
+// Clear only the kmReading for a reading (Admin only) - logical revert
+router.patch('/:id/clear-reading',
+  adminMiddleware,
+  validateRequest(schemas.idParamAny),
+  BikeController.clearKmReading
 );
 
 // Bike trip routes (Admin only for modifications)

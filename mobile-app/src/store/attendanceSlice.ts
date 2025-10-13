@@ -16,7 +16,7 @@ export const markAttendance = createAsyncThunk<
   async ({ type, latitude, longitude, photoUri, timestamp }, { rejectWithValue }) => {
     try {
       const response = await attendanceService.markAttendance(type, latitude, longitude, photoUri);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to mark attendance');
     }
@@ -32,7 +32,7 @@ export const getTodayAttendanceStatus = createAsyncThunk<
   async (_, { rejectWithValue }) => {
     try {
       const response = await attendanceService.getTodayStatus();
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get attendance status');
     }
@@ -48,7 +48,7 @@ export const getAttendanceHistory = createAsyncThunk<
   async (filters, { rejectWithValue }) => {
     try {
       const response = await attendanceService.getAttendanceList(filters);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get attendance history');
     }
@@ -64,7 +64,7 @@ export const getAttendanceSummary = createAsyncThunk<
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
       const response = await attendanceService.getAttendanceSummary(startDate, endDate);
-      return response.data;
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get attendance summary');
     }
@@ -104,22 +104,31 @@ const attendanceSlice = createSlice({
         state.error = null;
       })
       .addCase(markAttendance.fulfilled, (state, action) => {
+        // ensure submitting flag is cleared even if payload is malformed
         state.submittingAttendance = false;
-        
-        // Update today's attendance
-        const attendanceType = action.payload.type.toLowerCase();
-        if (attendanceType === 'morning') {
-          state.todayAttendance.morning = action.payload;
-        } else if (attendanceType === 'evening') {
-          state.todayAttendance.evening = action.payload;
-        }
-        
-        // Add to records if not already present
-        const existingIndex = state.records.findIndex(
-          record => record.id === action.payload.id
-        );
-        if (existingIndex === -1) {
-          state.records.unshift(action.payload);
+
+        // Action payload may be the attendance record or an API envelope { success, message, data }
+        const raw = action.payload as any;
+        const payload = raw && (raw.data ?? raw) ? (raw.data ?? raw) : raw;
+        if (!payload) return;
+
+        try {
+          const attendanceType = (payload.type || '').toString().toLowerCase();
+          if (attendanceType === 'morning') {
+            state.todayAttendance.morning = payload;
+          } else if (attendanceType === 'evening') {
+            state.todayAttendance.evening = payload;
+          }
+
+          // Add to records if not already present
+          const existingIndex = state.records.findIndex(
+            record => record.id === payload.id
+          );
+          if (existingIndex === -1) {
+            state.records.unshift(payload);
+          }
+        } catch (e) {
+          // swallow to avoid reducer crash
         }
       })
       .addCase(markAttendance.rejected, (state, action) => {
@@ -132,7 +141,54 @@ const attendanceSlice = createSlice({
       })
       .addCase(getTodayAttendanceStatus.fulfilled, (state, action) => {
         state.loading = false;
-        state.todayAttendance = action.payload;
+        const raw = action.payload as any;
+        const payload = raw && (raw.data ?? raw) ? (raw.data ?? raw) : raw;
+
+        // Two possible backend shapes:
+        // 1) { morningMarked: boolean, morningTime: string, eveningMarked: boolean, eveningTime: string }
+        // 2) { morning: AttendanceRecord | null, evening: AttendanceRecord | null }
+        if (!payload) {
+          state.todayAttendance = { morning: null, evening: null };
+          return;
+        }
+
+        if (payload.morningMarked !== undefined || payload.eveningMarked !== undefined) {
+          const baseDate = (payload.date || new Date().toISOString().split('T')[0]);
+          const morning = payload.morningMarked ? ({
+            id: `morning-${baseDate}`,
+            userId: '',
+            date: baseDate,
+            type: 'Morning' as 'Morning',
+            photoPath: '',
+            latitude: 0,
+            longitude: 0,
+            capturedAt: payload.morningTime || new Date().toISOString(),
+          } as AttendanceRecord) : null;
+          const evening = payload.eveningMarked ? ({
+            id: `evening-${baseDate}`,
+            userId: '',
+            date: baseDate,
+            type: 'Evening' as 'Evening',
+            photoPath: '',
+            latitude: 0,
+            longitude: 0,
+            capturedAt: payload.eveningTime || new Date().toISOString(),
+          } as AttendanceRecord) : null;
+          state.todayAttendance = { morning, evening };
+          return;
+        }
+
+        if (payload.morning !== undefined || payload.evening !== undefined) {
+          // assume they are already in the expected shape
+          state.todayAttendance = {
+            morning: payload.morning ?? null,
+            evening: payload.evening ?? null,
+          };
+          return;
+        }
+
+        // fallback to clear
+        state.todayAttendance = { morning: null, evening: null };
       })
       .addCase(getTodayAttendanceStatus.rejected, (state, action) => {
         state.loading = false;

@@ -30,7 +30,6 @@ import {
 } from '@mui/material'
 import {
   DirectionsBike,
-  Speed,
   FilterList,
   Download,
   Close,
@@ -39,6 +38,9 @@ import {
   TableRows,
   GridView,
   Image,
+  Upload,
+  CheckCircle,
+  Cancel,
 } from '@mui/icons-material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -65,7 +67,8 @@ export default function BikeReadingsPage() {
   
   // Filter states
   const [filters, setFilters] = useState<BikeFilters>({
-    startDate: dayjs().subtract(7, 'day'),
+    // Default to today's readings (admin can change to view history)
+    startDate: dayjs(),
     endDate: dayjs(),
     userId: '',
   })
@@ -74,6 +77,9 @@ export default function BikeReadingsPage() {
   const [openPhotoDialog, setOpenPhotoDialog] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<string>('')
   const [selectedReading, setSelectedReading] = useState<BikeMeterReading | null>(null)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     fetchSurveyors()
@@ -129,7 +135,8 @@ export default function BikeReadingsPage() {
 
   const clearFilters = () => {
     setFilters({
-      startDate: dayjs().subtract(7, 'day'),
+      // reset to today's readings by default
+      startDate: dayjs(),
       endDate: dayjs(),
       userId: '',
     })
@@ -150,6 +157,52 @@ export default function BikeReadingsPage() {
     exportBikeReadingsToPDF(readings ?? [])
   }
 
+  const handleConfirmUpload = async () => {
+    if (!selectedReading) return
+    const id = selectedReading.id
+    const km = Number(selectedReading.reading)
+    if (!km || Number.isNaN(km)) {
+      setError('Please enter a valid KM reading')
+      return
+    }
+    try {
+      setIsUploading(true)
+      await bikeMeterService.updateKmReading(id, km)
+      // After upload, reset to first page and refresh so the uploaded reading appears
+      setPage(0)
+      await fetchReadings()
+      setConfirmDialogOpen(false)
+      window.alert('KM reading uploaded successfully')
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      const backendMessage = err?.response?.data?.message || err?.response?.data || err?.message
+      setError(backendMessage || 'Failed to upload KM reading')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleConfirmRevert = async () => {
+    if (!selectedReading) return
+    const id = selectedReading.id
+    try {
+      setIsUploading(true)
+      // Clear only the km reading (do not delete the row)
+      await bikeMeterService.clearReading(id)
+      // After revert, reset to first page and refresh
+      setPage(0)
+      await fetchReadings()
+      setRevertDialogOpen(false)
+      window.alert('KM reading cleared successfully')
+    } catch (err: any) {
+      console.error('Revert error:', err)
+      const backendMessage = err?.response?.data?.message || err?.response?.data || err?.message
+      setError(backendMessage || 'Failed to revert bike reading')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage)
   }
@@ -160,12 +213,9 @@ export default function BikeReadingsPage() {
   }
 
   const totalReadings = readings?.length || 0
-  const avgReading = readings?.length > 0 
-    ? readings.reduce((sum, r) => sum + (r.reading || 0), 0) / readings.length 
-    : 0
-  const maxReading = readings?.length > 0 
-    ? Math.max(...readings.map(r => r.reading || 0)) 
-    : 0
+  // Compute check ins/outs similar to attendance
+  const checkIns = readings?.filter(r => r.type === 'MORNING').length || 0
+  const checkOuts = readings?.filter(r => r.type === 'EVENING').length || 0
 
   if (loading && page === 0) {
     return (
@@ -212,9 +262,9 @@ export default function BikeReadingsPage() {
           </Alert>
         )}
 
-        {/* Stats Cards */}
+        {/* Stats Cards - show Check Ins and Check Outs like Attendance */}
         <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
-          <Box sx={{ flex: '1 1 240px' }}>
+          <Box sx={{ flex: '1 1 300px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -225,49 +275,43 @@ export default function BikeReadingsPage() {
                     <Typography variant="h5" component="div">
                       {totalReadings}
                     </Typography>
-                    <Typography color="text.secondary">
-                      Total Readings
-                    </Typography>
+                    <Typography color="text.secondary">Total Readings</Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
           </Box>
 
-          <Box sx={{ flex: '1 1 240px' }}>
+          <Box sx={{ flex: '1 1 300px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Avatar sx={{ bgcolor: 'success.main' }}>
-                    <Speed />
+                    <CheckCircle />
                   </Avatar>
                   <Box>
                     <Typography variant="h5" component="div">
-                      {avgReading.toFixed(1)} KM
+                      {checkIns}
                     </Typography>
-                    <Typography color="text.secondary">
-                      Average Reading
-                    </Typography>
+                    <Typography color="text.secondary">Check Ins</Typography>
                   </Box>
                 </Box>
               </CardContent>
             </Card>
           </Box>
 
-          <Box sx={{ flex: '1 1 240px' }}>
+          <Box sx={{ flex: '1 1 300px' }}>
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Avatar sx={{ bgcolor: 'warning.main' }}>
-                    <Speed />
+                    <Cancel />
                   </Avatar>
                   <Box>
                     <Typography variant="h5" component="div">
-                      {maxReading} KM
+                      {checkOuts}
                     </Typography>
-                    <Typography color="text.secondary">
-                      Maximum Reading
-                    </Typography>
+                    <Typography color="text.secondary">Check Outs</Typography>
                   </Box>
                 </Box>
               </CardContent>
@@ -351,8 +395,9 @@ export default function BikeReadingsPage() {
                   <TableRow>
                     <TableCell>Surveyor</TableCell>
                     <TableCell>Date & Time</TableCell>
-                    <TableCell>Reading (KM)</TableCell>
+                    <TableCell>Type</TableCell>
                     <TableCell>Photo</TableCell>
+                    <TableCell>Reading (KM)</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -379,9 +424,11 @@ export default function BikeReadingsPage() {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="h6" fontWeight="bold" color="primary">
-                          {reading.reading}
-                        </Typography>
+                        <Chip
+                          label={reading.type === 'MORNING' ? 'Check In' : reading.type === 'EVENING' ? 'Check Out' : '—'}
+                          size="small"
+                          color={reading.type === 'MORNING' ? 'success' : reading.type === 'EVENING' ? 'warning' : 'default'}
+                        />
                       </TableCell>
                       <TableCell>
                         {reading.photoPath && (
@@ -395,15 +442,66 @@ export default function BikeReadingsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handlePhotoClick(reading)}
-                          disabled={!reading.photoPath}
-                        >
-                          <Image 
-                            color={reading.photoPath ? 'primary' : 'disabled'} 
-                          />
-                        </IconButton>
+                        {/* If a reading exists, show it as text. If not, allow inline entry. */}
+                        {reading.reading !== null && reading.reading !== undefined ? (
+                          <Typography sx={{ minWidth: 80, textAlign: 'right' }}>{`${reading.reading} KM`}</Typography>
+                        ) : (
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              value={reading.reading ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? '' : Number(e.target.value)
+                                setReadings(prev => prev.map(r => r.id === reading.id ? { ...r, reading: val as any } : r))
+                              }}
+                              style={{ width: 100, padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc' }}
+                            />
+                            <Button size="small" onClick={() => {
+                              // clear inline entry
+                              setReadings(prev => prev.map(r => r.id === reading.id ? { ...r, reading: undefined as any } : r))
+                            }}>Clear</Button>
+                          </Box>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            startIcon={<Upload />}
+                            onClick={() => {
+                              const km = Number(reading.reading)
+                              if (!Number.isFinite(km) || km <= 0) {
+                                setError('Please enter a valid KM reading greater than 0 before uploading/updating')
+                                return
+                              }
+                              // open confirm dialog with the selected reading (allows editing before confirm)
+                              setSelectedReading({ ...reading, reading: km })
+                              setConfirmDialogOpen(true)
+                            }}
+                            disabled={reading.reading === undefined || Number.isNaN(Number(reading.reading))}
+                          >
+                            {/* If a reading already exists, label the action Update instead of Upload */}
+                            {reading.reading !== undefined && reading.reading !== null ? 'Update' : 'Upload'}
+                          </Button>
+
+                          {/* Revert/Delete action - visible when a reading exists */}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            onClick={() => {
+                              setSelectedReading(reading)
+                              setRevertDialogOpen(true)
+                            }}
+                            disabled={!reading.reading}
+                          >
+                            Revert
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -537,6 +635,58 @@ export default function BikeReadingsPage() {
                 </Typography>
               </Box>
             )}
+          </DialogContent>
+        </Dialog>
+        {/* Confirm Upload Dialog */}
+        <Dialog
+          open={confirmDialogOpen}
+          onClose={() => setConfirmDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Confirm KM Upload</DialogTitle>
+          <DialogContent>
+            <Box sx={{ p: 2 }}>
+              <Typography>
+                Are you sure you want to upload the KM reading for{' '}
+                <strong>{selectedReading?.user.name}</strong>?
+              </Typography>
+              <Typography sx={{ mt: 1, mb: 2 }} color="text.secondary">
+                Reading: <strong>{selectedReading?.reading} KM</strong>
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                <Button onClick={() => setConfirmDialogOpen(false)} disabled={isUploading}>Cancel</Button>
+                <Button variant="contained" color="primary" onClick={handleConfirmUpload} disabled={isUploading}>
+                  {isUploading ? 'Uploading...' : 'Confirm Upload'}
+                </Button>
+              </Box>
+            </Box>
+          </DialogContent>
+        </Dialog>
+        {/* Revert (Clear Reading) Confirm Dialog */}
+        <Dialog
+          open={revertDialogOpen}
+          onClose={() => setRevertDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Confirm Clear KM Reading</DialogTitle>
+          <DialogContent>
+            <Box sx={{ p: 2 }}>
+              <Typography>
+                This will clear only the KM reading value for{' '}
+                <strong>{selectedReading?.user.name}</strong>. The photo and record will remain.
+              </Typography>
+              <Typography sx={{ mt: 1, mb: 2 }} color="text.secondary">
+                Reading to clear: <strong>{selectedReading?.reading} KM</strong>
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                <Button onClick={() => setRevertDialogOpen(false)} disabled={isUploading}>Cancel</Button>
+                <Button variant="contained" color="error" onClick={handleConfirmRevert} disabled={isUploading}>
+                  {isUploading ? 'Reverting...' : 'Confirm Revert'}
+                </Button>
+              </Box>
+            </Box>
           </DialogContent>
         </Dialog>
       </Box>

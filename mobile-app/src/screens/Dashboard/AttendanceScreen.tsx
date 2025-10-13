@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { markAttendance } from '../../store/attendanceSlice';
+import { getTodayAttendanceStatus } from '../../store/attendanceSlice';
 import { RootState, DashboardStackParamList } from '../../types';
 
 type AttendanceScreenNavigationProp = StackNavigationProp<DashboardStackParamList, 'Attendance'>;
@@ -151,13 +152,25 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
         timestamp: new Date().toISOString(),
       })).unwrap();
 
+      // Refresh today's status so Dashboard reflects the new state
+      try { await dispatch(getTodayAttendanceStatus()).unwrap(); } catch (_) {}
+
       Alert.alert(
         'Success',
         `${attendanceType.toLowerCase()} attendance marked successfully!`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
-      Alert.alert('Error', error || 'Failed to mark attendance.');
+      // Ensure we pass a string to Alert.alert — Android will crash if given a native map/object
+      let message: string = 'Failed to mark attendance.';
+      try {
+        if (typeof error === 'string') message = error;
+        else if (error && typeof error.message === 'string') message = error.message;
+        else if (error && typeof error === 'object') message = JSON.stringify(error);
+      } catch (e) {
+        // fallback
+      }
+      Alert.alert('Error', message || 'Failed to mark attendance.');
     }
   };
 

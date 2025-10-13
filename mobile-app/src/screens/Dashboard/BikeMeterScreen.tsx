@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
 import { uploadBikeMeterReading } from '../../store/bikeMeterSlice';
+import { getTodayBikeMeterStatus } from '../../store/bikeMeterSlice';
 import { RootState, DashboardStackParamList } from '../../types';
 
 type BikeMeterScreenNavigationProp = StackNavigationProp<DashboardStackParamList, 'BikeMeter'>;
@@ -98,6 +99,8 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
         timestamp: new Date().toISOString(),
       })).unwrap();
 
+      try { await dispatch(getTodayBikeMeterStatus()).unwrap(); } catch (_) {}
+
       Alert.alert(
         'Success',
         `${readingType.toLowerCase()} bike meter reading uploaded successfully!`,
@@ -105,6 +108,12 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
       );
     } catch (error: any) {
       const message = typeof error === 'string' ? error : (error?.message || 'Failed to upload bike meter reading.');
+      try {
+        // Refresh today's bike meter status even on error (server may indicate already marked)
+        await dispatch(getTodayBikeMeterStatus()).unwrap();
+      } catch (_) {
+        // ignore
+      }
       Alert.alert('Error', message);
     }
   };

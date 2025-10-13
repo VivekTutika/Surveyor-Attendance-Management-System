@@ -108,10 +108,9 @@ api.interceptors.response.use(
           throw new Error('Internal server error. Please try again later.');
           
         default:
-          // Use the error message from the response if available
-          const errorMessage = response.data?.message || 
-                              response.data?.error || 
-                              `HTTP Error ${response.status}`;
+          // Prefer detailed backend error payloads when available
+          const specific = response.data?.data?.error || response.data?.error || response.data?.message;
+          const errorMessage = specific || `HTTP Error ${response.status}`;
           throw new Error(errorMessage);
       }
     } else if (error.request) {
@@ -195,21 +194,22 @@ apiFormData.interceptors.response.use(
         url: response.config?.baseURL + response.config?.url,
         data: response.data,
       });
+      const specific = response.data?.data?.error || response.data?.error || response.data?.message;
       switch (response.status) {
         case 401:
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
-          throw new Error('Session expired. Please login again.');
+          throw new Error(specific || 'Session expired. Please login again.');
         case 403:
-          throw new Error('Access denied.');
+          throw new Error(specific || 'Access denied.');
         case 404:
-          throw new Error('Resource not found.');
+          throw new Error(specific || 'Resource not found.');
         case 422:
-          throw new Error(response.data?.message || 'Validation error');
+          throw new Error(specific || 'Validation error');
         case 500:
-          throw new Error('Server error. Please try again.');
+          throw new Error(specific || 'Server error. Please try again.');
         default:
-          throw new Error(response.data?.message || `Error ${response.status}`);
+          throw new Error(specific || `Error ${response.status}`);
       }
     } else if (error.request) {
       throw new Error('Network error. Please check your connection.');

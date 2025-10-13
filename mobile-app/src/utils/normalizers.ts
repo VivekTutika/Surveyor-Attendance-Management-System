@@ -34,15 +34,49 @@ export function normalizeUser(apiUser: any): User {
   const projectName = typeof raw.project === 'string' ? raw.project : raw.project?.name;
   const locationName = typeof raw.location === 'string' ? raw.location : raw.location?.name;
 
-  // Detect different possible flag names for hasBike
-  const hasBikeCandidates = [
-    raw.hasBike,
-    raw.has_bike,
-    raw.hasbike,
-    raw.has_bikes,
-    raw.is_bike_owner,
-  ];
-  const hasBikeRaw = hasBikeCandidates.find((v) => v !== undefined);
+  // Detect different possible flag names for hasBike across nested shapes
+  const candidateKeys = ['hasBike', 'has_bike', 'hasbike', 'has_bikes', 'is_bike_owner', 'bike_owner', 'hasBikeStatus'];
+  // candidate keys for active status
+  const activeKeys = ['isActive', 'is_active', 'active', 'statusActive', 'surveyorActive'];
+
+  function findHasBikeValue(obj: any): any {
+    if (!obj || typeof obj !== 'object') return undefined;
+    for (const key of candidateKeys) {
+      if (key in obj && obj[key] !== undefined) return obj[key];
+    }
+    // check common wrapper locations
+    if (obj.data && typeof obj.data === 'object') {
+      for (const key of candidateKeys) {
+        if (key in obj.data && obj.data[key] !== undefined) return obj.data[key];
+      }
+    }
+    if (obj.user && typeof obj.user === 'object') {
+      for (const key of candidateKeys) {
+        if (key in obj.user && obj.user[key] !== undefined) return obj.user[key];
+      }
+    }
+    return undefined;
+  }
+
+  const hasBikeRaw = findHasBikeValue(raw) ?? findHasBikeValue(apiUser);
+
+  function findActiveValue(obj: any): any {
+    if (!obj || typeof obj !== 'object') return undefined;
+    for (const key of activeKeys) {
+      if (key in obj && obj[key] !== undefined) return obj[key];
+    }
+    if (obj.data && typeof obj.data === 'object') {
+      for (const key of activeKeys) {
+        if (key in obj.data && obj.data[key] !== undefined) return obj.data[key];
+      }
+    }
+    if (obj.user && typeof obj.user === 'object') {
+      for (const key of activeKeys) {
+        if (key in obj.user && obj.user[key] !== undefined) return obj.user[key];
+      }
+    }
+    return undefined;
+  }
 
   const normalized: any = {
     id: String(raw.id ?? ''),
@@ -56,7 +90,27 @@ export function normalizeUser(apiUser: any): User {
   };
 
   if (hasBikeRaw !== undefined) {
-    normalized.hasBike = Boolean(hasBikeRaw);
+    // Coerce common representations to boolean
+    if (typeof hasBikeRaw === 'string') {
+      const lower = hasBikeRaw.toLowerCase().trim();
+      normalized.hasBike = lower === 'true' || lower === '1' || lower === 'yes';
+    } else if (typeof hasBikeRaw === 'number') {
+      normalized.hasBike = hasBikeRaw === 1;
+    } else {
+      normalized.hasBike = Boolean(hasBikeRaw);
+    }
+  }
+
+  const activeRaw = findActiveValue(raw) ?? findActiveValue(apiUser);
+  if (activeRaw !== undefined) {
+    if (typeof activeRaw === 'string') {
+      const lower = activeRaw.toLowerCase().trim();
+      normalized.isActive = lower === 'true' || lower === '1' || lower === 'yes' || lower === 'active';
+    } else if (typeof activeRaw === 'number') {
+      normalized.isActive = activeRaw === 1;
+    } else {
+      normalized.isActive = Boolean(activeRaw);
+    }
   }
 
   return normalized as User;
