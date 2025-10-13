@@ -86,8 +86,6 @@ export default function LoginPage() {
               margin="normal"
               required
               autoComplete="tel"
-              placeholder="e.g., +1234567890"
-              helperText="Include country code with + prefix"
             />
 
             <TextField
@@ -126,7 +124,7 @@ export default function LoginPage() {
           </form>
 
           <Typography variant="caption" display="block" align="center" color="text.secondary">
-            Admin access only. Please contact your system administrator for credentials.
+            Please contact Development Team for credentials.
           </Typography>
         </Paper>
       </Box>

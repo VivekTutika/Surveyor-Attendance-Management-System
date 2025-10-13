@@ -228,6 +228,42 @@ export class BikeService {
     return updatedReading;
   }
 
+  // Clear only the kmReading for a bike meter reading (Admin only) - logical revert
+  static async clearKmReading(readingId: string) {
+    const bikeMeterReading = await prisma.bikeMeterReading.findUnique({
+      where: { id: readingId },
+    })
+
+    if (!bikeMeterReading) {
+      throw new Error('Bike meter reading not found')
+    }
+
+    const updatedReading = await prisma.bikeMeterReading.update({
+      where: { id: readingId },
+      data: { kmReading: null },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            mobileNumber: true,
+            project: true,
+            location: true,
+          },
+        },
+      },
+    })
+
+    // After clearing the km reading, upsert bike trip to recompute computedKm/finalKm
+    try {
+      void BikeTripService.upsertTripForReading(updatedReading as any)
+    } catch (err) {
+      // swallow for now
+    }
+
+    return updatedReading
+  }
+
   // Get bike meter summary for a user in a date range
   static async getBikeMeterSummary(userId: number, startDate: string, endDate: string) {  // Changed from string to number
     const start = new Date(startDate);

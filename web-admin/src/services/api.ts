@@ -109,6 +109,8 @@ interface BikeMeterReading {
   userId: string
   date: string
   reading: number
+  // AttendanceType: MORNING | EVENING
+  type?: 'MORNING' | 'EVENING'
   photoPath: string
   capturedAt: string
   user: {
@@ -288,17 +290,29 @@ export const bikeMeterService = {
         pages: number; 
       }>> = await api.get('/api/bike/list', { params })
       const d = response.data.data!
+
+      // Normalizer: backend uses `kmReading` while UI expects `reading`.
+      const normalize = (item: any) => ({
+        // preserve other fields but map kmReading -> reading for UI
+        ...item,
+        reading: item.kmReading !== undefined ? item.kmReading : item.reading,
+      })
+
       // Backend may return either a paginated object or a plain array.
-      // Normalize to { readings, total, page, pages } for the UI.
       if (Array.isArray(d)) {
         return {
-          readings: d,
+          readings: d.map(normalize),
           total: d.length,
           page: 1,
           pages: 1,
         }
       }
-      return d
+
+      // Paginated object
+      return {
+        ...d,
+        readings: (d.readings || []).map(normalize),
+      }
     } catch (error) {
       console.error('Get bike meter readings error:', error)
       throw error
@@ -309,9 +323,43 @@ export const bikeMeterService = {
     try {
       const response: AxiosResponse<ApiResponse<{ readings: BikeMeterReading[] }>> = 
         await api.get(`/api/bike/user/${userId}`, { params })
-      return response.data.data!
+      const d = response.data.data!
+      // normalize kmReading -> reading
+      return {
+        readings: (d.readings || []).map((r: any) => ({ ...r, reading: r.kmReading !== undefined ? r.kmReading : r.reading })),
+      }
     } catch (error) {
       console.error('Get bike meter readings by user id error:', error)
+      throw error
+    }
+  },
+  // Update KM reading manually (Admin only)
+  updateKmReading: async (id: string, kmReading: number) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/bike/${id}/km-reading`, { kmReading })
+      return response.data.data
+    } catch (error) {
+      console.error('Update KM reading error:', error)
+      throw error
+    }
+  },
+  // Delete a bike meter reading (Admin only) - used as a revert/cancel action
+  delete: async (id: string) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/api/bike/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Delete bike meter reading error:', error)
+      throw error
+    }
+  },
+  // Clear only the kmReading for a bike meter reading (Admin only)
+  clearReading: async (id: string) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.patch(`/api/bike/${id}/clear-reading`)
+      return response.data.data
+    } catch (error) {
+      console.error('Clear bike meter reading error:', error)
       throw error
     }
   },

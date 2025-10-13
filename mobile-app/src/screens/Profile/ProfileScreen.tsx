@@ -147,6 +147,24 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               }</Text>
             </View>
           </View>
+        
+          {/* Bike Status (Option B) */}
+          <View style={styles.infoRow}>
+            <View style={styles.infoIcon}>
+              <Ionicons name="bicycle" size={20} color={Colors.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Bike</Text>
+              <Text style={styles.infoValue}>{
+                typeof user?.hasBike === 'boolean'
+                  ? (user?.hasBike ? 'Yes' : 'No')
+                  : 'Not set'
+              }</Text>
+              {typeof user?.hasBike !== 'boolean' && (
+                <Text style={styles.helperText}>If this shows "Not set", tap Refresh Profile after your admin updates your bike status.</Text>
+              )}
+            </View>
+          </View>
         </Card>
 
         {/* Account Information */}
@@ -300,6 +318,11 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginBottom: 8,
+  },
+  helperText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
 });
 

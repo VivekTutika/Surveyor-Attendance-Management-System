@@ -142,7 +142,7 @@ export class AuthService {
     const token = generateToken(tokenPayload);
 
     return {
-      user: {
+      user: ({
         id: user.id,
         name: user.name,
         mobileNumber: user.mobileNumber,
@@ -151,7 +151,8 @@ export class AuthService {
         locationId: user.locationId,
         project: user.project,
         location: user.location,
-      },
+        hasBike: (user as any).hasBike ?? false,
+      } as any),
       token,
     };
   }
@@ -203,7 +204,7 @@ export class AuthService {
     const token = generateToken(tokenPayload);
 
     return {
-      user: {
+      user: ({
         id: user.id,
         name: user.name,
         mobileNumber: user.mobileNumber,
@@ -212,7 +213,8 @@ export class AuthService {
         locationId: user.locationId,
         project: user.project || null,
         location: user.location || null,
-      },
+        hasBike: (user as any).hasBike ?? false,
+      } as any),
       token,
     };
   }
@@ -229,6 +231,7 @@ export class AuthService {
         project: true,
         location: true,
         isActive: true,
+        hasBike: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -257,6 +260,7 @@ export class AuthService {
         project: true,
         location: true,
         isActive: true,
+        hasBike: true,
         updatedAt: true,
       },
     });

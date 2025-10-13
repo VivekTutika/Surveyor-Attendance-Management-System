@@ -123,4 +123,13 @@ export class BikeController {
 
     sendSuccess(res, result.message);
   });
+
+  // PATCH /api/bike/:id/clear-reading - Clear only the KM reading (Admin only)
+  static clearKmReading = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const updated = await BikeService.clearKmReading(id);
+
+    sendSuccess(res, 'KM reading cleared successfully', updated);
+  });
 }

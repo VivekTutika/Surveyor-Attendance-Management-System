@@ -4,7 +4,9 @@ import { createStackNavigator } from '@react-navigation/stack';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../theme';
-import { AppStackParamList, DashboardStackParamList, ProfileStackParamList } from '../types';
+import { useSelector } from 'react-redux';
+import { AppStackParamList, DashboardStackParamList, ProfileStackParamList, RootState } from '../types';
+import { getFocusedRouteNameFromRoute, RouteProp } from '@react-navigation/native';
 
 // Import screens
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
@@ -81,6 +83,12 @@ const ProfileStack: React.FC = () => {
 };
 
 const AppNavigator: React.FC = () => {
+  // Read submitting flags to decide whether to hide the tab bar
+  const submittingAttendance = useSelector((state: RootState) => state.attendance.submittingAttendance);
+  const submittingReading = useSelector((state: RootState) => state.bikeMeter.submittingReading);
+
+  const hideTabBar = Boolean(submittingAttendance || submittingReading);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -106,6 +114,7 @@ const AppNavigator: React.FC = () => {
           shadowOpacity: 0.3,
           paddingVertical: 4,
           height: 60,
+          display: 'flex',
         },
         tabBarLabelStyle: {
           fontSize: Typography.styles.caption.fontSize,
@@ -116,7 +125,15 @@ const AppNavigator: React.FC = () => {
       <Tab.Screen
         name="Dashboard"
         component={DashboardStack}
-        options={{ title: 'Dashboard' }}
+        options={({ route }: { route: RouteProp<any> }) => {
+          const nested = getFocusedRouteNameFromRoute(route);
+          const hideForNested = nested === 'Attendance' || nested === 'BikeMeter';
+          const hide = hideForNested || hideTabBar;
+          return {
+            title: 'Dashboard',
+            tabBarStyle: { display: hide ? 'none' : 'flex' },
+          };
+        }}
       />
       <Tab.Screen
         name="Profile"

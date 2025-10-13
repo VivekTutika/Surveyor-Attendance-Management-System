@@ -101,9 +101,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const getBikeMeterCardColor = (type: 'morning' | 'evening'): string => {
     if (!user || !Boolean((user as any).hasBike)) return Colors.gray;
     if (type === 'morning') {
-      return bikeMeterStatus?.morning ? Colors.info : Colors.gray;
+      return bikeMeterStatus?.morning ? Colors.success : Colors.gray;
     }
-    return bikeMeterStatus?.evening ? Colors.secondary : Colors.gray;
+    return bikeMeterStatus?.evening ? Colors.warning : Colors.gray;
   };
 
   const getAttendanceStatus = (type: 'morning' | 'evening'): string => {
@@ -135,15 +135,24 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const navigateToAttendance = (type: 'morning' | 'evening') => {
-    if (canMarkAttendance(type)) {
-      navigation.navigate('Attendance', { type: type.toUpperCase() });
-    } else {
-      Alert.alert(
-        'Already Marked',
-        `You have already marked your ${type} attendance for today.`,
-        [{ text: 'OK' }]
-      );
-    }
+    (async () => {
+      try {
+        // If we don't have today's data, fetch it first to avoid stale state
+        if (!attendanceStatus) {
+          await dispatch(getTodayAttendanceStatus()).unwrap();
+        }
+      } catch (_) {}
+
+      if (canMarkAttendance(type)) {
+        navigation.navigate('Attendance', { type: type.toUpperCase() });
+      } else {
+        Alert.alert(
+          'Already Marked',
+          `You have already marked your ${type} attendance for today.`,
+          [{ text: 'OK' }]
+        );
+      }
+    })();
   };
 
   const navigateToBikeMeter = (type: 'morning' | 'evening') => {
@@ -153,15 +162,23 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
-    if (canUploadBikeMeter(type)) {
-      navigation.navigate('BikeMeter', { type: type.toUpperCase() });
-    } else {
-      Alert.alert(
-        'Already Uploaded',
-        `You have already uploaded your ${type} bike meter reading for today.`,
-        [{ text: 'OK' }]
-      );
-    }
+    (async () => {
+      try {
+        if (!bikeMeterStatus) {
+          await dispatch(getTodayBikeMeterStatus()).unwrap();
+        }
+      } catch (_) {}
+
+      if (canUploadBikeMeter(type)) {
+        navigation.navigate('BikeMeter', { type: type.toUpperCase() });
+      } else {
+        Alert.alert(
+          'Already Uploaded',
+          `You have already uploaded your ${type} bike meter reading for today.`,
+          [{ text: 'OK' }]
+        );
+      }
+    })();
   };
 
   const formatTime = (timeString?: string): string => {
@@ -205,12 +222,6 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.userName}>{user?.name || 'Surveyor'}</Text>
             <Text style={styles.date}>{getCurrentDate()}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={24} color={Colors.error} />
-          </TouchableOpacity>
         </View>
 
         {/* Quick Stats */}
@@ -231,6 +242,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Today's Tasks</Text>
           
           {/* Attendance Cards */}
+          <Text style={styles.cardsSectionTitle}>Attendance</Text>
           <View style={styles.cardRow}>
             <Card
               style={[styles.actionCard, { backgroundColor: getAttendanceCardColor('morning') }]}
@@ -279,7 +291,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* Bike Meter Cards (visible only if user.hasBike === true); otherwise show placeholder */}
           {user && Boolean((user as any).hasBike) ? (
-            <View style={styles.cardRow}>
+            <>
+              <Text style={styles.cardsSectionTitle}>Bike Meter Reading</Text>
+              <View style={styles.cardRow}>
               <Card
                 style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('morning') }]}
                 onPress={() => navigateToBikeMeter('morning')}
@@ -323,7 +337,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                   )}
                 </View>
               </Card>
-            </View>
+              </View>
+            </>
           ) : null}
         </View>
       </ScrollView>
@@ -452,6 +467,14 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginTop: 2,
   },
+  cardsSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginVertical: 8,
+  },
+  
 });
 
 export default DashboardScreen;
