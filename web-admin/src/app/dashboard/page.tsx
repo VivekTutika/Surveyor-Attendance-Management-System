@@ -116,9 +116,6 @@ export default function DashboardPage() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard Overview
-      </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
         Welcome to the SAMS Admin Portal. Here's a quick overview of your system.
       </Typography>

@@ -14,6 +14,7 @@ import projectRoutes from './routes/projectRoutes';
 import locationRoutes from './routes/locationRoutes';
 import geoFenceRoutes from './routes/geoFenceRoutes';
 import dashboardRoutes from './routes/dashboard';
+import healthRoutes from './routes/healthRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +52,8 @@ app.use('/api/projects', authMiddleware, projectRoutes);
 app.use('/api/locations', authMiddleware, locationRoutes);
 app.use('/api/geo-fence', authMiddleware, geoFenceRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+// Health routes (mounted under /api/health)
+app.use('/api/health', healthRoutes);
 
 // 404 handler
 app.use((req, res) => {

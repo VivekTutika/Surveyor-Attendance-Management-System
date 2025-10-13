@@ -27,6 +27,8 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  TextField,
+  Snackbar,
 } from '@mui/material'
 import {
   DirectionsBike,
@@ -80,6 +82,16 @@ export default function BikeReadingsPage() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [revertDialogOpen, setRevertDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  // Local editing values to avoid mutating the main readings state while typing
+  const [editingValues, setEditingValues] = useState<Record<string, string>>({})
+  // confirmMode: 'upload' | 'update' to change dialog title and button colors
+  const [confirmMode, setConfirmMode] = useState<'upload' | 'update'>('upload')
+  // Value used inside the confirm dialog (editable)
+  const [confirmValue, setConfirmValue] = useState<string>('')
+  // Snackbar for messages (center aligned)
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMsg, setSnackbarMsg] = useState('')
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success')
 
   useEffect(() => {
     fetchSurveyors()
@@ -160,7 +172,7 @@ export default function BikeReadingsPage() {
   const handleConfirmUpload = async () => {
     if (!selectedReading) return
     const id = selectedReading.id
-    const km = Number(selectedReading.reading)
+    const km = Number(confirmValue)
     if (!km || Number.isNaN(km)) {
       setError('Please enter a valid KM reading')
       return
@@ -172,7 +184,12 @@ export default function BikeReadingsPage() {
       setPage(0)
       await fetchReadings()
       setConfirmDialogOpen(false)
-      window.alert('KM reading uploaded successfully')
+      // clear editing value for this row
+      setEditingValues(prev => ({ ...prev, [id]: '' }))
+      // show snackbar
+      setSnackbarMsg('KM reading uploaded successfully')
+      setSnackbarSeverity('success')
+      setSnackbarOpen(true)
     } catch (err: any) {
       console.error('Upload error:', err)
       const backendMessage = err?.response?.data?.message || err?.response?.data || err?.message
@@ -193,7 +210,9 @@ export default function BikeReadingsPage() {
       setPage(0)
       await fetchReadings()
       setRevertDialogOpen(false)
-      window.alert('KM reading cleared successfully')
+      setSnackbarMsg('KM reading cleared successfully')
+      setSnackbarSeverity('success')
+      setSnackbarOpen(true)
     } catch (err: any) {
       console.error('Revert error:', err)
       const backendMessage = err?.response?.data?.message || err?.response?.data || err?.message
@@ -221,6 +240,17 @@ export default function BikeReadingsPage() {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
+        {/* Centered Snackbar for notifications */}
+        <Snackbar
+          open={snackbarOpen}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          autoHideDuration={4000}
+          onClose={() => setSnackbarOpen(false)}
+        >
+          <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+            {snackbarMsg}
+          </Alert>
+        </Snackbar>
       </Box>
     )
   }
@@ -229,9 +259,6 @@ export default function BikeReadingsPage() {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4" component="h1">
-            Bike Meter Readings
-          </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant={viewMode === 'table' ? 'contained' : 'outlined'}
@@ -369,20 +396,7 @@ export default function BikeReadingsPage() {
               Clear Filters
             </Button>
             
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={handleExportCSV}
-            >
-              Export CSV
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={handleExportPDF}
-            >
-              Export PDF
-            </Button>
+            {/* Exports moved to Reports page */}
           </Box>
         </Paper>
 
@@ -397,7 +411,7 @@ export default function BikeReadingsPage() {
                     <TableCell>Date & Time</TableCell>
                     <TableCell>Type</TableCell>
                     <TableCell>Photo</TableCell>
-                    <TableCell>Reading (KM)</TableCell>
+                    <TableCell align="center">Reading (KM)</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -441,27 +455,24 @@ export default function BikeReadingsPage() {
                           </Button>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
                         {/* If a reading exists, show it as text. If not, allow inline entry. */}
                         {reading.reading !== null && reading.reading !== undefined ? (
-                          <Typography sx={{ minWidth: 80, textAlign: 'right' }}>{`${reading.reading} KM`}</Typography>
+                          <Typography sx={{ minWidth: 80, textAlign: 'center' }}>{`${reading.reading} KM`}</Typography>
                         ) : (
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <input
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
+                            <TextField
+                              size="small"
                               type="number"
-                              min={0}
-                              step="0.1"
-                              value={reading.reading ?? ''}
+                              inputProps={{ min: 0, step: 0.1 }}
+                              value={editingValues[reading.id] ?? ''}
                               onChange={(e) => {
-                                const val = e.target.value === '' ? '' : Number(e.target.value)
-                                setReadings(prev => prev.map(r => r.id === reading.id ? { ...r, reading: val as any } : r))
+                                const val = e.target.value
+                                setEditingValues(prev => ({ ...prev, [reading.id]: val }))
                               }}
-                              style={{ width: 100, padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc' }}
+                              sx={{ width: 120 }}
                             />
-                            <Button size="small" onClick={() => {
-                              // clear inline entry
-                              setReadings(prev => prev.map(r => r.id === reading.id ? { ...r, reading: undefined as any } : r))
-                            }}>Clear</Button>
+                            <Button size="small" onClick={() => setEditingValues(prev => ({ ...prev, [reading.id]: '' }))}>Clear</Button>
                           </Box>
                         )}
                       </TableCell>
@@ -470,21 +481,26 @@ export default function BikeReadingsPage() {
                           <Button
                             size="small"
                             variant="contained"
-                            color="primary"
+                            color={reading.reading !== undefined && reading.reading !== null ? 'success' : 'primary'}
                             startIcon={<Upload />}
                             onClick={() => {
-                              const km = Number(reading.reading)
-                              if (!Number.isFinite(km) || km <= 0) {
-                                setError('Please enter a valid KM reading greater than 0 before uploading/updating')
-                                return
-                              }
-                              // open confirm dialog with the selected reading (allows editing before confirm)
-                              setSelectedReading({ ...reading, reading: km })
+                              // Determine the mode based on whether the row already had a stored reading
+                              const originalHadReading = reading.reading !== undefined && reading.reading !== null
+                              setConfirmMode(originalHadReading ? 'update' : 'upload')
+
+                              // Use editing value if present; otherwise prefill with existing reading (for update)
+                              const rawVal = editingValues[reading.id]
+                              const prefill = rawVal !== undefined && rawVal !== '' ? rawVal : (originalHadReading ? String(reading.reading) : '')
+
+                              // set confirmValue and selectedReading, then open dialog
+                              setConfirmValue(prefill)
+                              setSelectedReading({ ...reading, reading: prefill !== '' ? Number(prefill) : undefined as any })
                               setConfirmDialogOpen(true)
                             }}
-                            disabled={reading.reading === undefined || Number.isNaN(Number(reading.reading))}
+                            disabled={
+                              !((editingValues[reading.id] !== undefined && editingValues[reading.id] !== '' && !Number.isNaN(Number(editingValues[reading.id]))) || (reading.reading !== undefined && reading.reading !== null))
+                            }
                           >
-                            {/* If a reading already exists, label the action Update instead of Upload */}
                             {reading.reading !== undefined && reading.reading !== null ? 'Update' : 'Upload'}
                           </Button>
 
@@ -644,20 +660,26 @@ export default function BikeReadingsPage() {
           maxWidth="xs"
           fullWidth
         >
-          <DialogTitle>Confirm KM Upload</DialogTitle>
+          <DialogTitle>{confirmMode === 'update' ? 'Confirm KM Update' : 'Confirm KM Upload'}</DialogTitle>
           <DialogContent>
             <Box sx={{ p: 2 }}>
-              <Typography>
-                Are you sure you want to upload the KM reading for{' '}
-                <strong>{selectedReading?.user.name}</strong>?
+              <Typography sx={{ mb: 1 }}>
+                {confirmMode === 'update' ? 'Enter the new KM reading for ' : 'Enter the KM reading for '}
+                <strong>{selectedReading?.user.name}</strong>
               </Typography>
-              <Typography sx={{ mt: 1, mb: 2 }} color="text.secondary">
-                Reading: <strong>{selectedReading?.reading} KM</strong>
-              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                inputProps={{ min: 0, step: 0.1 }}
+                value={confirmValue}
+                onChange={(e) => setConfirmValue(e.target.value)}
+                sx={{ mb: 2 }}
+              />
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                 <Button onClick={() => setConfirmDialogOpen(false)} disabled={isUploading}>Cancel</Button>
-                <Button variant="contained" color="primary" onClick={handleConfirmUpload} disabled={isUploading}>
-                  {isUploading ? 'Uploading...' : 'Confirm Upload'}
+                <Button variant="contained" color={confirmMode === 'update' ? 'success' : 'primary'} onClick={handleConfirmUpload} disabled={isUploading}>
+                  {isUploading ? (confirmMode === 'update' ? 'Updating...' : 'Uploading...') : (confirmMode === 'update' ? 'Confirm Update' : 'Confirm Upload')}
                 </Button>
               </Box>
             </Box>

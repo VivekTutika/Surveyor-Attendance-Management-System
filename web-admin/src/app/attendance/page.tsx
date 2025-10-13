@@ -237,9 +237,6 @@ export default function AttendancePage() {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Attendance Records
-          </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="outlined"
@@ -249,20 +246,7 @@ export default function AttendancePage() {
             >
               View All Locations
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={handleExportCSV}
-            >
-              Export CSV
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={handleExportPDF}
-            >
-              Export PDF
-            </Button>
+            {/* Exports moved to Reports page */}
           </Box>
         </Box>
 
