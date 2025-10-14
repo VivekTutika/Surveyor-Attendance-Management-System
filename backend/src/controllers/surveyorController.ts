@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { SurveyorService } from '../services/surveyorService';
+import { SurveyorService, CreateSurveyorData, UpdateSurveyorData } from '../services/surveyorService';
 import { sendSuccess, sendError, sendCreated } from '../utils/response';
 import { asyncHandler } from '../middlewares/errorHandler';
 import { prisma } from '../config/db';
@@ -7,7 +7,8 @@ import { prisma } from '../config/db';
 export class SurveyorController {
   // POST /api/surveyors - Create new surveyor (Admin only)
   static createSurveyor = asyncHandler(async (req: Request, res: Response) => {
-    const surveyorData = req.body;
+    // prefer validated body when middleware is used
+    const surveyorData = ((req as any).validatedBody || req.body) as CreateSurveyorData;
 
     const surveyor = await SurveyorService.createSurveyor(surveyorData);
 
@@ -16,9 +17,9 @@ export class SurveyorController {
 
   // GET /api/surveyors - Get all surveyors with filters (Admin only)
   static getSurveyors = asyncHandler(async (req: Request, res: Response) => {
-    const filters = req.query as any;
+  const filters = ((req as any).validatedQuery || req.query) as any;
 
-    const surveyors = await SurveyorService.getSurveyors(filters);
+  const surveyors = await SurveyorService.getSurveyors(filters);
 
     sendSuccess(res, 'Surveyors retrieved successfully', surveyors);
   });
@@ -34,10 +35,10 @@ export class SurveyorController {
 
   // PUT /api/surveyors/:id - Update surveyor (Admin only)
   static updateSurveyor = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const updateData = req.body;
+  const { id } = req.params;
+  const updateData = ((req as any).validatedBody || req.body) as UpdateSurveyorData;
 
-    const updatedSurveyor = await SurveyorService.updateSurveyor(parseInt(id), updateData);
+  const updatedSurveyor = await SurveyorService.updateSurveyor(parseInt(id), updateData);
 
     sendSuccess(res, 'Surveyor updated successfully', updatedSurveyor);
   });

@@ -7,13 +7,15 @@ export interface CreateUserData {
   name: string;
   mobileNumber: string;
   password: string;
+  employeeId?: string;
+  hasBike?: boolean;
   role?: Role;
   projectId?: number;
   locationId?: number;
 }
 
 export interface LoginData {
-  mobileNumber: string;
+  employeeId: string;
   password: string;
 }
 
@@ -112,6 +114,8 @@ export class AuthService {
       data: {
         name,
         mobileNumber: normalizedMobileNumber, // Store normalized version
+        ...(userData.employeeId !== undefined && { employeeId: userData.employeeId }),
+        ...(typeof userData.hasBike === 'boolean' && { hasBike: userData.hasBike }),
         passwordHash,
         role,
         projectId,
@@ -137,6 +141,7 @@ export class AuthService {
     const tokenPayload: JWTPayload = {
       userId: user.id,
       mobileNumber: user.mobileNumber,
+      employeeId: (user as any).employeeId ?? null,
       role: user.role,
     };
     const token = generateToken(tokenPayload);
@@ -145,6 +150,7 @@ export class AuthService {
       user: ({
         id: user.id,
         name: user.name,
+        employeeId: (user as any).employeeId ?? null,
         mobileNumber: user.mobileNumber,
         role: user.role,
         projectId: user.projectId,
@@ -159,29 +165,16 @@ export class AuthService {
 
   // Login user
   static async login(loginData: LoginData): Promise<AuthResponse> {
-    const { mobileNumber, password } = loginData;
+    const { employeeId, password } = loginData;
 
-    // Get all possible variants of the mobile number
-    const mobileVariants = getMobileNumberVariants(mobileNumber);
-    
-    // Try to find user with any of the variants
-    let user = null;
-    for (const variant of mobileVariants) {
-      user = await prisma.user.findUnique({
-        where: { mobileNumber: variant },
-        include: {
-          project: true,
-          location: true,
-        },
-      });
-      
-      if (user) {
-        break;
-      }
-    }
+    // Lookup only by employeeId
+    const user = await prisma.user.findFirst({
+      where: { employeeId: employeeId },
+      include: { project: true, location: true },
+    });
 
     if (!user) {
-      throw new Error('Invalid mobile number or password');
+      throw new Error('Invalid employee ID or password');
     }
 
     // Check if user is active
@@ -207,6 +200,7 @@ export class AuthService {
       user: ({
         id: user.id,
         name: user.name,
+        employeeId: (user as any).employeeId ?? null,
         mobileNumber: user.mobileNumber,
         role: user.role,
         projectId: user.projectId,
@@ -226,6 +220,7 @@ export class AuthService {
       select: {
         id: true,
         name: true,
+        employeeId: true,
         mobileNumber: true,
         role: true,
         project: true,

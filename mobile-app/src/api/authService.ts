@@ -7,7 +7,7 @@ import {
 } from '../types';
 
 export interface AuthService {
-  login: (mobileNumber: string, password: string) => Promise<LoginResponse>;
+  login: (employeeId: string, password: string) => Promise<LoginResponse>;
   getProfile: () => Promise<User>;
   updateProfile: (profileData: Partial<User>) => Promise<User>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<ApiResponse>;
@@ -15,20 +15,20 @@ export interface AuthService {
 }
 
 export const authService: AuthService = {
-  // Login user
-  login: async (mobileNumber: string, password: string) => {
+  // Login user (by employeeId)
+  login: async (employeeId: string, password: string) => {
     try {
       // eslint-disable-next-line no-console
-      console.log('[AuthService] login attempt:', { mobileNumber });
+      console.log('[AuthService] login attempt:', { employeeId });
       const response = await api.post('/auth/login', {
-        mobileNumber,
+        employeeId,
         password,
       });
       // eslint-disable-next-line no-console
       console.log('[AuthService] login success');
       // The api interceptor already returns response.data or response.data.data
       // Cast to LoginResponse to keep callers strongly typed
-  return (response as unknown) as LoginResponse;
+      return (response as unknown) as LoginResponse;
     } catch (error) {
       // eslint-disable-next-line no-console
       console.log('[AuthService] login error:', error);

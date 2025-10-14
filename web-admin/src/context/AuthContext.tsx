@@ -84,8 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
       setError(null)
-      console.log('Attempting login with:', mobileNumber)
+      console.log('Attempting login with employeeId:', mobileNumber)
 
+      // treat the first parameter as employeeId now
       const response = await authService.login(mobileNumber, password)
       console.log('Login response:', response)
       

@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 // @ts-ignore
@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button, InputField, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
-import { loginUser, clearError, loadStoredAuth } from '../../store/authSlice';
+import { loginUser, clearError, loadStoredAuth, logoutUser } from '../../store/authSlice';
 import { RootState, AuthStackParamList } from '../../types';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
@@ -27,7 +27,7 @@ interface Props {
 }
 
 interface FormData {
-  mobileNumber: string;
+  employeeId: string;
   password: string;
 }
 
@@ -40,10 +40,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const [formData, setFormData] = useState<FormData>({
-    mobileNumber: '',
+    employeeId: '',
     password: '',
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const auth = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     // Load stored authentication on component mount
@@ -69,10 +70,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
 
-    if (!formData.mobileNumber.trim()) {
-      errors.mobileNumber = 'Mobile number is required';
-    } else if (formData.mobileNumber.length < 10) {
-      errors.mobileNumber = 'Please enter a valid mobile number';
+    if (!formData.employeeId.trim()) {
+      errors.employeeId = 'Employee ID is required';
     }
 
     if (!formData.password.trim()) {
@@ -106,28 +105,22 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     try {
-      await dispatch(loginUser({
-        mobileNumber: formData.mobileNumber,
+      const result: any = await dispatch(loginUser({
+        mobileNumber: formData.employeeId, // backend expects employeeId; thunk maps this
         password: formData.password,
       })).unwrap();
+
+      // Prevent non-surveyor roles from using the mobile app.
+      const role = (result?.user?.role || result?.role || (auth.user && auth.user.role) || null);
+      if (role && String(role).toLowerCase() !== 'surveyor') {
+        // Immediately clear auth state so admin credentials don't remain active here.
+        dispatch(logoutUser());
+        Alert.alert('Access Denied', 'This mobile app is only for Surveyor users. Please use the admin portal.', [{ text: 'OK' }]);
+        return;
+      }
     } catch (error) {
       // Error handling is done through useEffect
     }
-  };
-
-  const fillDemoCredentials = (userType: 'admin' | 'surveyor') => {
-    if (userType === 'admin') {
-      setFormData({
-        mobileNumber: '+1234567890',
-        password: 'admin123',
-      });
-    } else {
-      setFormData({
-        mobileNumber: '+1234567892',
-        password: 'surveyor123',
-      });
-    }
-    setFormErrors({});
   };
 
   return (
@@ -142,10 +135,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="clipboard" size={60} color={Colors.primary} />
-            </View>
-            <Text style={styles.title}>SAMS</Text>
+              <View style={styles.logoContainer}>
+                <Image source={require('../../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
+              </View>
+            <Text style={styles.title}>LRMC  SAMS</Text>
             <Text style={styles.subtitle}>Surveyor Attendance Management System</Text>
             <Text style={styles.welcomeText}>Welcome back! Please sign in to continue.</Text>
           </View>
@@ -153,14 +146,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           {/* Login Form */}
           <View style={styles.formContainer}>
             <InputField
-              label="Mobile Number"
-              placeholder="Enter your mobile number"
-              value={formData.mobileNumber}
-              onChangeText={(value) => handleInputChange('mobileNumber', value)}
-              keyboardType="phone-pad"
-              error={formErrors.mobileNumber}
+              label="Employee ID"
+              placeholder="Enter your employee ID"
+              value={formData.employeeId}
+              onChangeText={(value) => handleInputChange('employeeId', value)}
+              keyboardType="default"
+              error={formErrors.employeeId}
               leftIcon={
-                <Ionicons name="call-outline" size={20} color={Colors.gray} />
+                <Ionicons name="person-outline" size={20} color={Colors.gray} />
               }
             />
 
@@ -185,31 +178,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             />
           </View>
 
-          {/* Demo Credentials */}
-          <View style={styles.demoContainer}>
-            <Text style={styles.demoTitle}>Demo Credentials:</Text>
-            <View style={styles.demoButtons}>
-              <Button
-                title="Surveyor Login"
-                variant="outline"
-                size="small"
-                onPress={() => fillDemoCredentials('surveyor')}
-                style={styles.demoButton}
-              />
-              <Button
-                title="Admin Login"
-                variant="outline"
-                size="small"
-                onPress={() => fillDemoCredentials('admin')}
-                style={styles.demoButton}
-              />
-            </View>
-          </View>
+
 
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              LRMC Solutions © 2024
+              LRMC Solutions © 2025
             </Text>
             <Text style={styles.versionText}>Version 1.0.0</Text>
           </View>
@@ -258,6 +232,10 @@ const styles = StyleSheet.create({
         elevation: 3,
       },
     }),
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
   },
   title: {
     fontSize: 32,

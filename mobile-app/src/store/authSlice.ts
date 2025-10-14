@@ -19,12 +19,14 @@ export const loginUser = createAsyncThunk<
   'auth/loginUser',
   async ({ mobileNumber, password }, { rejectWithValue }) => {
     try {
-      const response = await authService.login(mobileNumber, password);
+      // in this app we now use employeeId in place of mobileNumber
+      const employeeId = mobileNumber
+      const response = await authService.login(employeeId, password);
       // eslint-disable-next-line no-console
       console.log('[AuthThunk] login response:', response ? Object.keys(response) : 'no response');
       
       // Response is already the data object due to axios interceptor
-      const normalizedUser = normalizeUser(response.user);
+  const normalizedUser = normalizeUser(response.user);
       await AsyncStorage.setItem('userToken', response.token);
       await AsyncStorage.setItem('userData', JSON.stringify(normalizedUser));
       

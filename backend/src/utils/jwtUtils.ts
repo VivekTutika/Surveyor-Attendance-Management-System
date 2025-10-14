@@ -4,6 +4,7 @@ import config from '../config';
 export interface JWTPayload {
   userId: number;  // Changed from string to number to match Prisma schema
   mobileNumber: string;
+  employeeId?: string | null;
   role: string;
 }
 

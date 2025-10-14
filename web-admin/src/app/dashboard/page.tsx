@@ -31,7 +31,8 @@ import {
   BarChart,
   Bar,
 } from 'recharts'
-import { dashboardService, DashboardStats } from '@/services/api'
+import { dashboardService, DashboardStats, attendanceService, bikeMeterService } from '@/services/api'
+import dayjs from 'dayjs'
 
 interface StatsCardProps {
   title: string
@@ -56,11 +57,6 @@ function StatsCard({ title, value, icon, color, subtitle }: StatsCardProps) {
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {title}
             </Typography>
-            {subtitle && (
-              <Typography variant="caption" color="text.secondary">
-                {subtitle}
-              </Typography>
-            )}
           </Box>
         </Box>
       </CardContent>
@@ -72,6 +68,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [weeklyAttendanceDataState, setWeeklyAttendanceDataState] = useState<Array<{ date: string; count: number }>>([])
+  const [monthlyStatsDataState, setMonthlyStatsDataState] = useState<Array<{ month: string; attendance: number; bikeReadings: number }>>([])
 
   useEffect(() => {
     fetchDashboardStats()
@@ -83,6 +81,57 @@ export default function DashboardPage() {
       setError(null)
       const data = await dashboardService.getStats()
       setStats(data)
+      // fetch raw attendance/bike data to compute client-side buckets using capturedAt (same approach as Attendance page)
+      try {
+        // Weekly: last 7 days (including today)
+        const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD')
+        const end = dayjs().format('YYYY-MM-DD')
+        const attResp: any = await attendanceService.getAll({ startDate: start, endDate: end, page: 1, limit: 10000 })
+        const attArr = attResp.attendance || []
+        const weekMap: Record<string, number> = {}
+        attArr.forEach((a: any) => {
+          const key = dayjs(a.capturedAt).format('YYYY-MM-DD')
+          weekMap[key] = (weekMap[key] || 0) + 1
+        })
+        const weekly = Array.from({ length: 7 }).map((_, i) => {
+          const k = dayjs().subtract(6 - i, 'day').format('YYYY-MM-DD')
+          return { date: k, count: weekMap[k] || 0 }
+        })
+        setWeeklyAttendanceDataState(weekly)
+
+        // Monthly: last 6 months (including current)
+        const monthsBack = 6
+        const startMonthDate = dayjs().subtract(monthsBack - 1, 'month').startOf('month').format('YYYY-MM-DD')
+        const endMonthDate = dayjs().endOf('month').format('YYYY-MM-DD')
+        const attMonthlyResp: any = await attendanceService.getAll({ startDate: startMonthDate, endDate: endMonthDate, page: 1, limit: 10000 })
+        const bikeResp: any = await bikeMeterService.getAll({ startDate: startMonthDate, endDate: endMonthDate, page: 1, limit: 10000 })
+        const attMonthlyArr = attMonthlyResp.attendance || []
+        const bikeArr = bikeResp.readings || []
+        const attMonthMap: Record<string, number> = {}
+        attMonthlyArr.forEach((a: any) => {
+          const key = dayjs(a.capturedAt).format('YYYY-MM')
+          attMonthMap[key] = (attMonthMap[key] || 0) + 1
+        })
+        const bikeMonthMap: Record<string, number> = {}
+        bikeArr.forEach((b: any) => {
+          // bike readings may use 'date' or 'capturedAt'
+          const dateField = b.capturedAt || b.date
+          const key = dayjs(dateField).format('YYYY-MM')
+          bikeMonthMap[key] = (bikeMonthMap[key] || 0) + 1
+        })
+        const months: string[] = []
+        for (let i = monthsBack - 1; i >= 0; i--) {
+          months.push(dayjs().subtract(i, 'month').format('YYYY-MM'))
+        }
+        const monthly = months.map(m => ({
+          month: dayjs(`${m}-01`).format('MMM YYYY'),
+          attendance: attMonthMap[m] || 0,
+          bikeReadings: bikeMonthMap[m] || 0,
+        }))
+        setMonthlyStatsDataState(monthly)
+      } catch (err) {
+        console.error('Error fetching raw attendance/bike data for charts:', err)
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to fetch dashboard statistics')
     } finally {
@@ -114,12 +163,20 @@ export default function DashboardPage() {
     )
   }
 
+  // if client-side computed weekly/monthly data is available, prefer it; otherwise fall back to server stats
+  const weeklyAttendanceData = (weeklyAttendanceDataState.length > 0)
+    ? weeklyAttendanceDataState
+    : (stats?.weeklyAttendance || [])
+        .map(item => ({ ...item, date: item.date }))
+        .filter(item => !!item.date)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+  const monthlyStatsData = (monthlyStatsDataState.length > 0)
+    ? monthlyStatsDataState
+    : (stats?.monthlyStats || [])
+
   return (
     <Box>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Welcome to the SAMS Admin Portal. Here's a quick overview of your system.
-      </Typography>
-
       {/* Stats Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
         <StatsCard
@@ -196,19 +253,19 @@ export default function DashboardPage() {
             </Typography>
           <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
-                <LineChart data={stats.weeklyAttendance}>
+                <LineChart data={weeklyAttendanceData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })}
-                  />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip 
-                    labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
+                    labelFormatter={(value) => new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', { 
                       weekday: 'long',
                       month: 'long',
                       day: 'numeric' 
@@ -234,7 +291,7 @@ export default function DashboardPage() {
             </Typography>
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
-                <BarChart data={stats.monthlyStats}>
+                <BarChart data={monthlyStatsData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
@@ -246,27 +303,6 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </Box>
           </Paper>
-
-        {/* System Status */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            System Status
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircle color="success" />
-              <Typography variant="body2">API Server: Online</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircle color="success" />
-              <Typography variant="body2">Database: Connected</Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CheckCircle color="success" />
-              <Typography variant="body2">File Storage: Available</Typography>
-            </Box>
-          </Box>
-        </Paper>
       </Box>
     </Box>
   )

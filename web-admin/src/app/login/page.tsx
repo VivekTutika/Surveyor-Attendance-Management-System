@@ -16,21 +16,16 @@ import { Visibility, VisibilityOff, AdminPanelSettings } from '@mui/icons-materi
 import { useAuth } from '@/context/AuthContext'
 
 export default function LoginPage() {
-  const [mobileNumber, setMobileNumber] = useState('')
+  const [employeeId, setEmployeeId] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const { login, loading, error } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Ensure mobile number has + prefix
-    let formattedMobileNumber = mobileNumber.trim()
-    if (formattedMobileNumber && !formattedMobileNumber.startsWith('+')) {
-      formattedMobileNumber = '+' + formattedMobileNumber
-    }
-    
-    await login(formattedMobileNumber, password)
+
+    const id = employeeId.trim()
+    await login(id, password)
   }
 
   return (
@@ -79,13 +74,13 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Mobile Number"
-              type="tel"
-              value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value)}
+              label="Employee ID"
+              type="text"
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
               margin="normal"
               required
-              autoComplete="tel"
+              autoComplete="username"
             />
 
             <TextField

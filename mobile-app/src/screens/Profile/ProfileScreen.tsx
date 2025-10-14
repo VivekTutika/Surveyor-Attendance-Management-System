@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Alert,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 // @ts-ignore
@@ -86,6 +86,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.profileInfo}>
               <Text style={styles.userName}>{user?.name || 'Unknown User'}</Text>
               <Text style={styles.userRole}>{user?.role || 'Surveyor'}</Text>
+              <Text style={[styles.infoValue, { marginTop: 1 }]}> 
+                <Text style={{ fontWeight: 'bold' }}>Employee ID</Text>
+                <Text>{' - '}{user?.employeeId ?? 'NA'}</Text>
+              </Text>
               <View style={styles.statusContainer}>
                 <View 
                   style={[
@@ -238,6 +242,7 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     marginBottom: 16,
+    padding: 12,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -264,11 +269,12 @@ const styles = StyleSheet.create({
   userRole: {
     fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 2,
   },
   statusDot: {
     width: 8,

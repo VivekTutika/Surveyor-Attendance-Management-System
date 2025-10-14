@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   Alert,
   TouchableOpacity,
   Image,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -61,8 +61,8 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
   const openCamera = async () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
-        // Use MediaTypeOptions for compatibility across SDKs
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        // Use  for compatibility across SDKs
+          mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.85,
       });
