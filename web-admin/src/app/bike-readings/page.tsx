@@ -55,6 +55,7 @@ interface BikeFilters {
   startDate: Dayjs | null
   endDate: Dayjs | null
   userId: string
+  type: string
 }
 
 export default function BikeReadingsPage() {
@@ -73,6 +74,7 @@ export default function BikeReadingsPage() {
     startDate: dayjs(),
     endDate: dayjs(),
     userId: '',
+    type: '',
   })
 
   // Photo dialog
@@ -129,6 +131,9 @@ export default function BikeReadingsPage() {
       if (filters.userId) {
         params.userId = filters.userId
       }
+      if (filters.type) {
+        params.type = filters.type
+      }
 
       const data = await bikeMeterService.getAll(params)
       setReadings(data.readings)
@@ -151,6 +156,7 @@ export default function BikeReadingsPage() {
       startDate: dayjs(),
       endDate: dayjs(),
       userId: '',
+      type: '',
     })
     setPage(0)
   }
@@ -277,12 +283,33 @@ export default function BikeReadingsPage() {
               Gallery
             </Button>
           </Box>
-        </Box>
-        
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Track and analyze bike odometer readings submitted by surveyors.
-        </Typography>
 
+          {/* Bike ownership summary cards next to view buttons */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ bgcolor: 'primary.main' }}><DirectionsBike /></Avatar>
+                  <Box>
+                    <Typography variant="h6">{surveyors.filter(s => s.hasBike).length}</Typography>
+                    <Typography color="text.secondary">With Bike</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ bgcolor: 'default' }}><DirectionsBike /></Avatar>
+                  <Box>
+                    <Typography variant="h6">{surveyors.filter(s => !s.hasBike).length}</Typography>
+                    <Typography color="text.secondary">Without Bike</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -387,6 +414,20 @@ export default function BikeReadingsPage() {
                 ))}
               </Select>
             </FormControl>
+            <FormControl sx={{ minWidth: 150 }}>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={filters.type}
+                label="Type"
+                onChange={(e) => handleFilterChange('type', e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All Types</em>
+                </MenuItem>
+                <MenuItem value="MORNING">Check In</MenuItem>
+                <MenuItem value="EVENING">Check Out</MenuItem>
+              </Select>
+            </FormControl>
             
             <Button
               variant="outlined"
@@ -395,8 +436,6 @@ export default function BikeReadingsPage() {
             >
               Clear Filters
             </Button>
-            
-            {/* Exports moved to Reports page */}
           </Box>
         </Paper>
 

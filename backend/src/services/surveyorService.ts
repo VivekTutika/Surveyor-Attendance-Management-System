@@ -5,12 +5,15 @@ import { prisma } from '../config/db';
 export interface CreateSurveyorData {
   name: string;
   mobileNumber: string;
+  employeeId: string;
+  hasBike?: boolean;
   password: string;
   projectId?: number;
   locationId?: number;
 }
 
 export interface UpdateSurveyorData {
+  employeeId?: string;
   name?: string;
   mobileNumber?: string;
   projectId?: number;
@@ -30,7 +33,7 @@ export interface SurveyorFilters {
 export class SurveyorService {
   // Create new surveyor (Admin only)
   static async createSurveyor(data: CreateSurveyorData) {
-    const { name, mobileNumber, password, projectId, locationId } = data;
+    const { name, mobileNumber, password, projectId, locationId, employeeId } = data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -46,18 +49,22 @@ export class SurveyorService {
 
     // Create surveyor
     const surveyor = await prisma.user.create({
+      // cast data to any to avoid transient type mismatch until prisma client is updated in every environment
       data: {
         name,
         mobileNumber,
+        employeeId,
+        hasBike: (data as any).hasBike ?? false,
         passwordHash,
         role: Role.SURVEYOR,
         projectId,
         locationId,
-      },
+      } as any,
       // Cast select to any because generated Prisma client types may not yet include
       // the `hasBike` field. This preserves runtime selection while avoiding
       // TypeScript compile errors until prisma generate is run.
       select: {
+        employeeId: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -76,11 +83,11 @@ export class SurveyorService {
             name: true,
           },
         },
-        isActive: true,
-        hasBike: true,
+  isActive: true,
+  hasBike: true,
         createdAt: true,
         updatedAt: true,
-      } as any,
+      },
     });
 
     return surveyor;
@@ -125,6 +132,7 @@ export class SurveyorService {
     const surveyors = await prisma.user.findMany({
       where,
       select: {
+        employeeId: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -144,7 +152,7 @@ export class SurveyorService {
           },
         },
         isActive: true,
-        hasBike: true,
+  hasBike: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -153,7 +161,7 @@ export class SurveyorService {
             bikeMeterReadings: true,
           },
         },
-      } as any,
+      },
       orderBy: [
         { isActive: 'desc' },
         { name: 'asc' },
@@ -168,6 +176,7 @@ export class SurveyorService {
     const surveyor = await prisma.user.findUnique({
       where: { id: surveyorId },
       select: {
+        employeeId: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -187,7 +196,7 @@ export class SurveyorService {
           },
         },
         isActive: true,
-        hasBike: true,
+  hasBike: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -196,7 +205,7 @@ export class SurveyorService {
             bikeMeterReadings: true,
           },
         },
-      } as any,
+      },
     });
 
     if (!surveyor) {
@@ -208,7 +217,7 @@ export class SurveyorService {
 
   // Update surveyor (Admin only)
   static async updateSurveyor(surveyorId: number, updateData: UpdateSurveyorData) {
-  const { name, mobileNumber, projectId, locationId, isActive, hasBike } = updateData;
+  const { name, mobileNumber, projectId, locationId, isActive, hasBike, employeeId } = updateData;
 
     // Check if surveyor exists
     const existingSurveyor = await prisma.user.findUnique({
@@ -233,15 +242,17 @@ export class SurveyorService {
     // Update surveyor
     const updatedSurveyor = await prisma.user.update({
       where: { id: surveyorId },
-      data: {
+      data: ({
+        ...(employeeId !== undefined && { employeeId }),
         ...(name && { name }),
         ...(mobileNumber && { mobileNumber }),
         ...(projectId !== undefined && { projectId }),
         ...(locationId !== undefined && { locationId }),
         ...(typeof isActive === 'boolean' && { isActive }),
         ...(typeof hasBike === 'boolean' && { hasBike }),
-      },
+      } as any),
       select: {
+        employeeId: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -264,7 +275,7 @@ export class SurveyorService {
         hasBike: true,
         createdAt: true,
         updatedAt: true,
-      } as any,
+      },
     });
 
     return updatedSurveyor;

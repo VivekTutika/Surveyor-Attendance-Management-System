@@ -67,6 +67,7 @@ interface ApiResponse<T = any> {
 interface User {
   id: string
   name: string
+  employeeId?: string
   mobileNumber: string
   role: 'ADMIN' | 'SURVEYOR'
   isActive: boolean
@@ -135,10 +136,10 @@ interface DashboardStats {
 
 // Auth Service
 export const authService = {
-  login: async (mobileNumber: string, password: string) => {
+  login: async (employeeId: string, password: string) => {
     try {
       const response: AxiosResponse<ApiResponse<AuthResponse>> = 
-        await api.post('/api/auth/login', { mobileNumber, password })
+        await api.post('/api/auth/login', { employeeId, password })
       return response.data.data!
     } catch (error) {
       console.error('Login error:', error)
@@ -222,6 +223,84 @@ export const surveyorService = {
       return response.data.data!
     } catch (error) {
       console.error('Toggle surveyor status error:', error)
+      throw error
+    }
+  },
+  // Get projects and locations for forms
+  getProjects: async () => {
+    try {
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/api/projects')
+      return response.data.data!
+    } catch (error) {
+      console.error('Get projects error:', error)
+      throw error
+    }
+  },
+
+  getLocations: async () => {
+    try {
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/api/locations')
+      return response.data.data!
+    } catch (error) {
+      console.error('Get locations error:', error)
+      throw error
+    }
+  },
+  createProject: async (payload: { name: string }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.post('/api/projects', payload)
+      return response.data.data!
+    } catch (error) {
+      console.error('Create project error:', error)
+      throw error
+    }
+  },
+
+  updateProject: async (id: number | string, payload: { name: string }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/projects/${id}`, payload)
+      return response.data.data!
+    } catch (error) {
+      console.error('Update project error:', error)
+      throw error
+    }
+  },
+
+  deleteProject: async (id: number | string) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/api/projects/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Delete project error:', error)
+      throw error
+    }
+  },
+
+  createLocation: async (payload: { name: string }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.post('/api/locations', payload)
+      return response.data.data!
+    } catch (error) {
+      console.error('Create location error:', error)
+      throw error
+    }
+  },
+  updateLocation: async (id: number | string, payload: { name: string }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/locations/${id}`, payload)
+      return response.data.data!
+    } catch (error) {
+      console.error('Update location error:', error)
+      throw error
+    }
+  },
+
+  deleteLocation: async (id: number | string) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/api/locations/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Delete location error:', error)
       throw error
     }
   },

@@ -80,6 +80,7 @@ export function normalizeUser(apiUser: any): User {
 
   const normalized: any = {
     id: String(raw.id ?? ''),
+    employeeId: raw.employeeId ?? raw.employee_id ?? null,
     name: raw.name ?? 'Unknown',
     mobileNumber: raw.mobileNumber ?? raw.mobile_number ?? '',
     role,

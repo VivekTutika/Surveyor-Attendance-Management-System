@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import {
   Box,
   Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -49,8 +50,11 @@ interface SurveyorFormData {
   name: string
   mobileNumber: string
   password: string
+  employeeId?: string
   isActive: boolean
   hasBike?: boolean
+  projectId?: number | ''
+  locationId?: number | ''
 }
 
 export default function SurveyorsPage() {
@@ -76,12 +80,57 @@ export default function SurveyorsPage() {
     name: '',
     mobileNumber: '',
     password: '',
+    employeeId: '',
     isActive: true,
     hasBike: false,
+    projectId: '',
+    locationId: '',
   })
+  const [projects, setProjects] = useState<Array<{id:number;name:string}>>([])
+  const [locations, setLocations] = useState<Array<{id:number;name:string}>>([])
+  // Add Project/Location dialog states
+  const [addProjectOpen, setAddProjectOpen] = useState(false)
+  const [addLocationOpen, setAddLocationOpen] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [newLocationName, setNewLocationName] = useState('')
+  const [creatingMeta, setCreatingMeta] = useState(false)
+  // Update/Delete project/location states
+  const [updateProjectOpen, setUpdateProjectOpen] = useState(false)
+  const [updateLocationOpen, setUpdateLocationOpen] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<number | ''>('')
+  const [selectedLocationId, setSelectedLocationId] = useState<number | ''>('')
+  const [editMetaName, setEditMetaName] = useState('')
+  const [deletingMetaType, setDeletingMetaType] = useState<'project' | 'location' | null>(null)
+  // Snackbar for success/info messages
+  const [snackbarOpen, setSnackbarOpen] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState('')
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success')
+  // Column filter states: 'all' | 'active' | 'inactive' for status
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  // Bike filter: 'all' | 'yes' | 'no'
+  const [bikeFilter, setBikeFilter] = useState<'all' | 'yes' | 'no'>('all')
 
   useEffect(() => {
     fetchSurveyors()
+  }, [])
+
+  // fetch projects and locations for selects
+  useEffect(() => {
+    const fetchMeta = async () => {
+      try {
+        const p = await surveyorService.getProjects()
+        setProjects(p || [])
+      } catch (e) {
+        // ignore
+      }
+      try {
+        const l = await surveyorService.getLocations()
+        setLocations(l || [])
+      } catch (e) {
+        // ignore
+      }
+    }
+    fetchMeta()
   }, [])
 
   const fetchSurveyors = async () => {
@@ -105,17 +154,23 @@ export default function SurveyorsPage() {
       setFormData({
         name: surveyor.name,
         mobileNumber: surveyor.mobileNumber,
+        employeeId: surveyor.employeeId ?? '',
         password: '', // Don't populate password for editing
         isActive: surveyor.isActive,
         hasBike: !!surveyor.hasBike,
+        projectId: surveyor.project?.id ?? '',
+        locationId: surveyor.location?.id ?? '',
       })
     } else {
       setFormData({
         name: '',
         mobileNumber: '',
         password: '',
+        employeeId: '',
         isActive: true,
         hasBike: false,
+        projectId: '',
+        locationId: '',
       })
     }
     
@@ -129,8 +184,11 @@ export default function SurveyorsPage() {
       name: '',
       mobileNumber: '',
       password: '',
+      employeeId: '',
       isActive: true,
       hasBike: false,
+      projectId: '',
+      locationId: '',
     })
   }
 
@@ -139,13 +197,13 @@ export default function SurveyorsPage() {
       setDialogLoading(true)
       
       if (dialogMode === 'create') {
-        await surveyorService.create(formData as any)
+        await surveyorService.create(formData)
       } else if (selectedSurveyor) {
         const updateData = { ...formData }
         if (!updateData.password) {
           delete (updateData as any).password // Don't update password if empty
         }
-        await surveyorService.update(selectedSurveyor.id, updateData as any)
+        await surveyorService.update(selectedSurveyor.id, updateData)
       }
       
       await fetchSurveyors()
@@ -173,6 +231,152 @@ export default function SurveyorsPage() {
     } catch (error: any) {
       setError(error.message || 'Failed to delete surveyor')
     }
+  }
+
+  const handleCreateProject = async () => {
+    try {
+      if (!newProjectName.trim()) return
+      setCreatingMeta(true)
+      await surveyorService.createProject({ name: newProjectName.trim() })
+      // refresh meta lists
+      const p = await surveyorService.getProjects()
+      setProjects(p || [])
+      setNewProjectName('')
+      setAddProjectOpen(false)
+      // show success snackbar
+      setSnackbarMessage('Project created successfully')
+      setSnackbarSeverity('success')
+      setSnackbarOpen(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to create project')
+    } finally {
+      setCreatingMeta(false)
+    }
+  }
+
+  const handleCreateLocation = async () => {
+    try {
+      if (!newLocationName.trim()) return
+      setCreatingMeta(true)
+      await surveyorService.createLocation({ name: newLocationName.trim() })
+      const l = await surveyorService.getLocations()
+      setLocations(l || [])
+      setNewLocationName('')
+      setAddLocationOpen(false)
+      // show success snackbar
+      setSnackbarMessage('Location created successfully')
+      setSnackbarSeverity('success')
+      setSnackbarOpen(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to create location')
+    } finally {
+      setCreatingMeta(false)
+    }
+  }
+
+  // Update project flow
+  const openUpdateProject = () => {
+    setSelectedProjectId('')
+    setEditMetaName('')
+    setUpdateProjectOpen(true)
+  }
+
+  const handleStartEditProject = (id: number) => {
+    const p = projects.find(pr => pr.id === id)
+    if (!p) return
+    setSelectedProjectId(id)
+    setEditMetaName(p.name)
+  }
+
+  const handleConfirmUpdateProject = async () => {
+    if (!selectedProjectId || !editMetaName.trim()) return
+    confirmAndExecute('Update Project', `Update project to "${editMetaName}"?`, async () => {
+      try {
+        setCreatingMeta(true)
+        await surveyorService.updateProject(selectedProjectId, { name: editMetaName.trim() })
+        const p = await surveyorService.getProjects()
+        setProjects(p || [])
+        setUpdateProjectOpen(false)
+        setSnackbarMessage('Project updated successfully')
+        setSnackbarSeverity('success')
+        setSnackbarOpen(true)
+      } catch (err: any) {
+        setError(err.message || 'Failed to update project')
+      } finally {
+        setCreatingMeta(false)
+      }
+    })
+  }
+
+  // Delete project
+  const handleDeleteProject = async (id: number) => {
+    confirmAndExecute('Delete Project', `Are you sure you want to delete this project? This action cannot be undone.`, async () => {
+      try {
+        setCreatingMeta(true)
+        await surveyorService.deleteProject(id)
+        const p = await surveyorService.getProjects()
+        setProjects(p || [])
+        setSnackbarMessage('Project deleted successfully')
+        setSnackbarSeverity('success')
+        setSnackbarOpen(true)
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete project')
+      } finally {
+        setCreatingMeta(false)
+      }
+    })
+  }
+
+  // Update location flow
+  const openUpdateLocation = () => {
+    setSelectedLocationId('')
+    setEditMetaName('')
+    setUpdateLocationOpen(true)
+  }
+
+  const handleStartEditLocation = (id: number) => {
+    const l = locations.find(loc => loc.id === id)
+    if (!l) return
+    setSelectedLocationId(id)
+    setEditMetaName(l.name)
+  }
+
+  const handleConfirmUpdateLocation = async () => {
+    if (!selectedLocationId || !editMetaName.trim()) return
+    confirmAndExecute('Update Location', `Update location to "${editMetaName}"?`, async () => {
+      try {
+        setCreatingMeta(true)
+        await surveyorService.updateLocation(selectedLocationId, { name: editMetaName.trim() })
+        const l = await surveyorService.getLocations()
+        setLocations(l || [])
+        setUpdateLocationOpen(false)
+        setSnackbarMessage('Location updated successfully')
+        setSnackbarSeverity('success')
+        setSnackbarOpen(true)
+      } catch (err: any) {
+        setError(err.message || 'Failed to update location')
+      } finally {
+        setCreatingMeta(false)
+      }
+    })
+  }
+
+  const handleDeleteLocation = async (id: number) => {
+    confirmAndExecute('Delete Location', `Are you sure you want to delete this location? This action cannot be undone.`, async () => {
+      try {
+        setCreatingMeta(true)
+        await surveyorService.deleteLocation(id)
+        const l = await surveyorService.getLocations()
+        setLocations(l || [])
+        setSnackbarMessage('Location deleted successfully')
+        setSnackbarSeverity('success')
+        setSnackbarOpen(true)
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete location')
+      } finally {
+        setCreatingMeta(false)
+      }
+    })
   }
 
   // Helpers to open confirmation dialogs
@@ -204,6 +408,15 @@ export default function SurveyorsPage() {
   const withBikeCount = surveyors.filter(s => s.role === 'SURVEYOR' && s.hasBike).length
   const withoutBikeCount = surveyors.filter(s => s.role === 'SURVEYOR' && !s.hasBike).length
 
+  // filtered list for table (applies status and bike filters)
+  const filteredSurveyors = surveyors.filter(s => {
+    if (statusFilter === 'active' && !s.isActive) return false
+    if (statusFilter === 'inactive' && s.isActive) return false
+    if (bikeFilter === 'yes' && !s.hasBike) return false
+    if (bikeFilter === 'no' && s.hasBike) return false
+    return true
+  })
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -214,14 +427,14 @@ export default function SurveyorsPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog('create')}
-        >
-          Add Surveyor
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog('create')}>Add Surveyor</Button>
+        <Button variant="contained" startIcon={<Add />} onClick={() => confirmAndExecute('Add Project', 'Create a new project?', async () => { setAddProjectOpen(true) })}>Add Project</Button>
+        <Button variant="outlined" onClick={openUpdateProject}>Update Project</Button>
+        <Button variant="outlined" color="error" onClick={() => { setDeletingMetaType('project'); setSelectedProjectId('') }}>Delete Project</Button>
+        <Button variant="contained" startIcon={<Add />} onClick={() => confirmAndExecute('Add Location', 'Create a new location?', async () => { setAddLocationOpen(true) })}>Add Location</Button>
+        <Button variant="outlined" onClick={openUpdateLocation}>Update Location</Button>
+        <Button variant="outlined" color="error" onClick={() => { setDeletingMetaType('location'); setSelectedLocationId('') }}>Delete Location</Button>
       </Box>
 
       {error && (
@@ -299,24 +512,48 @@ export default function SurveyorsPage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Avatar</TableCell>
+                <TableCell>Employee ID</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Mobile Number</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Bike</TableCell>
+                <TableCell>Project</TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell
+                  onClick={() => {
+                    // cycle: all -> active -> inactive -> all
+                    setStatusFilter(s => s === 'all' ? 'active' : s === 'active' ? 'inactive' : 'all')
+                    setPage(0)
+                  }}
+                  sx={{ cursor: 'pointer', userSelect: 'none', color: statusFilter !== 'all' ? 'primary.main' : 'inherit' }}
+                >
+                  Status
+                </TableCell>
+                <TableCell
+                  onClick={() => {
+                    // cycle: all -> yes -> no -> all
+                    setBikeFilter(b => b === 'all' ? 'yes' : b === 'yes' ? 'no' : 'all')
+                    setPage(0)
+                  }}
+                  sx={{ cursor: 'pointer', userSelect: 'none', color: bikeFilter !== 'all' ? 'primary.main' : 'inherit' }}
+                >
+                  Bike
+                </TableCell>
                 <TableCell>Created At</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {surveyors
+              {filteredSurveyors
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((surveyor) => (
                 <TableRow key={surveyor.id} hover>
                   <TableCell>
-                    <Avatar sx={{ bgcolor: surveyor.isActive ? 'success.main' : 'grey.400' }}>
-                      {surveyor.name.charAt(0).toUpperCase()}
-                    </Avatar>
+                    {surveyor.employeeId ? (
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {surveyor.employeeId}
+                      </Typography>
+                    ) : (
+                      <Typography>-</Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Typography variant="body1" fontWeight="medium">
@@ -325,10 +562,11 @@ export default function SurveyorsPage() {
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Phone fontSize="small" color="action" />
                       {surveyor.mobileNumber}
                     </Box>
                   </TableCell>
+                  <TableCell>{surveyor.project?.name || '-'}</TableCell>
+                  <TableCell>{surveyor.location?.name || '-'}</TableCell>
                   <TableCell>
                     <Chip
                       label={surveyor.isActive ? 'Active' : 'Inactive'}
@@ -402,7 +640,7 @@ export default function SurveyorsPage() {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={surveyors.length}
+          count={filteredSurveyors.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -426,6 +664,152 @@ export default function SurveyorsPage() {
         </DialogActions>
       </Dialog>
 
+      {/* Add Project Dialog */}
+      <Dialog open={addProjectOpen} onClose={() => setAddProjectOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Add New Project</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Project Name"
+            value={newProjectName}
+            onChange={(e) => setNewProjectName(e.target.value)}
+            margin="normal"
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddProjectOpen(false)}>Cancel</Button>
+          <Button onClick={async () => {
+            // show confirm before creating
+            confirmAndExecute('Create Project', `Create project "${newProjectName}"?`, async () => { await handleCreateProject() })
+            setAddProjectOpen(false)
+          }} variant="contained" disabled={creatingMeta || !newProjectName.trim()}>Create</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Location Dialog */}
+      <Dialog open={addLocationOpen} onClose={() => setAddLocationOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Add New Location</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Location Name"
+            value={newLocationName}
+            onChange={(e) => setNewLocationName(e.target.value)}
+            margin="normal"
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddLocationOpen(false)}>Cancel</Button>
+          <Button onClick={async () => {
+            confirmAndExecute('Create Location', `Create location "${newLocationName}"?`, async () => { await handleCreateLocation() })
+            setAddLocationOpen(false)
+          }} variant="contained" disabled={creatingMeta || !newLocationName.trim()}>Create</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Update Project Dialog */}
+      <Dialog open={updateProjectOpen} onClose={() => setUpdateProjectOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Update Project</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Select Project</InputLabel>
+            <Select
+              value={selectedProjectId}
+              label="Select Project"
+              onChange={(e) => {
+                const v = e.target.value as unknown as number
+                setSelectedProjectId(v)
+                handleStartEditProject(v)
+              }}
+            >
+              <MenuItem value="">Select</MenuItem>
+              {projects.map(p => (
+                <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField fullWidth label="Updated Name" value={editMetaName} onChange={(e) => setEditMetaName(e.target.value)} margin="normal" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUpdateProjectOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmUpdateProject} variant="contained" disabled={creatingMeta || !selectedProjectId || !editMetaName.trim()}>Update</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Update Location Dialog */}
+      <Dialog open={updateLocationOpen} onClose={() => setUpdateLocationOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Update Location</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Select Location</InputLabel>
+            <Select
+              value={selectedLocationId}
+              label="Select Location"
+              onChange={(e) => {
+                const v = e.target.value as unknown as number
+                setSelectedLocationId(v)
+                handleStartEditLocation(v)
+              }}
+            >
+              <MenuItem value="">Select</MenuItem>
+              {locations.map(l => (
+                <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField fullWidth label="Updated Name" value={editMetaName} onChange={(e) => setEditMetaName(e.target.value)} margin="normal" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUpdateLocationOpen(false)}>Cancel</Button>
+          <Button onClick={handleConfirmUpdateLocation} variant="contained" disabled={creatingMeta || !selectedLocationId || !editMetaName.trim()}>Update</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Meta Selection Dialog */}
+      <Dialog open={!!deletingMetaType} onClose={() => setDeletingMetaType(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete {deletingMetaType === 'project' ? 'Project' : 'Location'}</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Select {deletingMetaType === 'project' ? 'Project' : 'Location'}</InputLabel>
+            <Select
+              value={deletingMetaType === 'project' ? selectedProjectId : selectedLocationId}
+              label={`Select ${deletingMetaType === 'project' ? 'Project' : 'Location'}`}
+              onChange={(e) => {
+                const v = e.target.value as unknown as number
+                if (deletingMetaType === 'project') setSelectedProjectId(v)
+                else setSelectedLocationId(v)
+              }}
+            >
+              <MenuItem value="">Select</MenuItem>
+              {(deletingMetaType === 'project' ? projects : locations).map((m: any) => (
+                <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletingMetaType(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={async () => {
+              if (deletingMetaType === 'project' && selectedProjectId) {
+                await handleDeleteProject(Number(selectedProjectId))
+              }
+              if (deletingMetaType === 'location' && selectedLocationId) {
+                await handleDeleteLocation(Number(selectedLocationId))
+              }
+              setDeletingMetaType(null)
+            }}
+            disabled={!((deletingMetaType === 'project' && selectedProjectId) || (deletingMetaType === 'location' && selectedLocationId))}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Add/Edit Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
@@ -443,6 +827,14 @@ export default function SurveyorsPage() {
             />
             <TextField
               fullWidth
+              label="Employee ID"
+              value={formData.employeeId}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              margin="normal"
+              required={dialogMode === 'create'}
+            />
+            <TextField
+              fullWidth
               label="Mobile Number"
               value={formData.mobileNumber}
               onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
@@ -450,6 +842,38 @@ export default function SurveyorsPage() {
               required
               type="tel"
             />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Project</InputLabel>
+              <Select
+                value={formData.projectId ?? ''}
+                label="Project"
+                onChange={(e) => {
+                  const v = e.target.value as unknown as string
+                  setFormData({ ...formData, projectId: v === '' ? '' : Number(v) })
+                }}
+              >
+                <MenuItem value="">None</MenuItem>
+                {projects.map(p => (
+                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Location</InputLabel>
+              <Select
+                value={formData.locationId ?? ''}
+                label="Location"
+                onChange={(e) => {
+                  const v = e.target.value as unknown as string
+                  setFormData({ ...formData, locationId: v === '' ? '' : Number(v) })
+                }}
+              >
+                <MenuItem value="">None</MenuItem>
+                {locations.map(l => (
+                  <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               fullWidth
               label={dialogMode === 'create' ? 'Password' : 'New Password (leave blank to keep current)'}
@@ -489,12 +913,24 @@ export default function SurveyorsPage() {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={dialogLoading || !formData.name || !formData.mobileNumber || (dialogMode === 'create' && !formData.password)}
+        disabled={dialogLoading || !formData.name || !formData.mobileNumber || (dialogMode === 'create' && !formData.password) || (dialogMode === 'create' && !formData.employeeId)}
           >
             {dialogLoading ? <CircularProgress size={20} /> : (dialogMode === 'create' ? 'Create' : 'Update')}
           </Button>
         </DialogActions>
       </Dialog>
+
+        {/* Snackbar for success messages */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={4000}
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
     </Box>
   )
 }

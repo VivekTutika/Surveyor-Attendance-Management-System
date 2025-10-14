@@ -249,11 +249,6 @@ export default function AttendancePage() {
             {/* Exports moved to Reports page */}
           </Box>
         </Box>
-
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          Track and manage attendance records submitted by surveyors.
-        </Typography>
-
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}

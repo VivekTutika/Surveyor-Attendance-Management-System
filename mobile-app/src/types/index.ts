@@ -1,6 +1,7 @@
 // User and Authentication Types
 export interface User {
   id: string;
+  employeeId?: string | null;
   name: string;
   mobileNumber: string;
   role: 'Admin' | 'Surveyor';

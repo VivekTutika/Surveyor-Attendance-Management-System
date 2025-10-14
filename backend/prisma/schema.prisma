@@ -29,6 +29,7 @@ model Location {
 
 model User {
   id                Int                @id @default(autoincrement())
+  employeeId        String?            @map("employee_id")
   role              Role               @default(SURVEYOR)
   name              String
   mobileNumber      String             @unique @map("mobile_number")
@@ -125,7 +126,7 @@ model Report {
   endDate     DateTime @map("end_date") @db.Date
   filePath    String?  @map("file_path")
   generatedAt DateTime @default(now()) @map("generated_at")
-  createdBy   Int      @map("created_by")
+  createdBy   String   @map("created_by")
 
   @@map("reports")
 }

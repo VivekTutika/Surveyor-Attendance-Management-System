@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   TouchableOpacity,
   Alert,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -107,31 +107,56 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const getAttendanceStatus = (type: 'morning' | 'evening'): string => {
+    const minutes = getISTMinutes();
     if (type === 'morning') {
-      return attendanceStatus?.morning ? 'Completed' : 'Pending';
+      if (attendanceStatus?.morning) return 'Completed';
+      // If morning window closed
+      if (minutes > 12 * 60) return 'Attendance Time Closed';
+      return 'Pending';
     }
-    return attendanceStatus?.evening ? 'Completed' : 'Pending';
+    if (attendanceStatus?.evening) return 'Completed';
+    // If evening window not yet opened
+    if (minutes < 15 * 60) return 'Attendance Time Closed';
+    return 'Pending';
   };
 
   const getBikeMeterStatus = (type: 'morning' | 'evening'): string => {
+    const minutes = getISTMinutes();
     if (type === 'morning') {
-      return bikeMeterStatus?.morning ? 'Uploaded' : 'Pending';
+      if (bikeMeterStatus?.morning) return 'Uploaded';
+      if (minutes > 12 * 60) return 'Time Closed';
+      return 'Pending';
     }
-    return bikeMeterStatus?.evening ? 'Uploaded' : 'Pending';
+    if (bikeMeterStatus?.evening) return 'Uploaded';
+    if (minutes < 15 * 60) return 'Time Closed';
+    return 'Pending';
   };
 
   const canMarkAttendance = (type: 'morning' | 'evening'): boolean => {
+    const minutes = getISTMinutes();
     if (type === 'morning') {
-      return !attendanceStatus?.morning;
+      // Only allow if not marked and within morning window (<= 12:00 PM IST)
+      return !attendanceStatus?.morning && minutes <= 12 * 60;
     }
-    return !attendanceStatus?.evening;
+    // evening: only allow if not marked and after 3:00 PM IST
+    return !attendanceStatus?.evening && minutes >= 15 * 60;
   };
 
   const canUploadBikeMeter = (type: 'morning' | 'evening'): boolean => {
+    const minutes = getISTMinutes();
     if (type === 'morning') {
-      return !bikeMeterStatus?.morning;
+      return !bikeMeterStatus?.morning && minutes <= 12 * 60;
     }
-    return !bikeMeterStatus?.evening;
+    return !bikeMeterStatus?.evening && minutes >= 15 * 60;
+  };
+
+  // Helper: compute current IST minutes since midnight robustly
+  const getISTMinutes = (): number => {
+    const now = new Date();
+    // Convert local time to UTC ms, then add IST offset (UTC+5:30)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const ist = new Date(utc + (5.5 * 60 * 60 * 1000));
+    return ist.getHours() * 60 + ist.getMinutes();
   };
 
   const navigateToAttendance = (type: 'morning' | 'evening') => {
@@ -142,6 +167,27 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           await dispatch(getTodayAttendanceStatus()).unwrap();
         }
       } catch (_) {}
+
+      // Time-based restrictions (IST)
+      const minutes = getISTMinutes();
+
+      // Morning check-in allowed only until 12:00 PM (inclusive)
+      if (type === 'morning') {
+        if (minutes > 12 * 60) {
+          // Time-window closed; silently block navigation. No toast/alert per requested change.
+          console.debug('Morning check-in blocked: after 12:00 PM IST');
+          return;
+        }
+      }
+
+      // Evening check-out allowed only after 3:00 PM
+      if (type === 'evening') {
+        if (minutes < 15 * 60) {
+          // Time-window not yet open; silently block navigation.
+          console.debug('Evening checkout blocked: before 3:00 PM IST');
+          return;
+        }
+      }
 
       if (canMarkAttendance(type)) {
         navigation.navigate('Attendance', { type: type.toUpperCase() });
@@ -168,6 +214,25 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
           await dispatch(getTodayBikeMeterStatus()).unwrap();
         }
       } catch (_) {}
+
+      // Time-based restrictions (IST)
+      const minutes = getISTMinutes();
+
+      if (type === 'morning') {
+        if (minutes > 12 * 60) {
+          // Time-window closed; silently block navigation.
+          console.debug('Morning bike meter upload blocked: after 12:00 PM IST');
+          return;
+        }
+      }
+
+      if (type === 'evening') {
+        if (minutes < 15 * 60) {
+          // Time-window not yet open; silently block navigation.
+          console.debug('Evening bike meter upload blocked: before 3:00 PM IST');
+          return;
+        }
+      }
 
       if (canUploadBikeMeter(type)) {
         navigation.navigate('BikeMeter', { type: type.toUpperCase() });
@@ -247,7 +312,9 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             <Card
               style={[styles.actionCard, { backgroundColor: getAttendanceCardColor('morning') }]}
               onPress={() => navigateToAttendance('morning')}
-              disabled={!canMarkAttendance('morning')}
+              // Keep the card pressable when the time-window is closed so the toast/alert can be shown.
+              // Only disable when the morning attendance is already marked.
+              disabled={Boolean(attendanceStatus?.morning)}
             >
               <View style={styles.cardContent}>
                 <Ionicons 
@@ -269,7 +336,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             <Card
               style={[styles.actionCard, { backgroundColor: getAttendanceCardColor('evening') }]}
               onPress={() => navigateToAttendance('evening')}
-              disabled={!canMarkAttendance('evening')}
+              // Only disable when evening attendance is already marked; keep pressable otherwise so user sees time-window messages.
+              disabled={Boolean(attendanceStatus?.evening)}
             >
               <View style={styles.cardContent}>
                 <Ionicons 
@@ -297,7 +365,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
               <Card
                 style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('morning') }]}
                 onPress={() => navigateToBikeMeter('morning')}
-                disabled={!canUploadBikeMeter('morning')}
+                // Only disable when morning bike meter is already uploaded; keep pressable to show time-window messages.
+                disabled={Boolean(bikeMeterStatus?.morning)}
               >
                 <View style={styles.cardContent}>
                   <Ionicons 
@@ -319,7 +388,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
               <Card
                 style={[styles.actionCard, { backgroundColor: getBikeMeterCardColor('evening') }]}
                 onPress={() => navigateToBikeMeter('evening')}
-                disabled={!canUploadBikeMeter('evening')}
+                // Only disable when evening bike meter is already uploaded; keep pressable to show time-window messages.
+                disabled={Boolean(bikeMeterStatus?.evening)}
               >
                 <View style={styles.cardContent}>
                   <Ionicons 
