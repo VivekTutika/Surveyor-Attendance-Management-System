@@ -11,7 +11,7 @@ export interface UploadBikeMeterData {
 }
 
 export interface BikeMeterFilters {
-  userId?: number;  // Changed from string to number
+  userId?: number | string;  // Accept numeric string from query params or number
   date?: string;
   startDate?: string;
   endDate?: string;
@@ -97,11 +97,25 @@ export class BikeService {
     // Build where clause
     const where: any = {};
 
+    // Normalize and validate userId filter (query params arrive as strings)
+    let parsedUserId: number | undefined;
+    if (userId !== undefined && userId !== null) {
+      if (typeof userId === 'string') {
+        const p = parseInt(userId, 10);
+        if (Number.isNaN(p)) {
+          throw new Error('Invalid userId filter');
+        }
+        parsedUserId = p;
+      } else {
+        parsedUserId = userId;
+      }
+    }
+
     // Role-based filtering
     if (userRole === 'SURVEYOR') {
       where.userId = requestingUserId; // Surveyors can only see their own records
-    } else if (userId) {
-      where.userId = userId; // Admins can filter by specific user
+    } else if (parsedUserId !== undefined) {
+      where.userId = parsedUserId; // Admins can filter by specific user
     }
 
     // Date filtering

@@ -11,14 +11,19 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  console.error('Error caught by error handler:', {
-    message: error.message,
-    stack: error.stack,
-    url: req.url,
-    method: req.method,
-    body: req.body,
-    timestamp: new Date().toISOString(),
-  });
+  // For auth related errors (401) avoid printing stack traces to console to prevent leaking details
+  if (error.status === 401 || error.statusCode === 401 || (error.message && error.message.toLowerCase().includes('invalid employee id') ) ) {
+    console.warn('Authentication/Authorization error:', { message: error.message, url: req.url, method: req.method, timestamp: new Date().toISOString() })
+  } else {
+    console.error('Error caught by error handler:', {
+      message: error.message,
+      stack: error.stack,
+      url: req.url,
+      method: req.method,
+      body: req.body,
+      timestamp: new Date().toISOString(),
+    })
+  }
 
   // Default error
   let status = 500;

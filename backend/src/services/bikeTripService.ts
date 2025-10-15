@@ -10,17 +10,24 @@ export interface BikeTripFilters {
 export class BikeTripService {
   // Upsert or create a BikeTrip record based on a bike meter reading
   static async upsertTripForReading(reading: any) {
-    const { id: readingId, userId, date, type, kmReading } = reading;
+    const { id: readingId, userId, date, type, kmReading, capturedAt } = reading;
 
-    // Normalize date (ensure date-only)
-    const tripDate = new Date(date);
-    tripDate.setHours(0, 0, 0, 0);
+    // Prefer using the reading's capturedAt (timestamp) as the trip.date. If unavailable,
+    // fall back to the provided date value. Store timestamps (UTC) to preserve the upload instant.
+    const ts = capturedAt ? new Date(capturedAt) : new Date(date as any);
+    const tripTimestamp = new Date(ts);
 
     // Perform transactional upsert/link to avoid races
     const result = await prisma.$transaction(async (tx) => {
-      const existing = await (tx as any).bikeTrip.findUnique({
-        where: { surveyorId_date: { surveyorId: userId, date: tripDate } },
+      // Find any existing trip for this surveyor on the same UTC day. Because `date` is now a
+      // timestamp, exact equality won't match; we search for trips whose timestamp falls within
+      // the UTC day range for the reading's timestamp.
+      const startOfDay = new Date(Date.UTC(tripTimestamp.getUTCFullYear(), tripTimestamp.getUTCMonth(), tripTimestamp.getUTCDate(), 0, 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(tripTimestamp.getUTCFullYear(), tripTimestamp.getUTCMonth(), tripTimestamp.getUTCDate(), 23, 59, 59, 999));
+      const existingArr = await (tx as any).bikeTrip.findMany({
+        where: { surveyorId: userId, date: { gte: startOfDay, lte: endOfDay } },
       });
+      const existing = existingArr.length ? existingArr[0] : null;
 
       const isMorning = type === 'MORNING';
 
@@ -53,7 +60,7 @@ export class BikeTripService {
 
         const updated = await (tx as any).bikeTrip.update({
           where: { id: existing.id },
-          data,
+          data: { ...data, updatedAt: new Date() },
         });
 
         return updated;
@@ -62,7 +69,7 @@ export class BikeTripService {
       // Create a new trip
       const createData: any = {
         surveyorId: userId,
-        date: tripDate,
+        date: tripTimestamp,
       };
 
       if (isMorning) {
@@ -79,7 +86,11 @@ export class BikeTripService {
         createData.finalKm = computed;
       }
 
-      const created = await (tx as any).bikeTrip.create({ data: createData });
+  // Set createdAt and updatedAt from the application/system time to avoid DB timezone offsets
+  createData.createdAt = new Date();
+  createData.updatedAt = new Date();
+
+  const created = await (tx as any).bikeTrip.create({ data: createData });
       return created;
     });
 
@@ -97,23 +108,41 @@ export class BikeTripService {
       where.surveyorId = userId;
     }
 
+    // Parse incoming date filters as UTC date-only to avoid local timezone shifts.
+    // Expecting date/startDate/endDate in YYYY-MM-DD format.
     if (date) {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
-      where.date = d;
+      // create a Date at UTC midnight for the provided date
+      const parts = (date as string).split('-').map((p) => parseInt(p, 10));
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        const utcDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+        where.date = utcDate;
+      } else {
+        const dObj = new Date(date as string);
+        dObj.setUTCHours(0, 0, 0, 0);
+        where.date = dObj;
+      }
     } else if (startDate && endDate) {
-      const s = new Date(startDate);
-      s.setHours(0, 0, 0, 0);
-      const e = new Date(endDate);
-      e.setHours(23, 59, 59, 999);
-      where.date = { gte: s, lte: e };
+      const sParts = (startDate as string).split('-').map((p) => parseInt(p, 10));
+      const eParts = (endDate as string).split('-').map((p) => parseInt(p, 10));
+      if (sParts.length === 3 && eParts.length === 3) {
+        const sUtc = new Date(Date.UTC(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0, 0));
+        const eUtc = new Date(Date.UTC(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999));
+        where.date = { gte: sUtc, lte: eUtc };
+      } else {
+        const s = new Date(startDate as string);
+        s.setUTCHours(0, 0, 0, 0);
+        const e = new Date(endDate as string);
+        e.setUTCHours(23, 59, 59, 999);
+        where.date = { gte: s, lte: e };
+      }
     }
 
     const trips = await (prisma as any).bikeTrip.findMany({
       where,
       include: {
         surveyor: {
-          select: { id: true, name: true, mobileNumber: true, project: true, location: true },
+          select: { id: true, name: true, employeeId: true, mobileNumber: true, project: true, location: true },
         },
       },
       orderBy: [{ date: 'desc' }],
@@ -125,7 +154,7 @@ export class BikeTripService {
   static async setFinalKm(tripId: number, finalKm: number) {
     const updated = await (prisma as any).bikeTrip.update({
       where: { id: tripId },
-      data: { finalKm },
+      data: { finalKm, updatedAt: new Date() },
     });
     return updated;
   }
@@ -137,14 +166,14 @@ export class BikeTripService {
     if (!trip.isApproved) {
       const updated = await (prisma as any).bikeTrip.update({
         where: { id: tripId },
-        data: { isApproved: true, approvedBy: adminId, approvedAt: new Date() },
+        data: { isApproved: true, approvedBy: adminId, approvedAt: new Date(), updatedAt: new Date() },
       });
       return updated;
     }
 
     const updated = await (prisma as any).bikeTrip.update({
       where: { id: tripId },
-      data: { isApproved: false, approvedBy: null, approvedAt: null },
+      data: { isApproved: false, approvedBy: null, approvedAt: null, updatedAt: new Date() },
     });
     return updated;
   }

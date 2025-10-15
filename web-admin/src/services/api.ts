@@ -50,8 +50,11 @@ api.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
+      // remove token but do not force a navigation here; let the app decide how to handle
       Cookies.remove('adminToken')
-      window.location.href = '/login'
+      // Previously we redirected immediately which caused the app to reload on auth failures.
+      // Keeping the redirect out of the interceptor allows the UI (AuthContext) to show a friendly
+      // error message and remain on the login page until the user chooses to navigate/refresh.
     }
     return Promise.reject(error)
   }
@@ -143,7 +146,17 @@ export const authService = {
       return response.data.data!
     } catch (error) {
       console.error('Login error:', error)
-      throw error
+      // Normalize axios error to a friendly message
+      const axiosErr = error as AxiosError
+      if (axiosErr.response) {
+        const status = axiosErr.response.status
+        const serverMsg = (axiosErr.response.data as any)?.message || axiosErr.response.statusText
+        const friendly = status === 401 ? 'Invalid credentials' : serverMsg || 'Login failed'
+        const e: any = new Error(friendly)
+        e.status = status
+        throw e
+      }
+      throw new Error('Network error. Please try again.')
     }
   },
 
@@ -465,4 +478,51 @@ export type {
   BikeMeterReading,
   DashboardStats,
   ApiResponse,
+}
+
+// Bike Trip (Distance Travelled) Service - uses backend /api/bike/trips endpoints
+export const bikeTripService = {
+  getTrips: async (params?: { startDate?: string; endDate?: string; date?: string; userId?: string; page?: number; limit?: number; hasBike?: boolean }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.get('/api/bike/trips', { params })
+      return response.data.data
+    } catch (error) {
+      console.error('Get bike trips error:', error)
+      throw error
+    }
+  },
+
+  setFinalKm: async (id: string | number, finalKm: number) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/bike/trips/${id}/final-km`, { finalKm })
+      return response.data.data
+    } catch (error) {
+      console.error('Set final km error:', error)
+      throw error
+    }
+  },
+
+  toggleApprove: async (id: string | number) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/bike/trips/${id}/toggle-approve`)
+      return response.data.data
+    } catch (error) {
+      console.error('Toggle approve error:', error)
+      throw error
+    }
+  }
+}
+
+// Reports Service (record generated reports in DB)
+export const reportService = {
+  create: async (payload: { userId: number; reportType: 'CSV' | 'PDF'; startDate?: string | null; endDate?: string | null; filePath: string; generatedAt?: string; createdBy: string }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.post('/api/reports', payload)
+      return response.data.data
+    } catch (error) {
+      console.error('Create report record error:', error)
+      // Do not block downloads if recording fails; just log and continue
+      return null
+    }
+  }
 }

@@ -62,7 +62,7 @@ export default function SurveyorsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [rowsPerPage, setRowsPerPage] = useState(50)
   
   // Dialog states
   const [openDialog, setOpenDialog] = useState(false)
@@ -638,7 +638,7 @@ export default function SurveyorsPage() {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
           component="div"
           count={filteredSurveyors.length}
           rowsPerPage={rowsPerPage}

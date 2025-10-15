@@ -32,7 +32,21 @@ export const authService: AuthService = {
     } catch (error) {
       // eslint-disable-next-line no-console
       console.log('[AuthService] login error:', error);
-      throw error;
+      const axiosErr = error as any;
+      if (axiosErr.response) {
+        const status = axiosErr.response.status;
+        const serverMsg = axiosErr.response.data?.message || axiosErr.response.statusText;
+        if (status === 401) {
+          const e: any = new Error('Invalid credentials');
+          e.status = 401;
+          throw e;
+        }
+        const e: any = new Error(serverMsg || 'Login failed');
+        e.status = status;
+        throw e;
+      }
+      // Network or other non-response error
+      throw new Error('Network error. Please try again.');
     }
   },
 

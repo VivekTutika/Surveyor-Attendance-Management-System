@@ -187,13 +187,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         onClose={handleProfileMenuClose}
         keepMounted
       >
-        <MenuItem onClick={handleProfileMenuClose}>
-          <ListItemIcon>
-            <AccountCircle fontSize="small" />
-          </ListItemIcon>
-          Profile
-        </MenuItem>
-        <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <Logout fontSize="small" />

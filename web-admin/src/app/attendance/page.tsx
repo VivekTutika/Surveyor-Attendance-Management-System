@@ -46,7 +46,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
-import { attendanceService, surveyorService, Attendance, User } from '@/services/api'
+import { attendanceService, surveyorService, authService, Attendance, User } from '@/services/api'
 import { useAuth } from '@/context/AuthContext'
 import { exportAttendanceToCSV, exportAttendanceToPDF } from '@/utils/exportUtils'
 import AttendanceMap from '@/components/AttendanceMap'
@@ -65,8 +65,9 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+    const [rowsPerPage, setRowsPerPage] = useState(50)
   const [total, setTotal] = useState(0)
+  const [adminProfile, setAdminProfile] = useState<any>(null)
   
   // Filter states
   const [filters, setFilters] = useState<AttendanceFilters>({
@@ -93,6 +94,11 @@ export default function AttendancePage() {
   useEffect(() => {
     fetchSurveyors()
   }, [])
+
+  useEffect(() => { fetchProfile() }, [])
+  const fetchProfile = async () => {
+    try { const p = await authService.getProfile(); setAdminProfile(p) } catch (e) { console.error(e) }
+  }
 
   useEffect(() => {
     fetchAttendance()
@@ -196,11 +202,13 @@ export default function AttendancePage() {
   }
 
   const handleExportCSV = () => {
-    exportAttendanceToCSV(attendanceData)
+    const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
+    exportAttendanceToCSV(attendanceData, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleExportPDF = () => {
-    exportAttendanceToPDF(attendanceData)
+    const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
+    exportAttendanceToPDF(attendanceData, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -391,12 +399,12 @@ export default function AttendancePage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Surveyor</TableCell>
-                  <TableCell>Date & Time</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Photo</TableCell>
-                  <TableCell>Location</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Surveyor</TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Date & Time</TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Photo</TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Location</TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -404,31 +412,33 @@ export default function AttendancePage() {
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((record) => (
                   <TableRow key={record.id} hover>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Person fontSize="small" color="action" />
-                        <Typography variant="body2" fontWeight="medium">
-                          {record.user.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ({record.user.mobileNumber})
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TableCell align="center">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+                          <Person fontSize="small" color="action" />
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">
+                              {record.user.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              ({record.user.mobileNumber})
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
                         <CalendarToday fontSize="small" color="action" />
                         {new Date(record.capturedAt).toLocaleString()}
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="center">
                       <Chip
                         label={record.type === 'MORNING' ? 'Check In' : 'Check Out'}
                         color={getAttendanceTypeColor(record.type)}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="center">
                       {record.photoPath && (
                         <Button
                           size="small"
@@ -439,7 +449,7 @@ export default function AttendancePage() {
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell align="center">
                       <IconButton
                         size="small"
                         onClick={() => handleLocationClick(record)}
@@ -450,8 +460,8 @@ export default function AttendancePage() {
                         />
                       </IconButton>
                     </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
                         {user?.role === 'ADMIN' && (
                           <Button
                             size="small"
@@ -470,7 +480,7 @@ export default function AttendancePage() {
             </Table>
           </TableContainer>
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
+            rowsPerPageOptions={[10, 25, 50, 100]}
             component="div"
             count={total}
             rowsPerPage={rowsPerPage}

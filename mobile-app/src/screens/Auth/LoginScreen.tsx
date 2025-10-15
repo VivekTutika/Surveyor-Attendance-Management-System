@@ -59,12 +59,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    // Show error alert if login fails
-    if (error) {
-      Alert.alert('Login Failed', error, [
-        { text: 'OK', onPress: () => dispatch(clearError()) }
-      ]);
-    }
+    // No modal alert. The error will be rendered inline in the form so it persists until cleared.
   }, [error, dispatch]);
 
   const validateForm = (): boolean => {
@@ -96,6 +91,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         ...prev,
         [field]: null,
       }));
+    }
+    // Clear global auth error when user starts typing
+    if (error) {
+      dispatch(clearError())
     }
   };
 
@@ -168,6 +167,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 <Ionicons name="lock-closed-outline" size={20} color={Colors.gray} />
               }
             />
+
+            {/* Inline login error message (persistent) */}
+            {error ? (
+              <Text style={{ color: Colors.error, marginTop: 8, marginBottom: 8 }}>{error}</Text>
+            ) : null}
 
             <Button
               title="Sign In"
