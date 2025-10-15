@@ -111,12 +111,11 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     if (type === 'morning') {
       if (attendanceStatus?.morning) return 'Completed';
       // If morning window closed
-      if (minutes > 12 * 60) return 'Attendance Time Closed';
+      if (minutes > 12 * 60) return 'Not Available after 12 PM';
       return 'Pending';
     }
     if (attendanceStatus?.evening) return 'Completed';
-    // If evening window not yet opened
-    if (minutes < 15 * 60) return 'Attendance Time Closed';
+    // evening is available throughout the day (no 3:00 PM gating)
     return 'Pending';
   };
 
@@ -124,11 +123,11 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     const minutes = getISTMinutes();
     if (type === 'morning') {
       if (bikeMeterStatus?.morning) return 'Uploaded';
-      if (minutes > 12 * 60) return 'Time Closed';
+      if (minutes > 12 * 60) return 'Not Available after 12 PM';
       return 'Pending';
     }
     if (bikeMeterStatus?.evening) return 'Uploaded';
-    if (minutes < 15 * 60) return 'Time Closed';
+    // evening bike meter available (no 3:00 PM gating)
     return 'Pending';
   };
 
@@ -138,8 +137,8 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       // Only allow if not marked and within morning window (<= 12:00 PM IST)
       return !attendanceStatus?.morning && minutes <= 12 * 60;
     }
-    // evening: only allow if not marked and after 3:00 PM IST
-    return !attendanceStatus?.evening && minutes >= 15 * 60;
+    // evening: allow anytime as long as not already marked
+    return !attendanceStatus?.evening;
   };
 
   const canUploadBikeMeter = (type: 'morning' | 'evening'): boolean => {
@@ -147,7 +146,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     if (type === 'morning') {
       return !bikeMeterStatus?.morning && minutes <= 12 * 60;
     }
-    return !bikeMeterStatus?.evening && minutes >= 15 * 60;
+    return !bikeMeterStatus?.evening;
   };
 
   // Helper: compute current IST minutes since midnight robustly
@@ -181,13 +180,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       }
 
       // Evening check-out allowed only after 3:00 PM
-      if (type === 'evening') {
-        if (minutes < 15 * 60) {
-          // Time-window not yet open; silently block navigation.
-          console.debug('Evening checkout blocked: before 3:00 PM IST');
-          return;
-        }
-      }
+      // evening is allowed anytime (no 3:00 PM gating)
 
       if (canMarkAttendance(type)) {
         navigation.navigate('Attendance', { type: type.toUpperCase() });
@@ -226,13 +219,7 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         }
       }
 
-      if (type === 'evening') {
-        if (minutes < 15 * 60) {
-          // Time-window not yet open; silently block navigation.
-          console.debug('Evening bike meter upload blocked: before 3:00 PM IST');
-          return;
-        }
-      }
+      // evening bike meter is allowed anytime (no 3:00 PM gating)
 
       if (canUploadBikeMeter(type)) {
         navigation.navigate('BikeMeter', { type: type.toUpperCase() });

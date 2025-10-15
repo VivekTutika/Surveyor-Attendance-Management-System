@@ -106,9 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Login error:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed'
-      setError(errorMessage)
-      throw error
+      // Determine a safe, user-friendly message
+      const serverMessage = error.response?.data?.message || error.message || 'Login failed'
+      const friendly = (error.status === 401 || serverMessage.toLowerCase().includes('invalid')) ? 'Invalid credentials' : serverMessage
+      setError(friendly)
     } finally {
       setLoading(false)
     }

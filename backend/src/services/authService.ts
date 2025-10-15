@@ -174,18 +174,18 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('Invalid employee ID or password');
+      throw Object.assign(new Error('Invalid employee ID or password'), { status: 401 })
     }
 
     // Check if user is active
     if (!user.isActive) {
-      throw new Error('Account is inactive. Please contact administrator.');
+      throw Object.assign(new Error('Account is inactive. Please contact administrator.'), { status: 401 })
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new Error('Invalid mobile number or password');
+      throw Object.assign(new Error('Invalid employee ID or password'), { status: 401 })
     }
 
     // Generate token

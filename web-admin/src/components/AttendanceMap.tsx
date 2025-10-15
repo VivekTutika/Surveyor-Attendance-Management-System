@@ -48,6 +48,7 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
   const [mapKey, setMapKey] = useState(0)
+  const [provider, setProvider] = useState<'satellite' | 'osm'>('satellite')
 
   // Normalize attendance to array
   const attendanceArray = Array.isArray(attendance) ? attendance : [attendance]
@@ -81,6 +82,12 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
     }
   }, [open])
 
+  const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+  const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  // Esri World Imagery (satellite) - attribution required
+  const ESRI_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+  const ESRI_ATTR = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+
   if (!open || attendanceArray.length === 0) return null
 
   return (
@@ -99,6 +106,23 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <LocationOn color="primary" />
                 <Typography variant="h6">{title}</Typography>
+                {/* Provider toggle */}
+                <Box sx={{ ml: 2, display: 'flex', gap: 1 }}>
+                  <Chip
+                    label="Satellite"
+                    size="small"
+                    color={provider === 'satellite' ? 'primary' : 'default'}
+                    onClick={() => setProvider('satellite')}
+                    variant={provider === 'satellite' ? 'filled' : 'outlined'}
+                  />
+                  <Chip
+                    label="Map"
+                    size="small"
+                    color={provider === 'osm' ? 'primary' : 'default'}
+                    onClick={() => setProvider('osm')}
+                    variant={provider === 'osm' ? 'filled' : 'outlined'}
+                  />
+                </Box>
                 {attendanceArray.length === 1 && (attendanceArray[0].user as any)?.location?.name && (
                   <Typography variant="subtitle2" color="text.secondary" sx={{ ml: 1 }}>
                     {`(${(attendanceArray[0].user as any).location.name})`}
@@ -129,8 +153,8 @@ export default function AttendanceMap({ open, onClose, attendance, title = 'Atte
             scrollWheelZoom={true}
           >
             <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url={provider === 'satellite' ? ESRI_URL : OSM_URL}
+              attribution={provider === 'satellite' ? ESRI_ATTR : OSM_ATTR}
             />
             
             {attendanceArray.map((record) => (

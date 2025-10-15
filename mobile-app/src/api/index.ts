@@ -88,10 +88,11 @@ api.interceptors.response.use(
       // Handle different HTTP status codes
       switch (response.status) {
         case 401:
-          // Unauthorized - clear stored token and redirect to login
+          // Unauthorized - clear stored token but rethrow original error so callers can inspect status
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
-          throw new Error('Session expired. Please login again.');
+          // Rethrow the original axios error to preserve response.status and payload
+          throw error;
           
         case 403:
           throw new Error('Access denied. You do not have permission to perform this action.');
@@ -199,7 +200,7 @@ apiFormData.interceptors.response.use(
         case 401:
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
-          throw new Error(specific || 'Session expired. Please login again.');
+          throw error;
         case 403:
           throw new Error(specific || 'Access denied.');
         case 404:

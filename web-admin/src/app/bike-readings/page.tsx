@@ -18,7 +18,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
   Button,
+  Grid,
   Card,
   CardContent,
   Alert,
@@ -27,11 +29,11 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  TextField,
   Snackbar,
 } from '@mui/material'
 import {
   DirectionsBike,
+  Route,
   FilterList,
   Download,
   Close,
@@ -48,8 +50,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
-import { bikeMeterService, surveyorService, BikeMeterReading, User } from '@/services/api'
+import { bikeMeterService, surveyorService, authService, BikeMeterReading, User } from '@/services/api'
 import { exportBikeReadingsToCSV, exportBikeReadingsToPDF } from '@/utils/exportUtils'
+import Link from 'next/link'
 
 interface BikeFilters {
   startDate: Dayjs | null
@@ -64,9 +67,10 @@ export default function BikeReadingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [rowsPerPage, setRowsPerPage] = useState(50)
   const [total, setTotal] = useState(0)
   const [viewMode, setViewMode] = useState<'table' | 'gallery'>('table')
+  const [reportKind, setReportKind] = useState<'RAW' | 'COMPREHENSIVE'>('RAW')
   
   // Filter states
   const [filters, setFilters] = useState<BikeFilters>({
@@ -95,9 +99,16 @@ export default function BikeReadingsPage() {
   const [snackbarMsg, setSnackbarMsg] = useState('')
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('success')
 
+  const [adminProfile, setAdminProfile] = useState<any>(null)
+
   useEffect(() => {
     fetchSurveyors()
   }, [])
+
+  useEffect(() => { fetchProfile() }, [])
+  const fetchProfile = async () => {
+    try { const p = await authService.getProfile(); setAdminProfile(p) } catch (e) { console.error(e) }
+  }
 
   useEffect(() => {
     fetchReadings()
@@ -168,11 +179,13 @@ export default function BikeReadingsPage() {
   }
 
   const handleExportCSV = () => {
-    exportBikeReadingsToCSV(readings ?? [])
+    const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
+    exportBikeReadingsToCSV(readings ?? [], { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleExportPDF = () => {
-    exportBikeReadingsToPDF(readings ?? [])
+    const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
+    exportBikeReadingsToPDF(readings ?? [], { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleConfirmUpload = async () => {
@@ -286,29 +299,41 @@ export default function BikeReadingsPage() {
 
           {/* Bike ownership summary cards next to view buttons */}
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar sx={{ bgcolor: 'primary.main' }}><DirectionsBike /></Avatar>
-                  <Box>
-                    <Typography variant="h6">{surveyors.filter(s => s.hasBike).length}</Typography>
-                    <Typography color="text.secondary">With Bike</Typography>
+              {/* Distance Travelled card placed to the left of the existing With/Without bike cards */}
+              <Card sx={{ cursor: 'pointer', textDecoration: 'none' }} component={Link} href="/bike-trips">
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><Route /></Avatar>
+                    <Box>
+                      <Typography variant="h6">Distance Travelled</Typography>
+                    </Box>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar sx={{ bgcolor: 'default' }}><DirectionsBike /></Avatar>
-                  <Box>
-                    <Typography variant="h6">{surveyors.filter(s => !s.hasBike).length}</Typography>
-                    <Typography color="text.secondary">Without Bike</Typography>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><DirectionsBike /></Avatar>
+                    <Box>
+                      <Typography variant="h6">{surveyors.filter(s => s.hasBike).length}</Typography>
+                      <Typography color="text.secondary">With Bike</Typography>
+                    </Box>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar sx={{ bgcolor: 'default' }}><DirectionsBike /></Avatar>
+                    <Box>
+                      <Typography variant="h6">{surveyors.filter(s => !s.hasBike).length}</Typography>
+                      <Typography color="text.secondary">Without Bike</Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
         </Box>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -515,7 +540,7 @@ export default function BikeReadingsPage() {
                           </Box>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell align="center">
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button
                             size="small"
@@ -564,7 +589,7 @@ export default function BikeReadingsPage() {
               </Table>
             </TableContainer>
             <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
+              rowsPerPageOptions={[10, 25, 50, 100]}
               component="div"
               count={total}
               rowsPerPage={rowsPerPage}
@@ -643,7 +668,7 @@ export default function BikeReadingsPage() {
                 </Box>
                 
                 <TablePagination
-                  rowsPerPageOptions={[6, 12, 24]}
+                  rowsPerPageOptions={[10, 25, 50, 100]}
                   component="div"
                   count={total}
                   rowsPerPage={rowsPerPage}
