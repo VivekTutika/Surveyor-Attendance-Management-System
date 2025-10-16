@@ -5,76 +5,52 @@ import { Box, Typography, Card, CardContent, CardActionArea, Avatar } from "@mui
 import {
   People,
   Assignment,
-  DirectionsBike,
 } from "@mui/icons-material"
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
 import Link from "next/link"
 
 export default function ReportsLanding() {
   return (
     <Box>
-      {/* Reports Grid (replaced with flex Boxes for simpler layout and to avoid Grid typing issues) */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-        {/* Surveyors Report */}
-        <Box sx={{ flex: "1 1 320px", minWidth: 280 }}>
-          <Card elevation={2}>
-            <CardActionArea component={Link} href="/reports/surveyors">
-              <CardContent>
-                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  <Avatar sx={{ bgcolor: "primary.main" }}>
-                    <People />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6">Surveyors Details</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Export surveyor directory and details.
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 1200 }}>
 
-        {/* Attendance Report */}
-        <Box sx={{ flex: "1 1 320px", minWidth: 280 }}>
-          <Card elevation={2}>
-            <CardActionArea component={Link} href="/reports/attendance">
-              <CardContent>
-                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  <Avatar sx={{ bgcolor: "success.main" }}>
-                    <Assignment />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6">Surveyors Attendance</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Export attendance CSV/PDF per surveyor and date range.
-                    </Typography>
-                  </Box>
-                </Box>
+          {/* Surveyors Report */}
+          <Card sx={{ width: 360, height: 160, transition: 'transform 180ms ease, box-shadow 180ms ease' }} elevation={3}>
+            <CardActionArea component={Link} href="/reports/surveyors" sx={{ height: '100%', '&:hover': { transform: 'scale(1.12)', boxShadow: 16 } }}>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                <Avatar sx={{ bgcolor: 'primary.main', width: 64, height: 64 }}>
+                  <People sx={{ fontSize: 34 }} />
+                </Avatar>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Surveyors Details</Typography>
               </CardContent>
             </CardActionArea>
           </Card>
-        </Box>
 
-        {/* Bike Readings Report */}
-        <Box sx={{ flex: "1 1 320px", minWidth: 280 }}>
-          <Card elevation={2}>
-            <CardActionArea component={Link} href="/reports/bike-readings">
-              <CardContent>
-                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  <Avatar sx={{ bgcolor: "warning.main" }}>
-                    <DirectionsBike />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6">Bike Meter Readings</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Export bike meter readings by surveyor and date range.
-                    </Typography>
-                  </Box>
-                </Box>
+          {/* Attendance Report */}
+          <Card sx={{ width: 360, height: 160, transition: 'transform 180ms ease, box-shadow 180ms ease' }} elevation={3}>
+            <CardActionArea component={Link} href="/reports/attendance" sx={{ height: '100%', '&:hover': { transform: 'scale(1.12)', boxShadow: 16 } }}>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                <Avatar sx={{ bgcolor: 'success.main', width: 64, height: 64 }}>
+                  <Assignment sx={{ fontSize: 34 }} />
+                </Avatar>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Surveyors Attendance</Typography>
               </CardContent>
             </CardActionArea>
           </Card>
+
+          {/* Bike Readings Report */}
+          <Card sx={{ width: 360, height: 160, transition: 'transform 180ms ease, box-shadow 180ms ease' }} elevation={3}>
+            <CardActionArea component={Link} href="/reports/bike-readings" sx={{ height: '100%', '&:hover': { transform: 'scale(1.2)', boxShadow: 24 } }}>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                <Avatar sx={{ bgcolor: 'warning.main', width: 64, height: 64 }}>
+                  <TwoWheelerIcon sx={{ fontSize: 34 }} />
+                </Avatar>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Bike Meter Readings</Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+
         </Box>
       </Box>
     </Box>

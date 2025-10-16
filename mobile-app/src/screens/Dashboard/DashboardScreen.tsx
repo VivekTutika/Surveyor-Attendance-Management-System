@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 // @ts-ignore
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Card, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
@@ -356,10 +356,10 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                 disabled={Boolean(bikeMeterStatus?.morning)}
               >
                 <View style={styles.cardContent}>
-                  <Ionicons 
-                    name="bicycle" 
-                    size={32} 
-                    color={Colors.white} 
+                  <MaterialCommunityIcons
+                    name="motorbike"
+                    size={32}
+                    color={Colors.white}
                     style={styles.cardIcon}
                   />
                   <Text style={styles.cardTitle}>Morning{'\n'}Bike Meter</Text>
@@ -379,10 +379,10 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                 disabled={Boolean(bikeMeterStatus?.evening)}
               >
                 <View style={styles.cardContent}>
-                  <Ionicons 
-                    name="bicycle" 
-                    size={32} 
-                    color={Colors.white} 
+                  <MaterialCommunityIcons
+                    name="motorbike"
+                    size={32}
+                    color={Colors.white}
                     style={styles.cardIcon}
                   />
                   <Text style={styles.cardTitle}>Evening{'\n'}Bike Meter</Text>

@@ -8,14 +8,18 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
-import { surveyorService, attendanceService, authService } from '@/services/api'
+import { surveyorService, attendanceService, authService, reportService } from '@/services/api'
 import { exportAttendanceToCSV, exportAttendanceToPDF, buildAttendanceCSVString, buildAttendancePDFBlob, consolidateAttendance, exportConsolidatedAttendanceToCSV, exportConsolidatedAttendanceToPDF, buildConsolidatedAttendancePDFBlob } from '@/utils/exportUtils'
 
 export default function AttendanceReportPage() {
   const [surveyors, setSurveyors] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [startDate, setStartDate] = useState<any>(dayjs().subtract(7, 'day'))
   const [endDate, setEndDate] = useState<any>(dayjs())
   const [userId, setUserId] = useState<string>('')
+  const [projectId, setProjectId] = useState<string>('')
+  const [locationId, setLocationId] = useState<string>('')
   const [adminProfile, setAdminProfile] = useState<any>(null)
   const [previewType, setPreviewType] = useState<'CSV' | 'PDF'>('CSV')
   const [previewRows, setPreviewRows] = useState<{ headers: string[]; rows: string[][] } | null>(null)
@@ -27,6 +31,9 @@ export default function AttendanceReportPage() {
   const fetchSurveyors = async () => {
     try { const data = await surveyorService.getAll(); setSurveyors(data) } catch (err) { console.error(err) }
   }
+  useEffect(() => { fetchProjects(); fetchLocations() }, [])
+  const fetchProjects = async () => { try { const p = await surveyorService.getProjects(); setProjects(p) } catch (e) { console.error(e) } }
+  const fetchLocations = async () => { try { const l = await surveyorService.getLocations(); setLocations(l) } catch (e) { console.error(e) } }
 
   useEffect(() => { fetchProfile() }, [])
   const fetchProfile = async () => {
@@ -38,9 +45,14 @@ export default function AttendanceReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
-    const data = await attendanceService.getAll(params)
+    if (projectId) params.projectId = projectId
+    if (locationId) params.locationId = locationId
+    // Call consolidated endpoint
+  if (projectId) params.projectId = projectId
+  if (locationId) params.locationId = locationId
+  const res = await reportService.getConsolidatedAttendance(params)
     const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
-    await exportAttendanceToCSV(data.attendance, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
+    await exportConsolidatedAttendanceToCSV(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleExportPDF = async () => {
@@ -48,9 +60,10 @@ export default function AttendanceReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
-    const data = await attendanceService.getAll(params)
-    const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
-    await exportAttendanceToPDF(data.attendance, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
+    if (projectId) params.projectId = projectId
+    if (locationId) params.locationId = locationId
+    const res = await reportService.getConsolidatedAttendance(params)
+    await exportConsolidatedAttendanceToPDF(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const generatePreview = async () => {
@@ -58,13 +71,19 @@ export default function AttendanceReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
-    const data = await attendanceService.getAll(params)
-    const attendance = data.attendance
-    const consolidated = consolidateAttendance(attendance)
-    setPreviewTotal(consolidated.length)
+    // Use the backend consolidated endpoint for previews as well so that preview matches exported data
+    const res = await reportService.getConsolidatedAttendance(params)
+    const consolidated = res.data
+    setPreviewTotal(consolidated.surveyors.length)
     if (previewType === 'CSV') {
-      const headers = ['Date', 'Surveyor', 'Mobile', 'Check In', 'Check Out']
-      const rows = consolidated.slice(0, 10).map((r: any) => [r.date, r.surveyorName, r.mobile, r.checkIn ?? '', r.checkOut ?? ''])
+      // build combined header: date on first row, day on second row (we'll show combined in preview column titles)
+      const headers = ['Employee ID', 'Surveyor Name', ...consolidated.dates.slice(0, 10).map((d: string) => {
+        const dt = new Date(`${d}T00:00:00.000Z`)
+        const dateShort = dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
+        const dayShort = dt.toLocaleDateString(undefined, { weekday: 'short' })
+        return `${dateShort}\n${dayShort}`
+      })]
+      const rows = consolidated.surveyors.slice(0, 10).map((r: any) => [r.employeeId, r.name, ...consolidated.dates.slice(0, 10).map((d: string) => r[d] ?? '')])
       setPreviewRows({ headers, rows })
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null) }
     } else {
@@ -113,6 +132,20 @@ export default function AttendanceReportPage() {
                 {surveyors.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
               </Select>
             </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Project</InputLabel>
+              <Select value={projectId} label="Project" onChange={(e) => setProjectId(e.target.value)}>
+                <MenuItem value=""><em>All Projects</em></MenuItem>
+                {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Location</InputLabel>
+              <Select value={locationId} label="Location" onChange={(e) => setLocationId(e.target.value)}>
+                <MenuItem value=""><em>All Locations</em></MenuItem>
+                {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small">
                 <InputLabel>Preview</InputLabel>
@@ -129,18 +162,20 @@ export default function AttendanceReportPage() {
                 if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
                 if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
                 if (userId) params.userId = userId
-                const data = await attendanceService.getAll(params)
-                const consolidated = consolidateAttendance(data.attendance)
-                await exportConsolidatedAttendanceToCSV(consolidated, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
+                if (projectId) params.projectId = projectId
+                if (locationId) params.locationId = locationId
+                const res = await reportService.getConsolidatedAttendance(params)
+                await exportConsolidatedAttendanceToCSV(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
               }}>Export CSV</Button>
               <Button startIcon={<></>} variant="outlined" onClick={async () => {
                 const params: any = {}
                 if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
                 if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
                 if (userId) params.userId = userId
-                const data = await attendanceService.getAll(params)
-                const consolidated = consolidateAttendance(data.attendance)
-                await exportConsolidatedAttendanceToPDF(consolidated, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
+                if (projectId) params.projectId = projectId
+                if (locationId) params.locationId = locationId
+                const res = await reportService.getConsolidatedAttendance(params)
+                await exportConsolidatedAttendanceToPDF(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
               }}>Export PDF</Button>
             </Box>
           </Box>
@@ -156,13 +191,19 @@ export default function AttendanceReportPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {previewRows.headers.map(h => <TableCell key={h}><strong>{h}</strong></TableCell>)}
+                    {previewRows.headers.map((h, idx) => {
+                      const isNumericCol = idx >= 2
+                      return <TableCell key={h} align={isNumericCol ? 'center' : 'left'}><strong>{h}</strong></TableCell>
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {previewRows.rows.map((r, i) => (
                     <TableRow key={i}>
-                      {r.map((c, j) => <TableCell key={j}>{c}</TableCell>)}
+                      {r.map((c, j) => {
+                        const isNumericCol = j >= 2 // date/value columns are from index 2 onwards in consolidated view
+                        return <TableCell key={j} align={isNumericCol ? 'center' : 'left'}>{c}</TableCell>
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>

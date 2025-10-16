@@ -14,11 +14,11 @@ import {
 import {
   People,
   Assignment,
-  DirectionsBike,
   TrendingUp,
   PersonAdd,
   CheckCircle,
 } from '@mui/icons-material'
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
 import {
   LineChart,
   Line,
@@ -185,7 +185,7 @@ export default function DashboardPage() {
           icon={<People />}
           color="primary.main"
           subtitle="Registered in system"
-        />
+  />
 
         <StatsCard
           title="Active Surveyors"
@@ -198,7 +198,7 @@ export default function DashboardPage() {
         <StatsCard
           title="Surveyors with Bikes"
           value={(stats as any).surveyorsWithBikes ?? 0}
-          icon={<DirectionsBike />}
+          icon={<TwoWheelerIcon />}
           color="primary.main"
           subtitle="Surveyors who have bikes"
         />
@@ -206,7 +206,7 @@ export default function DashboardPage() {
         <StatsCard
           title="Surveyors without Bikes"
           value={(stats as any).surveyorsWithoutBikes ?? 0}
-          icon={<DirectionsBike />}
+          icon={<TwoWheelerIcon />}
           color="warning.main"
           subtitle="Surveyors who don't have bikes"
         />
@@ -230,7 +230,7 @@ export default function DashboardPage() {
         <StatsCard
           title="Bike Readings (Morning)"
           value={stats.todayBikeMorning ?? 0}
-          icon={<DirectionsBike />}
+          icon={<TwoWheelerIcon />}
           color="warning.main"
           subtitle="Morning bike readings"
         />
@@ -238,7 +238,7 @@ export default function DashboardPage() {
         <StatsCard
           title="Bike Readings (Evening)"
           value={stats.todayBikeEvening ?? 0}
-          icon={<DirectionsBike />}
+          icon={<TwoWheelerIcon />}
           color="warning.dark"
           subtitle="Evening bike readings"
         />

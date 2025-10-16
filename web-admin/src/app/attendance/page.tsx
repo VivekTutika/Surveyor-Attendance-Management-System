@@ -29,6 +29,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Checkbox,
 } from '@mui/material'
 import {
   Assignment,
@@ -57,17 +58,25 @@ interface AttendanceFilters {
   endDate: Dayjs | null
   userId: string
   type: string
+  projectId?: string
+  locationId?: string
 }
 
 export default function AttendancePage() {
   const [attendanceData, setAttendanceData] = useState<Attendance[]>([])
   const [surveyors, setSurveyors] = useState<User[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
     const [rowsPerPage, setRowsPerPage] = useState(50)
   const [total, setTotal] = useState(0)
   const [adminProfile, setAdminProfile] = useState<any>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectAllLoading, setSelectAllLoading] = useState(false)
+  const [bulkApproveDialogOpen, setBulkApproveDialogOpen] = useState(false)
+  const [bulkApproving, setBulkApproving] = useState(false)
   
   // Filter states
   const [filters, setFilters] = useState<AttendanceFilters>({
@@ -94,6 +103,14 @@ export default function AttendancePage() {
   useEffect(() => {
     fetchSurveyors()
   }, [])
+
+  useEffect(() => { fetchProjectList(); fetchLocationList() }, [])
+  const fetchProjectList = async () => {
+    try { const p = await surveyorService.getProjects(); setProjects(p || []) } catch (e) { console.error('Failed to load projects', e) }
+  }
+  const fetchLocationList = async () => {
+    try { const l = await surveyorService.getLocations(); setLocations(l || []) } catch (e) { console.error('Failed to load locations', e) }
+  }
 
   useEffect(() => { fetchProfile() }, [])
   const fetchProfile = async () => {
@@ -134,6 +151,12 @@ export default function AttendancePage() {
       }
       if (filters.type) {
         params.type = filters.type
+      }
+      if (filters.projectId) {
+        params.projectId = filters.projectId
+      }
+      if (filters.locationId) {
+        params.locationId = filters.locationId
       }
 
       const data = await attendanceService.getAll(params)
@@ -179,6 +202,63 @@ export default function AttendancePage() {
       setError(error.message || 'Approve failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const clearSelection = () => setSelectedIds([])
+
+  const selectAllOnPage = (rows: Attendance[]) => {
+    const ids = rows.map(r => r.id)
+    const allSelected = ids.every(i => selectedIds.includes(i))
+    if (allSelected) {
+      // unselect all on page
+      setSelectedIds(prev => prev.filter(id => !ids.includes(id)))
+    } else {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...ids])))
+    }
+  }
+
+  const selectAllMatching = async () => {
+    try {
+      setSelectAllLoading(true)
+      const params: any = {}
+      if (filters.startDate) params.startDate = filters.startDate.format('YYYY-MM-DD')
+      if (filters.endDate) params.endDate = filters.endDate.format('YYYY-MM-DD')
+      if (filters.userId) params.userId = filters.userId
+      if (filters.type) params.type = filters.type
+      // fetch without pagination to get all matching ids
+      const data = await attendanceService.getAll(params)
+      const ids = (data.attendance || []).map((a: Attendance) => a.id)
+      setSelectedIds(ids)
+    } catch (err) {
+      console.error('Select all matching failed', err)
+      setError((err as any)?.message || 'Failed to select all')
+    } finally {
+      setSelectAllLoading(false)
+    }
+  }
+
+  const openBulkApproveDialog = () => setBulkApproveDialogOpen(true)
+
+  const handleBulkApproveConfirm = async () => {
+    setBulkApproveDialogOpen(false)
+    if (selectedIds.length === 0) return
+    try {
+      setBulkApproving(true)
+      // Approve in parallel but allow individual failures
+      await Promise.all(selectedIds.map(id => attendanceService.approve(id).catch(e => { console.error('bulk approve error', id, e); return null })))
+      // Refresh data and clear selection
+      await fetchAttendance()
+      clearSelection()
+    } catch (err) {
+      console.error('Bulk approve failed', err)
+      setError((err as any)?.message || 'Bulk approve failed')
+    } finally {
+      setBulkApproving(false)
     }
   }
 
@@ -245,7 +325,7 @@ export default function AttendancePage() {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Button
               variant="outlined"
               startIcon={<Map />}
@@ -254,7 +334,16 @@ export default function AttendancePage() {
             >
               View All Locations
             </Button>
-            {/* Exports moved to Reports page */}
+            {user?.role === 'ADMIN' && (
+              <>
+                <Button variant="contained" color="primary" onClick={openBulkApproveDialog} disabled={selectedIds.length === 0} sx={{ ml: 1 }}>
+                  Approve All ({selectedIds.length})
+                </Button>
+                <Button variant="text" onClick={selectAllMatching} disabled={selectAllLoading || attendanceData.length === 0} sx={{ ml: 1 }}>
+                  {selectAllLoading ? 'Selecting...' : 'Select All Matching'}
+                </Button>
+              </>
+            )}
           </Box>
         </Box>
         {error && (
@@ -329,10 +418,6 @@ export default function AttendancePage() {
         {/* Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <Typography variant="h6" sx={{ mr: 2 }}>
-              Filters
-            </Typography>
-            
             <DatePicker
               label="Start Date"
               value={filters.startDate}
@@ -358,12 +443,7 @@ export default function AttendancePage() {
                   <em>All Surveyors</em>
                 </MenuItem>
                 {surveyors.map((surveyor) => (
-                  <MenuItem key={surveyor.id} value={surveyor.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Person fontSize="small" />
-                      {surveyor.name}
-                    </Box>
-                  </MenuItem>
+                  <MenuItem key={surveyor.id} value={surveyor.id}>{surveyor.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -383,6 +463,20 @@ export default function AttendancePage() {
               </Select>
             </FormControl>
             
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Project</InputLabel>
+              <Select value={filters.projectId ?? ''} label="Project" onChange={(e) => handleFilterChange('projectId', e.target.value)}>
+                <MenuItem value=""><em>All Projects</em></MenuItem>
+                {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Location</InputLabel>
+              <Select value={filters.locationId ?? ''} label="Location" onChange={(e) => handleFilterChange('locationId', e.target.value)}>
+                <MenuItem value=""><em>All Locations</em></MenuItem>
+                {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Button
               variant="outlined"
               startIcon={<FilterList />}
@@ -399,6 +493,14 @@ export default function AttendancePage() {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={selectedIds.length > 0 && selectedIds.length < Math.min(rowsPerPage, attendanceData.length)}
+                      checked={selectedIds.length > 0 && selectedIds.length === Math.min(rowsPerPage, attendanceData.length)}
+                      onChange={() => selectAllOnPage(attendanceData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage))}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Employee ID</TableCell>
                   <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Surveyor</TableCell>
                   <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Date & Time</TableCell>
                   <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Type</TableCell>
@@ -412,9 +514,12 @@ export default function AttendancePage() {
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((record) => (
                   <TableRow key={record.id} hover>
+                      <TableCell padding="checkbox">
+                        <Checkbox checked={selectedIds.includes(record.id)} onChange={() => toggleSelect(record.id)} />
+                      </TableCell>
+                      <TableCell align="center">{(record.user as any)?.employeeId ?? ''}</TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
-                          <Person fontSize="small" color="action" />
                           <Box>
                             <Typography variant="body2" fontWeight="medium">
                               {record.user.name}
@@ -542,6 +647,25 @@ export default function AttendancePage() {
                   setApproveTargetId(null);
                   setApproveTargetApproved(null);
                 }}>Confirm</Button>
+              </Box>
+            </Box>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Approve Confirmation Dialog */}
+        <Dialog
+          open={bulkApproveDialogOpen}
+          onClose={() => setBulkApproveDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Confirm Bulk Approve</DialogTitle>
+          <DialogContent>
+            <Box sx={{ p: 2 }}>
+              <Typography>Are you sure you want to approve the selected attendance records ({selectedIds.length})?</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+                <Button onClick={() => setBulkApproveDialogOpen(false)}>Cancel</Button>
+                <Button variant="contained" onClick={handleBulkApproveConfirm} disabled={bulkApproving}>{bulkApproving ? 'Approving...' : 'Confirm'}</Button>
               </Box>
             </Box>
           </DialogContent>

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { Role } from '@prisma/client';
 import { prisma } from '../config/db';
+import { startOfDayUTC, endOfDayUTC } from '../utils/dateUtils';
 
 export interface CreateSurveyorData {
   name: string;
@@ -358,11 +359,7 @@ export class SurveyorService {
     // Build date filter
     const dateFilter: any = {};
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      dateFilter.date = { gte: start, lte: end };
+      dateFilter.date = { gte: startOfDayUTC(startDate as any), lte: endOfDayUTC(endDate as any) };
     }
 
     // Get attendance statistics

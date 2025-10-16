@@ -1,6 +1,7 @@
 import { AttendanceType } from '@prisma/client';
 import { prisma } from '../config/db';
 import { uploadAttendancePhoto } from '../config/cloudinary';
+import { startOfDayUTC, endOfDayUTC, startOfTodayUTC } from '../utils/dateUtils';
 
 export interface MarkAttendanceData {
   userId: number;  // Changed from string to number
@@ -32,8 +33,7 @@ export class AttendanceService {
   static async markAttendance(data: MarkAttendanceData) {
     const { userId, type, latitude, longitude, photoBuffer } = data;
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = startOfTodayUTC();
 
     // Ensure user is active
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -74,6 +74,7 @@ export class AttendanceService {
         user: {
           select: {
             id: true,
+            employeeId: true,
             name: true,
             mobileNumber: true,
             project: true,
@@ -88,7 +89,12 @@ export class AttendanceService {
 
   // Get attendance records with filters and pagination
   static async getAttendanceRecords(filters: AttendanceFilters, userRole: string, requestingUserId: number) {  // Changed from string to number
-    const { userId, date, startDate, endDate, type, page = 1, limit = 10 } = filters;
+    let { userId, date, startDate, endDate, type, page = 1, limit = 10 } = filters as any;
+    // Coerce userId which may come as a query string into a number for Prisma
+    if (typeof userId === 'string') {
+      const parsed = parseInt(userId, 10)
+      userId = Number.isFinite(parsed) ? parsed : undefined
+    }
 
     // Build where clause
     const where: any = {};
@@ -96,32 +102,26 @@ export class AttendanceService {
     // Role-based filtering
     if (userRole === 'SURVEYOR') {
       where.userId = requestingUserId; // Surveyors can only see their own records
-    } else if (userId) {
+    } else if (userId !== undefined && userId !== null) {
       where.userId = userId; // Admins can filter by specific user
     }
 
     // Date filtering
     if (date) {
-      const targetDate = new Date(date);
-      targetDate.setHours(0, 0, 0, 0);
-      where.date = targetDate;
-    } else if (startDate && endDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
+      // exact date provided (YYYY-MM-DD) -> match that UTC day
       where.date = {
-        gte: start,
-        lte: end,
-      };
+        gte: startOfDayUTC(date as any),
+        lte: endOfDayUTC(date as any),
+      }
+    } else if (startDate && endDate) {
+      where.date = {
+        gte: startOfDayUTC(startDate as any),
+        lte: endOfDayUTC(endDate as any),
+      }
     } else if (startDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      where.date = { gte: start };
+      where.date = { gte: startOfDayUTC(startDate as any) };
     } else if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      where.date = { lte: end };
+      where.date = { lte: endOfDayUTC(endDate as any) };
     }
 
     // Type filtering
@@ -129,8 +129,8 @@ export class AttendanceService {
       where.type = type;
     }
 
-    // Get total count for pagination
-    const total = await prisma.attendance.count({ where });
+  // Get total count for pagination
+  const total = await prisma.attendance.count({ where });
     
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -142,6 +142,7 @@ export class AttendanceService {
         user: {
           select: {
             id: true,
+            employeeId: true,
             name: true,
             mobileNumber: true,
             project: true,
@@ -167,8 +168,7 @@ export class AttendanceService {
 
   // Get today's attendance status for a user
   static async getTodayAttendanceStatus(userId: number) {  // Changed from string to number
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfTodayUTC();
 
     const attendanceRecords = await prisma.attendance.findMany({
       where: {
@@ -200,10 +200,8 @@ export class AttendanceService {
 
   // Get attendance summary for a user in a date range
   static async getAttendanceSummary(userId: number, startDate: string, endDate: string) {  // Changed from string to number
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const start = startOfDayUTC(startDate);
+    const end = endOfDayUTC(endDate);
 
     const attendanceRecords = await prisma.attendance.findMany({
       where: {
@@ -283,6 +281,7 @@ export class AttendanceService {
         user: {
           select: {
             id: true,
+            employeeId: true,
             name: true,
             mobileNumber: true,
             project: true,

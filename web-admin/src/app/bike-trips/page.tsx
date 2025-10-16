@@ -25,6 +25,7 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Checkbox,
 } from '@mui/material'
 import { ArrowBack } from '@mui/icons-material'
 // dayjs imported below with Dayjs type
@@ -46,7 +47,11 @@ export default function BikeTripsPage() {
   const [startDate, setStartDate] = useState<Dayjs | null>(dayjs())
   const [endDate, setEndDate] = useState<Dayjs | null>(dayjs())
   const [surveyorList, setSurveyorList] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [selectedSurveyor, setSelectedSurveyor] = useState<string | ''>('')
+  const [selectedProject, setSelectedProject] = useState<string | ''>('')
+  const [selectedLocation, setSelectedLocation] = useState<string | ''>('')
   // removed hasBike filter as requested
 
   // Dialogs
@@ -65,10 +70,16 @@ export default function BikeTripsPage() {
   const [editingTrip, setEditingTrip] = useState<any | null>(null)
   const [finalKmValue, setFinalKmValue] = useState<string>('')
   const [isSavingFinal, setIsSavingFinal] = useState(false)
+  // selection / bulk approve state
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectAllLoading, setSelectAllLoading] = useState(false)
+  const [bulkApproveDialogOpen, setBulkApproveDialogOpen] = useState(false)
+  const [bulkApproving, setBulkApproving] = useState(false)
+  const [bulkActionMode, setBulkActionMode] = useState<'approve' | 'disapprove' | 'mixed'>('approve')
 
   useEffect(() => {
     fetchTrips()
-  }, [page, rowsPerPage, startDate, endDate, selectedSurveyor])
+  }, [page, rowsPerPage, startDate, endDate, selectedSurveyor, selectedProject, selectedLocation])
 
   useEffect(() => {
     // load surveyors for filter
@@ -82,14 +93,44 @@ export default function BikeTripsPage() {
     })()
   }, [])
 
+  useEffect(() => { fetchProjectList(); fetchLocationList() }, [])
+  const fetchProjectList = async () => {
+    try {
+      const p = await surveyorService.getProjects()
+      setProjects(p || [])
+    } catch (e) {
+      console.error('Failed to load projects for filter', e)
+    }
+  }
+  const fetchLocationList = async () => {
+    try {
+      const l = await surveyorService.getLocations()
+      setLocations(l || [])
+    } catch (e) {
+      console.error('Failed to load locations for filter', e)
+    }
+  }
+
   const fetchTrips = async () => {
     try {
       setLoading(true)
-      const params: any = { page: page + 1, limit: rowsPerPage }
+  const params: any = { page: page + 1, limit: rowsPerPage }
       if (startDate) params.startDate = (startDate as Dayjs).format('YYYY-MM-DD')
       if (endDate) params.endDate = (endDate as Dayjs).format('YYYY-MM-DD')
       if (selectedSurveyor) params.userId = selectedSurveyor
+  // include project/location if selected
+  if (selectedProject) params.projectId = selectedProject
+  if (selectedLocation) params.locationId = selectedLocation
+      // projectId/locationId will be added from UI state if present
+      if ((window as any) && false) { /* placeholder to keep TS happy in patched area */ }
       // no hasBike param
+      // include project/location if provided via state
+      if ((params as any).projectId === undefined && (projects && projects.length > 0)) {
+        // no-op: projects available
+      }
+      if (selectedSurveyor) params.userId = selectedSurveyor
+      // Add project/location from local state if present
+      // (we store selected values in selectedSurveyor variable only; UI below will add selects that set local variables via setSelectedSurveyor)
       const data = await bikeTripService.getTrips(params)
       // backend may return array or paginated
       if (Array.isArray(data)) {
@@ -142,24 +183,28 @@ export default function BikeTripsPage() {
   const confirmToggleApprove = async () => {
     if (!approveTarget) return
     try {
-      // If there's a locally staged pending final for this trip, persist it now before approving
+      // Only persist finalKm when approving (not when disapproving)
       const staged = pendingFinals[String(approveTarget.id)]
       const computed = approveTarget.computedKm ?? (approveTarget.eveningKm != null && approveTarget.morningKm != null ? (approveTarget.eveningKm - approveTarget.morningKm) : undefined)
-      if (staged !== undefined) {
-        await bikeTripService.setFinalKm(approveTarget.id, staged)
-      } else if ((approveTarget.finalKm == null || approveTarget.finalKm === '') && typeof computed === 'number' && isFinite(computed)) {
-        // if no final present but computed exists, persist computed as final on approve
-        await bikeTripService.setFinalKm(approveTarget.id, computed)
+      if (!approveTarget.isApproved) {
+        // Currently not approved -> approving now: persist staged or computed as final if needed
+        if (staged !== undefined) {
+          await bikeTripService.setFinalKm(approveTarget.id, staged)
+        } else if ((approveTarget.finalKm == null || approveTarget.finalKm === '') && typeof computed === 'number' && isFinite(computed)) {
+          await bikeTripService.setFinalKm(approveTarget.id, computed)
+        }
+        // clear any staged pending final we persisted
+        if (staged !== undefined) {
+          setPendingFinals((p) => {
+            const copy = { ...p }
+            delete copy[String(approveTarget.id)]
+            return copy
+          })
+        }
+      } else {
+        // Currently approved -> disapproving: per requirement do not change finalKm
       }
       await bikeTripService.toggleApprove(approveTarget.id)
-      // clear any staged pending final we persisted
-      if (staged !== undefined) {
-        setPendingFinals((p) => {
-          const copy = { ...p }
-          delete copy[String(approveTarget.id)]
-          return copy
-        })
-      }
       await fetchTrips()
     } catch (err) {
       console.error('Failed to toggle approve', err)
@@ -213,13 +258,129 @@ export default function BikeTripsPage() {
     setPendingFinal(null)
   }
 
+  // Selection helpers
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const selectAllOnPage = (rows: any[]) => {
+    const ids = rows.map(r => r.id)
+    const allSelected = ids.every(i => selectedIds.includes(i))
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !ids.includes(id)))
+    } else {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...ids])))
+    }
+  }
+
+  const handleBulkApproveConfirm = async () => {
+    setBulkApproveDialogOpen(false)
+    if (selectedIds.length === 0) return
+    try {
+      setBulkApproving(true)
+      // Attempt to fetch all matching trips to get current states (if not present in current page)
+      const params: any = { page: 1, limit: selectedIds.length }
+      if (startDate) params.startDate = (startDate as Dayjs).format('YYYY-MM-DD')
+      if (endDate) params.endDate = (endDate as Dayjs).format('YYYY-MM-DD')
+      if (selectedSurveyor) params.userId = selectedSurveyor
+      if (selectedProject) params.projectId = selectedProject
+      if (selectedLocation) params.locationId = selectedLocation
+      const data = await bikeTripService.getTrips(params)
+      const all = Array.isArray(data) ? data : (data.trips || [])
+      const map = new Map(all.map((t: any) => [String(t.id), t]))
+
+      // Determine actual action mode based on fetched items
+      const fetchedForSelected = selectedIds.map(id => map.get(String(id))).filter(Boolean)
+      const anyNotApproved = fetchedForSelected.some((t: any) => !t.isApproved)
+      const allApproved = fetchedForSelected.length > 0 && fetchedForSelected.every((t: any) => t.isApproved)
+      const resolvedMode: 'approve' | 'disapprove' | 'mixed' = allApproved ? 'disapprove' : anyNotApproved ? 'approve' : 'mixed'
+      setBulkActionMode(resolvedMode)
+
+      await Promise.all(selectedIds.map(async (id) => {
+        try {
+          const trip = map.get(String(id)) as any
+          const staged = pendingFinals[String(id)]
+          const computed = (trip as any)?.computedKm ?? ((trip as any)?.eveningKm != null && (trip as any)?.morningKm != null ? ((trip as any).eveningKm - (trip as any).morningKm) : undefined)
+          if (trip && !(trip as any).isApproved) {
+            if (staged !== undefined) {
+              await bikeTripService.setFinalKm(id, staged)
+            } else if (((trip as any).finalKm == null || (trip as any).finalKm === '') && typeof computed === 'number' && isFinite(computed)) {
+              await bikeTripService.setFinalKm(id, computed)
+            }
+            await bikeTripService.toggleApprove(id)
+          } else {
+            // disapprove path: do not change finalKm
+            await bikeTripService.toggleApprove(id)
+          }
+        } catch (e) {
+          console.error('bulk approve item failed', id, e)
+        }
+      }))
+      await fetchTrips()
+      setSelectedIds([])
+    } catch (err) {
+      console.error('Bulk approve failed', err)
+    } finally {
+      setBulkApproving(false)
+    }
+  }
+
   return (
     <AdminLayout>
       <Box p={2}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h5" gutterBottom>
-            Distance Travelled
-          </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              color={(() => {
+                // decide color based on current selection states
+                const selectedOnPage = trips.filter(t => selectedIds.includes(t.id))
+                if (selectedOnPage.length === 0) return 'primary'
+                const anyNotApproved = selectedOnPage.some(t => !t.isApproved)
+                const allApproved = selectedOnPage.every(t => t.isApproved)
+                if (anyNotApproved && !allApproved) return 'warning'
+                return allApproved ? 'error' : 'success'
+              })() as any}
+              onClick={async () => {
+                // derive action mode from current known trips; if mixed/missing, we'll resolve in confirm handler
+                const selectedOnPage = trips.filter(t => selectedIds.includes(t.id))
+                const anyNotApproved = selectedOnPage.some(t => !t.isApproved)
+                const allApproved = selectedOnPage.length > 0 && selectedOnPage.every(t => t.isApproved)
+                if (allApproved) setBulkActionMode('disapprove')
+                else if (anyNotApproved) setBulkActionMode('approve')
+                else setBulkActionMode('mixed')
+                setBulkApproveDialogOpen(true)
+              }} disabled={selectedIds.length === 0}>
+              {(() => {
+                const selectedOnPage = trips.filter(t => selectedIds.includes(t.id))
+                if (selectedOnPage.length === 0) return `Approve All (${selectedIds.length})`
+                const allApproved = selectedOnPage.every(t => t.isApproved)
+                const anyNotApproved = selectedOnPage.some(t => !t.isApproved)
+                if (allApproved) return `Disapprove All (${selectedIds.length})`
+                if (anyNotApproved && !allApproved) return `Approve Selected (${selectedIds.length})`
+                return `Toggle Approval (${selectedIds.length})`
+              })()}
+            </Button>
+            <Button variant="text" onClick={async () => {
+              // select all matching
+              setSelectAllLoading(true)
+              try {
+                const params: any = {}
+                if (startDate) params.startDate = (startDate as Dayjs).format('YYYY-MM-DD')
+                if (endDate) params.endDate = (endDate as Dayjs).format('YYYY-MM-DD')
+                if (selectedSurveyor) params.userId = selectedSurveyor
+                if (selectedProject) params.projectId = selectedProject
+                if (selectedLocation) params.locationId = selectedLocation
+                const data = await bikeTripService.getTrips(params)
+                const all = Array.isArray(data) ? data : (data.trips || [])
+                setSelectedIds(all.map((t: any) => t.id))
+              } catch (e) {
+                console.error('select all matching failed', e)
+              } finally {
+                setSelectAllLoading(false)
+              }
+            }} disabled={selectAllLoading || trips.length === 0}>{selectAllLoading ? 'Selecting...' : 'Select All Matching'}</Button>
+          </Box>
           <Box>
             <Link href="/bike-readings">
               <Button startIcon={<ArrowBack />}>Back</Button>
@@ -230,7 +391,7 @@ export default function BikeTripsPage() {
         <Stack direction="row" spacing={2} mb={2} alignItems="center">
           <DatePicker label="Start Date" value={startDate} onChange={(d) => setStartDate(d)} />
           <DatePicker label="End Date" value={endDate} onChange={(d) => setEndDate(d)} />
-          <FormControl sx={{ minWidth: 240 }}>
+          <FormControl sx={{ minWidth: 220 }}>
             <InputLabel id="surveyor-filter-label">Surveyor</InputLabel>
             <Select labelId="surveyor-filter-label" value={selectedSurveyor} label="Surveyor" onChange={(e) => setSelectedSurveyor(e.target.value)}>
               <MenuItem value="">
@@ -241,7 +402,31 @@ export default function BikeTripsPage() {
               ))}
             </Select>
           </FormControl>
-          <Button variant="outlined" onClick={() => { setPage(0); fetchTrips() }}>Filter</Button>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Project</InputLabel>
+            <Select value={selectedProject} label="Project" onChange={(e) => setSelectedProject(e.target.value)}>
+              <MenuItem value=""><em>All Projects</em></MenuItem>
+              {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Location</InputLabel>
+            <Select value={selectedLocation} label="Location" onChange={(e) => setSelectedLocation(e.target.value)}>
+              <MenuItem value=""><em>All Locations</em></MenuItem>
+              {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <Button variant="outlined" onClick={() => {
+            // Clear filters
+            setStartDate(null)
+            setEndDate(null)
+            setSelectedSurveyor('')
+            setSelectedProject('')
+            setSelectedLocation('')
+            setPage(0)
+            // refresh list
+            fetchTrips()
+          }}>Clear Filters</Button>
         </Stack>
       </LocalizationProvider>
 
@@ -250,6 +435,13 @@ export default function BikeTripsPage() {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < Math.min(rowsPerPage, trips.length)}
+                    checked={selectedIds.length > 0 && selectedIds.length === Math.min(rowsPerPage, trips.length)}
+                    onChange={() => selectAllOnPage(trips.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage))}
+                  />
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Employee ID</TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Surveyor</TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Date</TableCell>
@@ -263,15 +455,18 @@ export default function BikeTripsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center"><CircularProgress /></TableCell>
+                  <TableCell colSpan={9} align="center"><CircularProgress /></TableCell>
                 </TableRow>
               ) : trips.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">No records</TableCell>
+                  <TableCell colSpan={9} align="center">No records</TableCell>
                 </TableRow>
               ) : (
                 trips.map((t: any) => (
                   <TableRow key={t.id}>
+                    <TableCell padding="checkbox">
+                      <Checkbox checked={selectedIds.includes(t.id)} onChange={() => toggleSelect(t.id)} />
+                    </TableCell>
                     <TableCell align="center">{t.surveyor?.employeeId ?? t.surveyorId}</TableCell>
                     <TableCell align="center">{t.surveyor?.name}</TableCell>
                     <TableCell align="center">{dayjs(t.date).format('YYYY-MM-DD')}</TableCell>
@@ -281,14 +476,34 @@ export default function BikeTripsPage() {
                     <TableCell align="center">
                       {(() => {
                         const staged = pendingFinals[String(t.id)]
+                        const computed = t.computedKm ?? (t.eveningKm != null && t.morningKm != null ? (t.eveningKm - t.morningKm) : undefined)
+                        // If editing modal is open for this trip, show its input
+                        if (editingTrip && String(editingTrip.id) === String(t.id)) {
+                          return (
+                            <TextField size="small" value={finalKmValue} onChange={(e) => setFinalKmValue(e.target.value)} />
+                          )
+                        }
+                        // If there's a staged pending value, show it with a small label
                         if (staged !== undefined) return <Typography>{staged} (staged)</Typography>
+                        // If finalKm already persisted, display it
                         if (t.finalKm != null) return <Typography>{t.finalKm}</Typography>
-                        return <Button size="small" variant="contained" color="primary" onClick={() => handleEditFinal(t)}>Set Final KM</Button>
+                        // If both readings exist (computed available), show an editable input prefilled with computed
+                        if (computed !== undefined && computed !== null) {
+                          const value = staged !== undefined ? staged : computed
+                          return (
+                            <TextField size="small" value={String(value)} onChange={(e) => {
+                              const v = Number(e.target.value)
+                              if (!isNaN(v)) {
+                                setPendingFinals(p => ({ ...p, [String(t.id)]: v }))
+                              }
+                            }} />
+                          )
+                        }
+                        return <Typography>-</Typography>
                       })()}
                     </TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        {/* compute the computed distance for this row */}
                         {(() => {
                           const computed = t.computedKm ?? (t.eveningKm != null && t.morningKm != null ? (t.eveningKm - t.morningKm) : undefined)
                           const actionable = typeof computed === 'number' && isFinite(computed)
@@ -297,7 +512,7 @@ export default function BikeTripsPage() {
                               <Button size="small" color={t.isApproved ? 'error' : 'success'} variant="contained" onClick={() => handleApproveWithFinal(t)} disabled={!actionable}>
                                 {t.isApproved ? 'Disapprove' : 'Approve'}
                               </Button>
-                              <Button size="small" variant="contained" color="secondary" onClick={() => handleEditFinal(t)} disabled={!actionable}>Update</Button>
+                              <Button size="small" variant="contained" color="secondary" onClick={() => handleEditFinal(t)} disabled={!t.isApproved}>Update</Button>
                             </>
                           )
                         })()}
@@ -328,7 +543,22 @@ export default function BikeTripsPage() {
           </Typography>
           <Box mt={2} display="flex" gap={2} justifyContent="flex-end">
             <Button onClick={cancelToggleApprove}>Cancel</Button>
-            <Button variant="contained" color="primary" onClick={confirmToggleApprove}>Confirm</Button>
+            <Button variant="contained" color={approveTarget?.isApproved ? 'error' : 'primary'} onClick={confirmToggleApprove}>Confirm</Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkApproveDialogOpen} onClose={() => setBulkApproveDialogOpen(false)}>
+        <DialogTitle>{bulkActionMode === 'approve' ? 'Confirm Approve Selected' : bulkActionMode === 'disapprove' ? 'Confirm Disapprove Selected' : 'Confirm Toggle Approval'}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {bulkActionMode === 'approve' && `Are you sure you want to approve the selected trips (${selectedIds.length})?`}
+            {bulkActionMode === 'disapprove' && `Are you sure you want to disapprove the selected trips (${selectedIds.length})?`}
+            {bulkActionMode === 'mixed' && `The selected trips contain a mix of approved and unapproved records; confirming will toggle approval for each.`}
+          </Typography>
+          <Box mt={2} display="flex" gap={2} justifyContent="flex-end">
+            <Button onClick={() => setBulkApproveDialogOpen(false)}>Cancel</Button>
+            <Button variant="contained" color={bulkActionMode === 'disapprove' ? 'error' : 'primary'} onClick={handleBulkApproveConfirm} disabled={bulkApproving}>{bulkApproving ? (bulkActionMode === 'disapprove' ? 'Processing...' : 'Approving...') : 'Confirm'}</Button>
           </Box>
         </DialogContent>
       </Dialog>
@@ -355,7 +585,7 @@ export default function BikeTripsPage() {
           <TextField label="Final KM" value={finalKmValue} onChange={(e) => setFinalKmValue(e.target.value)} fullWidth />
           <Box mt={2} display="flex" gap={2} justifyContent="flex-end">
             <Button onClick={() => setEditingTrip(null)}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveFinal} disabled={isSavingFinal}>{isSavingFinal ? 'Updating...' : 'Update'}</Button>
+            <Button variant="contained" onClick={handleSaveFinal} disabled={isSavingFinal || !(editingTrip?.isApproved)}>{isSavingFinal ? 'Updating...' : 'Update'}</Button>
           </Box>
         </DialogContent>
       </Dialog>

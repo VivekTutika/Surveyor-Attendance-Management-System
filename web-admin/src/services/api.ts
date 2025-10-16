@@ -525,4 +525,24 @@ export const reportService = {
       return null
     }
   }
+
+  ,getConsolidatedAttendance: async (params?: { startDate?: string; endDate?: string; surveyorId?: string | number; projectId?: string | number; locationId?: string | number }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.get('/api/reports/consolidated/attendance', { params })
+      return response.data
+    } catch (error) {
+      console.error('Get consolidated attendance error:', error)
+      throw error
+    }
+  },
+
+  getConsolidatedBikeReadings: async (params?: { startDate?: string; endDate?: string; surveyorId?: string | number; projectId?: string | number; locationId?: string | number }) => {
+    try {
+      const response: AxiosResponse<ApiResponse<any>> = await api.get('/api/reports/consolidated/bike-readings', { params })
+      return response.data
+    } catch (error) {
+      console.error('Get consolidated bike readings error:', error)
+      throw error
+    }
+  }
 }

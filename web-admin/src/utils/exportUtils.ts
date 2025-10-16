@@ -101,7 +101,8 @@ export const exportAttendanceToPDF = async (data: Attendance[], opts: { surveyor
     startY: 45,
     theme: 'grid',
     headStyles: { fillColor: [25, 118, 210] },
-    styles: { fontSize: 8 }
+    styles: { fontSize: 8, halign: 'center' },
+    columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } },
   })
 
   const filename = `${buildFileName(opts.surveyorName ? `attendance-${opts.surveyorName}` : 'attendance-all', null, opts.startDate ?? null, opts.endDate ?? null)}.pdf`
@@ -135,7 +136,8 @@ export const exportBikeReadingsToPDF = async (data: BikeMeterReading[], opts: { 
     startY: 45,
     theme: 'grid',
     headStyles: { fillColor: [25, 118, 210] },
-    styles: { fontSize: 10 }
+    styles: { fontSize: 10, halign: 'center' },
+    columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } },
   })
 
   const kindSuffix = opts.reportKind === 'COMPREHENSIVE' ? 'comprehensive' : 'raw'
@@ -212,7 +214,7 @@ export const exportSurveyorsToPDF = async (data: any[], opts: { surveyorName?: s
   doc.setFontSize(18)
   doc.text('Surveyor Details', 14, 22)
   const tableData = data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
-  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']], body: tableData, startY: 35 })
+  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']], body: tableData, startY: 35, styles: { halign: 'center' }, columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } } })
   const filenameBase = opts.userId ? `surveyor-details-${opts.surveyorName ?? 'single'}` : 'surveyor-details-all'
   const filename = `${buildFileName(filenameBase, null, null, null)}.pdf`
   doc.save(filename)
@@ -309,8 +311,8 @@ export const buildAttendancePDFBlob = (data: Attendance[], opts: { surveyorName?
 }
 
 export const buildSurveyorsCSVString = (data: any[]) => {
-  const headers = ['Name', 'Mobile', 'Project', 'Location']
-  const csvContent = [headers.join(','), ...data.map(s => [s.name, s.mobileNumber, s.project?.name ?? '', s.location?.name ?? ''].join(','))].join('\n')
+  const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']
+  const csvContent = [headers.join(','), ...data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''].join(','))].join('\n')
   return csvContent
 }
 
@@ -318,8 +320,8 @@ export const buildSurveyorsPDFBlob = (data: any[]) => {
   const doc = new jsPDF()
   doc.setFontSize(18)
   doc.text('Surveyor Details', 14, 20)
-  const tableData = data.map(s => [s.name, s.mobileNumber, s.project?.name ?? '', s.location?.name ?? ''])
-  autoTable(doc, { head: [['Name', 'Mobile', 'Project', 'Location']], body: tableData, startY: 35 })
+  const tableData = data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
+  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']], body: tableData, startY: 35, styles: { halign: 'center' }, columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } } })
   return doc.output('blob')
 }
 
@@ -366,39 +368,49 @@ export const consolidateAttendance = (attendance: Attendance[]): ConsolidatedAtt
   return arr
 }
 
-export const buildConsolidatedAttendanceCSVString = (consolidated: ConsolidatedAttendanceRow[]) => {
-  const headers = ['Date', 'Surveyor', 'Mobile', 'Check In', 'Check Out']
-  const lines = consolidated.map(r => [r.date, r.surveyorName, r.mobile, r.checkIn ?? '', r.checkOut ?? ''].map(v => {
+// New consolidated attendance/bike readers helpers expect backend shape: { dates: string[], surveyors: Array<{ employeeId, name, [date]: value }> }
+export const buildConsolidatedAttendanceCSVString = (data: { dates: string[]; surveyors: any[] }) => {
+  // build two header rows: first row = dates, second row = day names
+  // Short date format (e.g. 01 Oct) and short weekday (e.g. Wed) for compact display
+  const row1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => {
+    const dt = new Date(`${d}T00:00:00.000Z`)
+    return dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
+  })]
+  const row2 = ['', '', ...data.dates.map(d => {
+    const dt = new Date(`${d}T00:00:00.000Z`)
+    return dt.toLocaleDateString(undefined, { weekday: 'short' })
+  })]
+  const lines = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? ''))].map(v => {
     if (v == null) return ''
     const s = String(v)
     if (s.includes(',') || s.includes('\n') || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"'
     return s
   }).join(','))
-  return [headers.join(','), ...lines].join('\n')
+  return [row1.join(','), row2.join(','), ...lines].join('\n')
 }
 
-export const buildConsolidatedAttendancePDFBlob = (consolidated: ConsolidatedAttendanceRow[]) => {
+export const buildConsolidatedAttendancePDFBlob = (data: { dates: string[]; surveyors: any[] }) => {
   const doc = new jsPDF()
-  doc.setFontSize(18)
-  doc.text('Attendance (Consolidated)', 14, 20)
-  doc.setFontSize(11)
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
-  const tableData = consolidated.map(r => [r.date, r.surveyorName, r.mobile, r.checkIn ?? '', r.checkOut ?? ''])
-  autoTable(doc, { head: [['Date', 'Surveyor', 'Mobile', 'Check In', 'Check Out']], body: tableData, startY: 40, styles: { fontSize: 9 } })
+  doc.setFontSize(16)
+  doc.text('Attendance (Consolidated)', 14, 16)
+  doc.setFontSize(10)
+  // two header rows: short dates (first), short weekdays (second)
+  const headRow1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }))]
+  const headRow2 = ['', '', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { weekday: 'short' }))]
+  const body = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? ''))])
+  autoTable(doc, { head: [headRow1, headRow2], body, startY: 22, styles: { fontSize: 8, cellPadding: 2 } })
   return doc.output('blob')
 }
 
-export const exportConsolidatedAttendanceToCSV = async (consolidated: ConsolidatedAttendanceRow[], opts: { startDate?: string | null; endDate?: string | null; userId?: number | null; createdBy?: string | null }) => {
-  const csv = buildConsolidatedAttendanceCSVString(consolidated)
+export const exportConsolidatedAttendanceToCSV = async (data: { dates: string[]; surveyors: any[] }, opts: { startDate?: string | null; endDate?: string | null; userId?: number | null; createdBy?: string | null }) => {
+  const csv = buildConsolidatedAttendanceCSVString(data)
   const filename = `${buildFileName('attendance-consolidated', null, opts.startDate ?? null, opts.endDate ?? null)}.csv`
   downloadCSV(csv, filename)
-  try {
-    await reportService.create({ userId: opts.userId ?? 0, reportType: 'CSV', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: filename, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' })
-  } catch (e) {}
+  try { await reportService.create({ userId: opts.userId ?? 0, reportType: 'CSV', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: filename, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }) } catch (e) {}
 }
 
-export const exportConsolidatedAttendanceToPDF = async (consolidated: ConsolidatedAttendanceRow[], opts: { startDate?: string | null; endDate?: string | null; userId?: number | null; createdBy?: string | null }) => {
-  const blob = buildConsolidatedAttendancePDFBlob(consolidated)
+export const exportConsolidatedAttendanceToPDF = async (data: { dates: string[]; surveyors: any[] }, opts: { startDate?: string | null; endDate?: string | null; userId?: number | null; createdBy?: string | null }) => {
+  const blob = buildConsolidatedAttendancePDFBlob(data)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -406,7 +418,120 @@ export const exportConsolidatedAttendanceToPDF = async (consolidated: Consolidat
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-  try {
-    await reportService.create({ userId: opts.userId ?? 0, reportType: 'PDF', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: a.download, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' })
-  } catch (e) {}
+  try { await reportService.create({ userId: opts.userId ?? 0, reportType: 'PDF', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: a.download, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }) } catch (e) {}
+}
+
+// Consolidated bike readings (date-distance matrix)
+export const buildConsolidatedBikeReadingsCSVString = (data: { dates: string[]; surveyors: any[] }) => {
+  const row1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }))]
+  const row2 = ['', '', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { weekday: 'short' }))]
+  const esc = (v: any) => {
+    if (v === null || v === undefined) return ''
+    const s = String(v)
+    if (s.includes(',') || s.includes('\n') || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"'
+    return s
+  }
+  const lines = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? 0))].map(esc).join(','))
+  return [row1.join(','), row2.join(','), ...lines].join('\n')
+}
+
+export const buildConsolidatedBikeReadingsPDFBlob = (data: { dates: string[]; surveyors: any[] }) => {
+  const doc = new jsPDF()
+  doc.setFontSize(16)
+  doc.text('Bike Readings (Consolidated)', 14, 16)
+  doc.setFontSize(10)
+  const headRow1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => d)]
+  const headRow2 = ['', '', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { weekday: 'short' }))]
+  const body = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? 0))])
+  autoTable(doc, {
+    head: [headRow1, headRow2],
+    body,
+    startY: 22,
+    styles: { fontSize: 8, cellPadding: 2, halign: 'center' },
+    columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } },
+  })
+  return doc.output('blob')
+}
+
+export const exportConsolidatedBikeReadingsToCSV = async (data: { dates: string[]; surveyors: any[] }, opts: { startDate?: string | null; endDate?: string | null; userId?: number | null; createdBy?: string | null }) => {
+  const csv = buildConsolidatedBikeReadingsCSVString(data)
+  const filename = `${buildFileName('bike-readings-consolidated', null, opts.startDate ?? null, opts.endDate ?? null)}.csv`
+  downloadCSV(csv, filename)
+  try { await reportService.create({ userId: opts.userId ?? 0, reportType: 'CSV', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: filename, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }) } catch (e) {}
+}
+
+export const exportConsolidatedBikeReadingsToPDF = async (data: { dates: string[]; surveyors: any[] }, opts: { startDate?: string | null; endDate?: string | null; userId?: number | null; createdBy?: string | null }) => {
+  const blob = buildConsolidatedBikeReadingsPDFBlob(data)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${buildFileName('bike-readings-consolidated', null, opts.startDate ?? null, opts.endDate ?? null)}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  try { await reportService.create({ userId: opts.userId ?? 0, reportType: 'PDF', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: a.download, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }) } catch (e) {}
+}
+
+// Bike Trips (RAW) exporters - one row per trip/day
+export const buildBikeTripsCSVString = (trips: any[]) => {
+  const headers = ['Employee ID', 'Surveyor Name', 'Date', 'Morning Reading', 'Evening Reading', 'Distance (KM)']
+  const esc = (v: any) => {
+    if (v === null || v === undefined) return ''
+    const s = String(v)
+    if (s.includes(',') || s.includes('\n') || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"'
+    return s
+  }
+  const lines = trips.map(t => {
+    const emp = t.surveyor?.employeeId ?? ''
+    const name = t.surveyor?.name ?? ''
+    const dt = t.date ? new Date(t.date).toISOString().split('T')[0] : ''
+    const morning = t.morningKm != null ? t.morningKm : ''
+    const evening = t.eveningKm != null ? t.eveningKm : ''
+    const distance = t.isApproved ? (t.finalKm ?? 0) : 0
+    return [esc(emp), esc(name), esc(dt), esc(morning), esc(evening), esc(distance)].join(',')
+  })
+  return [headers.join(','), ...lines].join('\n')
+}
+
+export const exportBikeTripsToCSV = async (trips: any[], opts: { surveyorName?: string | null; startDate?: string | null; endDate?: string | null; userId?: number | null; reportKind?: string; createdBy?: string | null }) => {
+  const csv = buildBikeTripsCSVString(trips)
+  const filename = `${buildFileName('bike-trips-raw', null, opts.startDate ?? null, opts.endDate ?? null)}.csv`
+  downloadCSV(csv, filename)
+  try { await reportService.create({ userId: opts.userId ?? 0, reportType: 'CSV', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: filename, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }) } catch (e) {}
+}
+
+export const buildBikeTripsPDFBlob = (trips: any[], opts?: { surveyorName?: string | null; startDate?: string | null; endDate?: string | null; reportKind?: string }) => {
+  const doc = new jsPDF()
+  doc.setFontSize(16)
+  doc.text('Bike Trips (Raw)', 14, 16)
+  doc.setFontSize(10)
+  const head = ['Employee ID', 'Surveyor Name', 'Date', 'Morning Reading', 'Evening Reading', 'Distance (KM)']
+  const body = trips.map(t => [t.surveyor?.employeeId ?? '', t.surveyor?.name ?? '', t.date ? new Date(t.date).toLocaleDateString() : '', t.morningKm != null ? String(t.morningKm) : '', t.eveningKm != null ? String(t.eveningKm) : '', t.isApproved ? String(t.finalKm ?? 0) : '0'])
+  autoTable(doc, {
+    head: [head],
+    body,
+    startY: 22,
+    styles: { fontSize: 8 },
+    columnStyles: {
+      0: { halign: 'left' },
+      1: { halign: 'left' },
+      2: { halign: 'center' },
+      3: { halign: 'center' },
+      4: { halign: 'center' },
+      5: { halign: 'center' },
+    },
+  })
+  return doc.output('blob')
+}
+
+export const exportBikeTripsToPDF = async (trips: any[], opts: { surveyorName?: string | null; startDate?: string | null; endDate?: string | null; userId?: number | null; reportKind?: string; createdBy?: string | null }) => {
+  const blob = buildBikeTripsPDFBlob(trips, opts)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${buildFileName('bike-trips-raw', null, opts.startDate ?? null, opts.endDate ?? null)}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  try { await reportService.create({ userId: opts.userId ?? 0, reportType: 'PDF', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: a.download, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }) } catch (e) {}
 }
