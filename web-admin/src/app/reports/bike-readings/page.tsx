@@ -8,14 +8,29 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
-import { surveyorService, bikeMeterService, authService } from '@/services/api'
-import { exportBikeReadingsToCSV, exportBikeReadingsToPDF, buildBikeReadingsCSVString, buildBikeReadingsPDFBlob } from '@/utils/exportUtils'
+import { surveyorService, bikeMeterService, bikeTripService, authService, reportService } from '@/services/api'
+import {
+  exportBikeReadingsToCSV,
+  exportBikeReadingsToPDF,
+  buildBikeReadingsCSVString,
+  buildBikeReadingsPDFBlob,
+  exportConsolidatedBikeReadingsToCSV,
+  exportConsolidatedBikeReadingsToPDF,
+  buildConsolidatedBikeReadingsPDFBlob,
+  exportBikeTripsToCSV,
+  exportBikeTripsToPDF,
+  buildBikeTripsPDFBlob,
+} from '@/utils/exportUtils'
 
 export default function BikeReadingsReportPage() {
   const [surveyors, setSurveyors] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [startDate, setStartDate] = useState<any>(dayjs().subtract(7, 'day'))
   const [endDate, setEndDate] = useState<any>(dayjs())
   const [userId, setUserId] = useState<string>('')
+  const [projectId, setProjectId] = useState<string>('')
+  const [locationId, setLocationId] = useState<string>('')
   const [reportKind, setReportKind] = useState<'RAW' | 'COMPREHENSIVE'>('RAW')
   const [adminProfile, setAdminProfile] = useState<any>(null)
   // Preview state
@@ -28,6 +43,9 @@ export default function BikeReadingsReportPage() {
   const fetchSurveyors = async () => {
     try { const data = await surveyorService.getAll(); setSurveyors(data) } catch (err) { console.error(err) }
   }
+  useEffect(() => { fetchProjects(); fetchLocations() }, [])
+  const fetchProjects = async () => { try { const p = await surveyorService.getProjects(); setProjects(p) } catch (e) { console.error(e) } }
+  const fetchLocations = async () => { try { const l = await surveyorService.getLocations(); setLocations(l) } catch (e) { console.error(e) } }
 
   useEffect(() => { fetchProfile() }, [])
   const fetchProfile = async () => {
@@ -39,9 +57,19 @@ export default function BikeReadingsReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
-    const data = await bikeMeterService.getAll(params)
-    const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
-    await exportBikeReadingsToCSV(data.readings, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
+    if (projectId) params.projectId = projectId
+    if (locationId) params.locationId = locationId
+    // For RAW report call existing service, for COMPREHENSIVE call consolidated endpoint
+    if (reportKind === 'RAW') {
+      const trips = await bikeTripService.getTrips(params)
+      const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
+      await exportBikeTripsToCSV(trips, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
+      return
+    }
+    // consolidated endpoint expects 'surveyorId' query param name
+    if (params.userId) { params.surveyorId = params.userId; delete params.userId }
+    const res = await reportService.getConsolidatedBikeReadings(params)
+    await exportConsolidatedBikeReadingsToCSV(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleExportPDF = async () => {
@@ -49,9 +77,17 @@ export default function BikeReadingsReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
-    const data = await bikeMeterService.getAll(params)
-    const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
-    await exportBikeReadingsToPDF(data.readings, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
+    if (projectId) params.projectId = projectId
+    if (locationId) params.locationId = locationId
+    if (reportKind === 'RAW') {
+      const trips = await bikeTripService.getTrips(params)
+      const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
+      await exportBikeTripsToPDF(trips, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
+      return
+    }
+    if (params.userId) { params.surveyorId = params.userId; delete params.userId }
+    const res = await reportService.getConsolidatedBikeReadings(params)
+    await exportConsolidatedBikeReadingsToPDF(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const generatePreview = async () => {
@@ -59,26 +95,53 @@ export default function BikeReadingsReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
-    const data = await bikeMeterService.getAll(params)
-    const readings = data.readings
+    // If comprehensive, use consolidated endpoint for preview to match export
+    if (projectId) params.projectId = projectId
+    if (locationId) params.locationId = locationId
+    if (reportKind === 'COMPREHENSIVE') {
+      if (params.userId) { params.surveyorId = params.userId; delete params.userId }
+      const res = await reportService.getConsolidatedBikeReadings(params)
+      const consolidated = res.data
+      setPreviewTotal(consolidated.surveyors.length)
+        if (previewType === 'CSV') {
+        const headers = ['Employee ID', 'Surveyor Name', ...consolidated.dates.slice(0, 10).map((d: string) => {
+          const dt = new Date(`${d}T00:00:00.000Z`)
+          const dateShort = dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
+          const dayShort = dt.toLocaleDateString(undefined, { weekday: 'short' })
+          return `${dateShort}\n${dayShort}`
+        })]
+        const rows = consolidated.surveyors.slice(0, 10).map((r: any) => [r.employeeId, r.name, ...consolidated.dates.slice(0, 10).map((d: string) => r[d] ?? 0)])
+        setPreviewRows({ headers, rows })
+        if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null) }
+      } else {
+        const blob = buildConsolidatedBikeReadingsPDFBlob(consolidated)
+        const url = URL.createObjectURL(blob)
+        setPreviewBlobUrl(url)
+        setPreviewRows(null)
+      }
+      return
+    }
+
+    // RAW preview path
+    const trips = await bikeTripService.getTrips(params)
     if (previewType === 'CSV') {
-      const headers = ['Date', 'Time', 'Surveyor', 'Mobile', 'Reading (KM)', 'Photo URL']
-  const total = readings.length
-  const rows = readings.slice(0, 10).map(record => {
-        const date = record?.capturedAt ? new Date(record.capturedAt) : null
-        const dateStr = date ? date.toLocaleDateString() : ''
-        const timeStr = date ? date.toLocaleTimeString() : ''
-        const surveyor = record?.user?.name ?? ''
-        const mobile = record?.user?.mobileNumber ?? ''
-        const reading = String(record?.reading ?? '')
-        const photo = record?.photoPath ?? ''
-        return [dateStr, timeStr, surveyor, mobile, reading, photo]
+      const headers = ['Employee ID', 'Surveyor Name', 'Date', 'Morning Reading', 'Evening Reading', 'Distance (KM)']
+      const total = trips.length
+      const rows = trips.slice(0, 10).map((t: any) => {
+        const emp = t.surveyor?.employeeId ?? ''
+        const name = t.surveyor?.name ?? ''
+        const dt = t.date ? new Date(t.date) : null
+        const dateStr = dt ? dt.toLocaleDateString() : ''
+        const morning = t.morningKm != null ? String(t.morningKm) : ''
+        const evening = t.eveningKm != null ? String(t.eveningKm) : ''
+        const distance = t.isApproved ? String(t.finalKm ?? 0) : '0'
+        return [emp, name, dateStr, morning, evening, distance]
       })
-  setPreviewRows({ headers, rows })
-  setPreviewTotal(total)
+      setPreviewRows({ headers, rows })
+      setPreviewTotal(total)
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null) }
     } else {
-      const blob = buildBikeReadingsPDFBlob(readings, { surveyorName: userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null, startDate: params.startDate ?? null, endDate: params.endDate ?? null, reportKind })
+      const blob = buildBikeTripsPDFBlob(trips, { surveyorName: userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null, startDate: params.startDate ?? null, endDate: params.endDate ?? null, reportKind })
       const url = URL.createObjectURL(blob)
       setPreviewBlobUrl(url)
       setPreviewRows(null)
@@ -122,6 +185,20 @@ export default function BikeReadingsReportPage() {
                 {surveyors.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
               </Select>
             </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Project</InputLabel>
+              <Select value={projectId} label="Project" onChange={(e) => setProjectId(e.target.value)}>
+                <MenuItem value=""><em>All Projects</em></MenuItem>
+                {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Location</InputLabel>
+              <Select value={locationId} label="Location" onChange={(e) => setLocationId(e.target.value)}>
+                <MenuItem value=""><em>All Locations</em></MenuItem>
+                {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
+              </Select>
+            </FormControl>
             <FormControl sx={{ minWidth: 220 }}>
               <InputLabel>Report Type</InputLabel>
               <Select value={reportKind} label="Report Type" onChange={(e) => setReportKind(e.target.value as any)}>
@@ -157,13 +234,19 @@ export default function BikeReadingsReportPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {previewRows.headers.map(h => <TableCell key={h}><strong>{h}</strong></TableCell>)}
+                    {previewRows.headers.map((h, idx) => {
+                      const isNumeric = idx >= 2
+                      return <TableCell key={h} align={isNumeric ? 'center' : 'left'}><strong>{h}</strong></TableCell>
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {previewRows.rows.map((r, i) => (
+                    {previewRows.rows.map((r, i) => (
                     <TableRow key={i}>
-                      {r.map((c, j) => <TableCell key={j}>{c}</TableCell>)}
+                      {r.map((c, j) => {
+                        const isNumeric = j >= 2
+                        return <TableCell key={j} align={isNumeric ? 'center' : 'left'}>{c}</TableCell>
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>

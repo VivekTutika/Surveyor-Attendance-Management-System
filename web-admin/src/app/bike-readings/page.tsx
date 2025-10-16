@@ -32,13 +32,11 @@ import {
   Snackbar,
 } from '@mui/material'
 import {
-  DirectionsBike,
   Route,
   FilterList,
   Download,
   Close,
   CalendarToday,
-  Person,
   TableRows,
   GridView,
   Image,
@@ -46,6 +44,7 @@ import {
   CheckCircle,
   Cancel,
 } from '@mui/icons-material'
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -64,6 +63,8 @@ interface BikeFilters {
 export default function BikeReadingsPage() {
   const [readings, setReadings] = useState<BikeMeterReading[]>([])
   const [surveyors, setSurveyors] = useState<User[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
@@ -105,6 +106,10 @@ export default function BikeReadingsPage() {
     fetchSurveyors()
   }, [])
 
+  useEffect(() => { fetchProjectList(); fetchLocationList() }, [])
+  const fetchProjectList = async () => { try { const p = await surveyorService.getProjects(); setProjects(p || []) } catch (e) { console.error('Failed to load projects', e) } }
+  const fetchLocationList = async () => { try { const l = await surveyorService.getLocations(); setLocations(l || []) } catch (e) { console.error('Failed to load locations', e) } }
+
   useEffect(() => { fetchProfile() }, [])
   const fetchProfile = async () => {
     try { const p = await authService.getProfile(); setAdminProfile(p) } catch (e) { console.error(e) }
@@ -145,6 +150,8 @@ export default function BikeReadingsPage() {
       if (filters.type) {
         params.type = filters.type
       }
+      if ((filters as any).projectId) params.projectId = (filters as any).projectId
+      if ((filters as any).locationId) params.locationId = (filters as any).locationId
 
       const data = await bikeMeterService.getAll(params)
       setReadings(data.readings)
@@ -314,7 +321,7 @@ export default function BikeReadingsPage() {
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar sx={{ bgcolor: 'primary.main' }}><DirectionsBike /></Avatar>
+                    <Avatar sx={{ bgcolor: 'primary.main' }}><TwoWheelerIcon /></Avatar>
                     <Box>
                       <Typography variant="h6">{surveyors.filter(s => s.hasBike).length}</Typography>
                       <Typography color="text.secondary">With Bike</Typography>
@@ -325,7 +332,7 @@ export default function BikeReadingsPage() {
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar sx={{ bgcolor: 'default' }}><DirectionsBike /></Avatar>
+                    <Avatar sx={{ bgcolor: 'default' }}><TwoWheelerIcon /></Avatar>
                     <Box>
                       <Typography variant="h6">{surveyors.filter(s => !s.hasBike).length}</Typography>
                       <Typography color="text.secondary">Without Bike</Typography>
@@ -347,8 +354,8 @@ export default function BikeReadingsPage() {
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
-                    <DirectionsBike />
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>
+                    <TwoWheelerIcon />
                   </Avatar>
                   <Box>
                     <Typography variant="h5" component="div">
@@ -401,202 +408,83 @@ export default function BikeReadingsPage() {
         {/* Filters */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <Typography variant="h6" sx={{ mr: 2 }}>
-              Filters
-            </Typography>
-            
-            <DatePicker
-              label="Start Date"
-              value={filters.startDate}
-              onChange={(newValue) => handleFilterChange('startDate', newValue)}
-              format="DD/MM/YYYY"
-            />
-            
-            <DatePicker
-              label="End Date"
-              value={filters.endDate}
-              onChange={(newValue) => handleFilterChange('endDate', newValue)}
-              format="DD/MM/YYYY"
-            />
-            
+            <DatePicker label="Start Date" value={filters.startDate} onChange={(newValue) => handleFilterChange('startDate', newValue)} format="DD/MM/YYYY" />
+            <DatePicker label="End Date" value={filters.endDate} onChange={(newValue) => handleFilterChange('endDate', newValue)} format="DD/MM/YYYY" />
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Surveyor</InputLabel>
-              <Select
-                value={filters.userId}
-                label="Surveyor"
-                onChange={(e) => handleFilterChange('userId', e.target.value)}
-              >
-                <MenuItem value="">
-                  <em>All Surveyors</em>
-                </MenuItem>
-                {surveyors.map((surveyor) => (
-                  <MenuItem key={surveyor.id} value={surveyor.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Person fontSize="small" />
-                      {surveyor.name}
-                    </Box>
-                  </MenuItem>
-                ))}
+              <Select value={filters.userId} label="Surveyor" onChange={(e) => handleFilterChange('userId', e.target.value)}>
+                <MenuItem value=""><em>All Surveyors</em></MenuItem>
+                {surveyors.map((surveyor) => (<MenuItem key={surveyor.id} value={surveyor.id}>{surveyor.name}</MenuItem>))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Project</InputLabel>
+              <Select value={(filters as any).projectId ?? ''} label="Project" onChange={(e) => handleFilterChange('projectId' as any, e.target.value)}>
+                <MenuItem value=""><em>All Projects</em></MenuItem>
+                {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Location</InputLabel>
+              <Select value={(filters as any).locationId ?? ''} label="Location" onChange={(e) => handleFilterChange('locationId' as any, e.target.value)}>
+                <MenuItem value=""><em>All Locations</em></MenuItem>
+                {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
               </Select>
             </FormControl>
             <FormControl sx={{ minWidth: 150 }}>
               <InputLabel>Type</InputLabel>
-              <Select
-                value={filters.type}
-                label="Type"
-                onChange={(e) => handleFilterChange('type', e.target.value)}
-              >
-                <MenuItem value="">
-                  <em>All Types</em>
-                </MenuItem>
+              <Select value={filters.type} label="Type" onChange={(e) => handleFilterChange('type', e.target.value)}>
+                <MenuItem value=""><em>All Types</em></MenuItem>
                 <MenuItem value="MORNING">Check In</MenuItem>
                 <MenuItem value="EVENING">Check Out</MenuItem>
               </Select>
             </FormControl>
-            
-            <Button
-              variant="outlined"
-              startIcon={<FilterList />}
-              onClick={clearFilters}
-            >
-              Clear Filters
-            </Button>
+            <Button variant="outlined" startIcon={<FilterList />} onClick={clearFilters}>Clear Filters</Button>
           </Box>
         </Paper>
-
         {viewMode === 'table' ? (
-          /* Bike Readings Table */
           <Paper>
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Surveyor</TableCell>
-                    <TableCell>Date & Time</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>Photo</TableCell>
-                    <TableCell align="center">Reading (KM)</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Surveyor</TableCell>
+                    <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Date & Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Photo</TableCell>
+                    <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Reading (KM)</TableCell>
+                    <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(readings ?? [])
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((reading) => (
-                    <TableRow key={reading.id} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Person fontSize="small" color="action" />
-                          <Typography variant="body2" fontWeight="medium">
-                            {reading.user.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            ({reading.user.mobileNumber})
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarToday fontSize="small" color="action" />
-                          {new Date(reading.capturedAt).toLocaleString()}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={reading.type === 'MORNING' ? 'Check In' : reading.type === 'EVENING' ? 'Check Out' : '—'}
-                          size="small"
-                          color={reading.type === 'MORNING' ? 'success' : reading.type === 'EVENING' ? 'warning' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {reading.photoPath && (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handlePhotoClick(reading)}
-                          >
-                            View Photo
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        {/* If a reading exists, show it as text. If not, allow inline entry. */}
-                        {reading.reading !== null && reading.reading !== undefined ? (
-                          <Typography sx={{ minWidth: 80, textAlign: 'center' }}>{`${reading.reading} KM`}</Typography>
-                        ) : (
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
-                            <TextField
-                              size="small"
-                              type="number"
-                              inputProps={{ min: 0, step: 0.1 }}
-                              value={editingValues[reading.id] ?? ''}
-                              onChange={(e) => {
-                                const val = e.target.value
-                                setEditingValues(prev => ({ ...prev, [reading.id]: val }))
-                              }}
-                              sx={{ width: 120 }}
-                            />
-                            <Button size="small" onClick={() => setEditingValues(prev => ({ ...prev, [reading.id]: '' }))}>Clear</Button>
+                      <TableRow key={reading.id} hover>
+                        <TableCell align="center">
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium" align="center">{reading.user.name}</Typography>
+                            <Typography variant="caption" color="text.secondary" align="center">({reading.user.mobileNumber})</Typography>
                           </Box>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color={reading.reading !== undefined && reading.reading !== null ? 'success' : 'primary'}
-                            startIcon={<Upload />}
-                            onClick={() => {
-                              // Determine the mode based on whether the row already had a stored reading
-                              const originalHadReading = reading.reading !== undefined && reading.reading !== null
-                              setConfirmMode(originalHadReading ? 'update' : 'upload')
-
-                              // Use editing value if present; otherwise prefill with existing reading (for update)
-                              const rawVal = editingValues[reading.id]
-                              const prefill = rawVal !== undefined && rawVal !== '' ? rawVal : (originalHadReading ? String(reading.reading) : '')
-
-                              // set confirmValue and selectedReading, then open dialog
-                              setConfirmValue(prefill)
-                              setSelectedReading({ ...reading, reading: prefill !== '' ? Number(prefill) : undefined as any })
-                              setConfirmDialogOpen(true)
-                            }}
-                            disabled={
-                              !((editingValues[reading.id] !== undefined && editingValues[reading.id] !== '' && !Number.isNaN(Number(editingValues[reading.id]))) || (reading.reading !== undefined && reading.reading !== null))
-                            }
-                          >
-                            {reading.reading !== undefined && reading.reading !== null ? 'Update' : 'Upload'}
-                          </Button>
-
-                          {/* Revert/Delete action - visible when a reading exists */}
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            onClick={() => {
-                              setSelectedReading(reading)
-                              setRevertDialogOpen(true)
-                            }}
-                            disabled={!reading.reading}
-                          >
-                            Revert
-                          </Button>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell align="center">{new Date(reading.capturedAt).toLocaleString()}</TableCell>
+                        <TableCell align="center">
+                          <Chip label={reading.type === 'MORNING' ? 'Check In' : reading.type === 'EVENING' ? 'Check Out' : '—'} size="small" color={reading.type === 'MORNING' ? 'success' : reading.type === 'EVENING' ? 'warning' : 'default'} />
+                        </TableCell>
+                        <TableCell align="center">{reading.photoPath ? <Button size="small" variant="outlined" onClick={() => handlePhotoClick(reading)}>View Photo</Button> : null}</TableCell>
+                        <TableCell align="center">{reading.reading != null ? `${reading.reading} KM` : '-'}</TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                            <Button size="small" variant={reading.reading != null ? 'contained' : 'outlined'} color={reading.reading != null ? 'success' : 'primary'} onClick={() => { setConfirmMode(reading.reading != null ? 'update' : 'upload'); setConfirmValue(reading.reading != null ? String(reading.reading) : ''); setSelectedReading(reading); setConfirmDialogOpen(true); }}>{reading.reading != null ? 'Update' : 'Upload'}</Button>
+                            <Button size="small" variant="outlined" color="error" onClick={() => { setSelectedReading(reading); setRevertDialogOpen(true); }} disabled={!reading.reading}>Revert</Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 50, 100]}
-              component="div"
-              count={total}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
+            <TablePagination rowsPerPageOptions={[10,25,50,100]} component="div" count={total} rowsPerPage={rowsPerPage} page={page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
           </Paper>
         ) : (
           /* Gallery View */

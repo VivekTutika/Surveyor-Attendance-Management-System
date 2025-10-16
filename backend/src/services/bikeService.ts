@@ -2,6 +2,7 @@ import { AttendanceType } from '@prisma/client';
 import { prisma } from '../config/db';
 import { BikeTripService } from './bikeTripService';
 import { uploadAttendancePhoto } from '../config/cloudinary';
+import { startOfDayUTC, endOfDayUTC, startOfTodayUTC } from '../utils/dateUtils';
 
 export interface UploadBikeMeterData {
   userId: number;  // Changed from string to number
@@ -23,8 +24,7 @@ export class BikeService {
   static async uploadBikeMeterReading(data: UploadBikeMeterData) {
     const { userId, type, photoBuffer, kmReading } = data;
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = startOfTodayUTC();
 
     // Ensure user is active
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -120,26 +120,13 @@ export class BikeService {
 
     // Date filtering
     if (date) {
-      const targetDate = new Date(date);
-      targetDate.setHours(0, 0, 0, 0);
-      where.date = targetDate;
+      where.date = { gte: startOfDayUTC(date as any), lte: endOfDayUTC(date as any) }
     } else if (startDate && endDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      where.date = {
-        gte: start,
-        lte: end,
-      };
+      where.date = { gte: startOfDayUTC(startDate as any), lte: endOfDayUTC(endDate as any) }
     } else if (startDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      where.date = { gte: start };
+      where.date = { gte: startOfDayUTC(startDate as any) }
     } else if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      where.date = { lte: end };
+      where.date = { lte: endOfDayUTC(endDate as any) }
     }
 
     // Type filtering
@@ -171,8 +158,7 @@ export class BikeService {
 
   // Get today's bike meter reading status for a user
   static async getTodayBikeMeterStatus(userId: number) {  // Changed from string to number
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = startOfTodayUTC();
 
     const readings = await prisma.bikeMeterReading.findMany({
       where: {
@@ -280,10 +266,8 @@ export class BikeService {
 
   // Get bike meter summary for a user in a date range
   static async getBikeMeterSummary(userId: number, startDate: string, endDate: string) {  // Changed from string to number
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const start = startOfDayUTC(startDate);
+    const end = endOfDayUTC(endDate);
 
     const readings = await prisma.bikeMeterReading.findMany({
       where: {

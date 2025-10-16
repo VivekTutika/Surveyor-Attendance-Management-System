@@ -13,8 +13,12 @@ import { exportSurveyorsToCSV, exportSurveyorsToPDF, buildSurveyorsCSVString, bu
 
 export default function SurveyorsReportPage() {
   const [surveyors, setSurveyors] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [adminProfile, setAdminProfile] = useState<any>(null)
   const [userId, setUserId] = useState<string>('')
+  const [projectId, setProjectId] = useState<string>('')
+  const [locationId, setLocationId] = useState<string>('')
   const [previewType, setPreviewType] = useState<'CSV' | 'PDF'>('CSV')
   const [previewContent, setPreviewContent] = useState<string | null>(null)
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
@@ -31,21 +35,43 @@ export default function SurveyorsReportPage() {
     try { const p = await authService.getProfile(); setAdminProfile(p) } catch (e) { console.error(e) }
   }
 
+  useEffect(() => { fetchProjectList(); fetchLocationList() }, [])
+  const fetchProjectList = async () => {
+    try { const p = await surveyorService.getProjects(); setProjects(p || []) } catch (e) { console.error(e) }
+  }
+  const fetchLocationList = async () => {
+    try { const l = await surveyorService.getLocations(); setLocations(l || []) } catch (e) { console.error(e) }
+  }
+
   const handleExportCSV = async () => {
     const data = await surveyorService.getAll()
+    const filtered = data.filter(d =>
+      (!userId || String(d.id) === String(userId)) &&
+      (!projectId || String(d.project?.id) === String(projectId)) &&
+      (!locationId || String(d.location?.id) === String(locationId))
+    )
     const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
-    await exportSurveyorsToCSV(data.filter(d => !userId || String(d.id) === String(userId)), { surveyorName, createdBy: adminProfile?.name ?? 'admin', userId: adminProfile?.id ?? null })
+    await exportSurveyorsToCSV(filtered, { surveyorName, createdBy: adminProfile?.name ?? 'admin', userId: adminProfile?.id ?? null })
   }
 
   const handleExportPDF = async () => {
     const data = await surveyorService.getAll()
+    const filtered = data.filter(d =>
+      (!userId || String(d.id) === String(userId)) &&
+      (!projectId || String(d.project?.id) === String(projectId)) &&
+      (!locationId || String(d.location?.id) === String(locationId))
+    )
     const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
-    await exportSurveyorsToPDF(data.filter(d => !userId || String(d.id) === String(userId)), { surveyorName, createdBy: adminProfile?.name ?? 'admin', userId: adminProfile?.id ?? null })
+    await exportSurveyorsToPDF(filtered, { surveyorName, createdBy: adminProfile?.name ?? 'admin', userId: adminProfile?.id ?? null })
   }
 
   const generatePreview = async () => {
     const all = await surveyorService.getAll()
-    const filtered = all.filter(d => !userId || String(d.id) === String(userId))
+    const filtered = all.filter(d =>
+      (!userId || String(d.id) === String(userId)) &&
+      (!projectId || String(d.project?.id) === String(projectId)) &&
+      (!locationId || String(d.location?.id) === String(locationId))
+    )
     if (previewType === 'CSV') {
       const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']
       const total = filtered.length
@@ -98,6 +124,20 @@ export default function SurveyorsReportPage() {
                 {surveyors.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
               </Select>
             </FormControl>
+            <FormControl sx={{ minWidth: 220 }}>
+              <InputLabel>Project</InputLabel>
+              <Select value={projectId} label="Project" onChange={(e) => setProjectId(e.target.value)}>
+                <MenuItem value=""><em>All Projects</em></MenuItem>
+                {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 220 }}>
+              <InputLabel>Location</InputLabel>
+              <Select value={locationId} label="Location" onChange={(e) => setLocationId(e.target.value)}>
+                <MenuItem value=""><em>All Locations</em></MenuItem>
+                {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <FormControl size="small">
                 <InputLabel>Preview</InputLabel>
@@ -126,13 +166,19 @@ export default function SurveyorsReportPage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {previewRows.headers.map(h => <TableCell key={h}><strong>{h}</strong></TableCell>)}
+                    {previewRows.headers.map((h, idx) => {
+                      const isNumeric = idx >= 2
+                      return <TableCell key={h} align={isNumeric ? 'center' : 'left'}><strong>{h}</strong></TableCell>
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {previewRows.rows.map((r, i) => (
                     <TableRow key={i}>
-                      {r.map((c, j) => <TableCell key={j}>{c}</TableCell>)}
+                      {r.map((c, j) => {
+                        const isNumeric = j >= 2
+                        return <TableCell key={j} align={isNumeric ? 'center' : 'left'}>{c}</TableCell>
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>

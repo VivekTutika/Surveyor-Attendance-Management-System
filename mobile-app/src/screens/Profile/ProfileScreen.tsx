@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 // @ts-ignore
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Button, LoadingSpinner, Card } from '../../components';
 import { Colors, Typography } from '../../theme';
@@ -154,8 +154,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         
           {/* Bike Status (Option B) */}
           <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="bicycle" size={20} color={Colors.primary} />
+              <View style={styles.infoIcon}>
+              <MaterialCommunityIcons name="motorbike" size={20} color={Colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Bike</Text>

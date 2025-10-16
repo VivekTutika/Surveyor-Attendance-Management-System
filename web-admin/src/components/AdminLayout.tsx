@@ -25,12 +25,12 @@ import {
   Dashboard,
   People,
   Assignment,
-  DirectionsBike,
   Assessment,
   AccountCircle,
   Logout,
   AdminPanelSettings,
 } from "@mui/icons-material"
+import TwoWheelerIcon from '@mui/icons-material/TwoWheeler'
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 
@@ -45,7 +45,7 @@ const menuItems = [
   { text: "Dashboard", icon: <Dashboard />, path: "/dashboard" },
   { text: "Surveyors", icon: <People />, path: "/surveyors" },
   { text: "Attendance", icon: <Assignment />, path: "/attendance" },
-  { text: "Bike Readings", icon: <DirectionsBike />, path: "/bike-readings" },
+  { text: "Bike Readings", icon: <TwoWheelerIcon />, path: "/bike-readings" },
   { text: "Reports", icon: <Assessment />, path: "/reports" },
 ]
 

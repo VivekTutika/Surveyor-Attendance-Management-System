@@ -10,8 +10,8 @@ datasource db {
 model Project {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   users     User[]
 
   @@map("projects")
@@ -20,8 +20,8 @@ model Project {
 model Location {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   users     User[]
 
   @@map("locations")
@@ -37,8 +37,8 @@ model User {
   projectId         Int?               @map("project_id")
   locationId        Int?               @map("location_id")
   isActive          Boolean            @default(true) @map("is_active")
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   hasBike           Boolean            @default(false) @map("has_bike")
   attendances       Attendance[]
   bikeMeterReadings BikeMeterReading[]
@@ -53,13 +53,14 @@ model User {
 model Attendance {
   id         String         @id @default(cuid())
   userId     Int            @map("user_id")
-  date       DateTime       @db.Date
+  // store full timestamp with timezone for consistent querying across zones
+  date       DateTime       @db.Timestamptz(6)
   type       AttendanceType
   photoPath  String         @map("photo_path")
   latitude   Float
   longitude  Float
-  capturedAt DateTime       @map("captured_at")
-  createdAt  DateTime       @default(now()) @map("created_at")
+  capturedAt DateTime       @map("captured_at") @db.Timestamptz(6)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   approved   Boolean        @default(false) @map("approved")
   approvedAt DateTime?      @map("approved_at")
   approvedBy Int?           @map("approved_by")
@@ -72,12 +73,12 @@ model Attendance {
 model BikeMeterReading {
   id         String         @id @default(cuid())
   userId     Int            @map("user_id")
-  date       DateTime       @db.Date
+  date       DateTime       @db.Timestamptz(6)
   type       AttendanceType
   photoPath  String         @map("photo_path")
   kmReading  Float?         @map("km_reading")
-  capturedAt DateTime       @map("captured_at")
-  createdAt  DateTime       @default(now()) @map("created_at")
+  capturedAt DateTime       @map("captured_at") @db.Timestamptz(6)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date, type])
@@ -85,22 +86,23 @@ model BikeMeterReading {
 }
 
 model BikeTrip {
-  id               Int      @id @default(autoincrement())
-  surveyorId       Int      @map("surveyor_id")
-  date             DateTime @db.Timestamp(6)
-  morningReadingId String?  @map("morning_reading_id")
-  eveningReadingId String?  @map("evening_reading_id")
-  morningKm        Float?   @map("morning_km")
-  eveningKm        Float?   @map("evening_km")
-  computedKm       Float?   @map("computed_km")
-  finalKm          Float?   @map("final_km")
-  isApproved       Boolean  @default(false) @map("is_approved")
-  approvedBy       Int?     @map("approved_by")
-  approvedAt       DateTime? @map("approved_at")
-  createdAt        DateTime @map("created_at")
-  updatedAt        DateTime @map("updated_at")
+  id               Int       @id @default(autoincrement())
+  surveyorId       Int       @map("surveyor_id")
+  // store trip date/time as timestamp with timezone
+  date             DateTime  @db.Timestamptz(6)
+  morningReadingId String?   @map("morning_reading_id")
+  eveningReadingId String?   @map("evening_reading_id")
+  morningKm        Float?    @map("morning_km")
+  eveningKm        Float?    @map("evening_km")
+  computedKm       Float?    @map("computed_km")
+  finalKm          Float?    @map("final_km")
+  isApproved       Boolean   @default(false) @map("is_approved")
+  approvedBy       Int?      @map("approved_by")
+  approvedAt       DateTime? @map("approved_at") @db.Timestamptz(6)
+  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @map("updated_at") @db.Timestamptz(6)
 
-  surveyor         User     @relation(fields: [surveyorId], references: [id], onDelete: Cascade)
+  surveyor User @relation(fields: [surveyorId], references: [id], onDelete: Cascade)
 
   @@map("bike_trips")
 }
@@ -110,8 +112,8 @@ model GeoFence {
   surveyorId  Int      @unique @map("surveyor_id")
   coordinates Json
   isActive    Boolean  @default(false) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   surveyor    User     @relation(fields: [surveyorId], references: [id], onDelete: Cascade)
 
   @@map("geo_fences")
@@ -121,10 +123,10 @@ model Report {
   id          Int      @id @default(autoincrement())
   userId      Int      @map("user_id")
   reportType  String   @map("report_type")
-  startDate   DateTime @map("start_date") @db.Date
-  endDate     DateTime @map("end_date") @db.Date
+  startDate   DateTime @map("start_date") @db.Timestamptz(6)
+  endDate     DateTime @map("end_date") @db.Timestamptz(6)
   filePath    String?  @map("file_path")
-  generatedAt DateTime @default(now()) @map("generated_at")
+  generatedAt DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
   createdBy   String   @map("created_by")
 
   @@map("reports")

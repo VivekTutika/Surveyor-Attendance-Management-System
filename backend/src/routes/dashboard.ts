@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../config/db';
+import { startOfDayUTC, startOfTodayUTC } from '../utils/dateUtils';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -7,19 +8,21 @@ const router = Router();
 // GET /dashboard/stats - Get dashboard statistics
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  // Use UTC day boundaries to avoid local timezone shifts
+  const todayStart = startOfTodayUTC();
+  const tomorrowStart = new Date(todayStart);
+  // advance by one UTC day
+  tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
 
-    // Get current date for weekly/monthly calculations
-    const currentDate = new Date();
-    const weekAgo = new Date(currentDate);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    
-    const monthAgo = new Date(currentDate);
-    monthAgo.setMonth(monthAgo.getMonth() - 6);
+  // Get current date for weekly/monthly calculations (anchored to UTC start of day)
+  const currentDate = new Date();
+  const weekAgoDate = new Date(currentDate);
+  weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 7);
+  const weekAgo = startOfDayUTC(weekAgoDate.toISOString().split('T')[0]);
+
+  const monthAgoDate = new Date(currentDate);
+  monthAgoDate.setUTCMonth(monthAgoDate.getUTCMonth() - 6);
+  const monthAgo = startOfDayUTC(monthAgoDate.toISOString().split('T')[0]);
 
     // Get basic counts
     const [
@@ -40,16 +43,16 @@ router.get('/stats', authMiddleware, async (req, res) => {
       prisma.attendance.count({
         where: {
           capturedAt: {
-            gte: today,
-            lt: tomorrow
+            gte: todayStart,
+            lt: tomorrowStart
           }
         }
       }),
       prisma.bikeMeterReading.count({
         where: {
           capturedAt: {
-            gte: today,
-            lt: tomorrow
+            gte: todayStart,
+            lt: tomorrowStart
           }
         }
       })
@@ -71,14 +74,14 @@ router.get('/stats', authMiddleware, async (req, res) => {
       prisma.attendance.groupBy({
         by: ['type'],
         where: {
-          capturedAt: { gte: today, lt: tomorrow }
+          capturedAt: { gte: todayStart, lt: tomorrowStart }
         },
         _count: { id: true }
       }),
       prisma.bikeMeterReading.groupBy({
         by: ['type'],
         where: {
-          capturedAt: { gte: today, lt: tomorrow }
+          capturedAt: { gte: todayStart, lt: tomorrowStart }
         },
         _count: { id: true }
       })
@@ -134,7 +137,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     const monthlyStats = [];
     for (let i = 5; i >= 0; i--) {
       const date = new Date();
-      date.setMonth(date.getMonth() - i);
+      date.setUTCMonth(date.getUTCMonth() - i);
       const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
       
       const attendanceCount = monthlyAttendance.filter(item => 
@@ -162,7 +165,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     const completeWeeklyAttendance = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
-      date.setDate(date.getDate() - i);
+      date.setUTCDate(date.getUTCDate() - i);
       const dateStr = date.toISOString().slice(0, 10);
       
       const existingData = formattedWeeklyAttendance.find(item => 

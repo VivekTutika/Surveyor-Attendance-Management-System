@@ -21,3 +21,27 @@ export const createReport = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: 'Failed to record report' })
   }
 }
+
+export const consolidatedAttendance = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, surveyorId, projectId, locationId } = req.query as any
+    if (!startDate || !endDate) return res.status(400).json({ success: false, message: 'startDate and endDate are required' })
+    const result = await ReportService.getConsolidatedAttendance({ startDate, endDate, surveyorId: surveyorId ? Number(surveyorId) : undefined, projectId: projectId ? Number(projectId) : undefined, locationId: locationId ? Number(locationId) : undefined })
+    res.json({ success: true, data: result })
+  } catch (err: any) {
+    console.error('consolidatedAttendance error', err)
+    res.status(500).json({ success: false, message: 'Failed to generate consolidated attendance' })
+  }
+}
+
+export const consolidatedBikeReadings = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, surveyorId, projectId, locationId } = req.query as any
+    if (!startDate || !endDate) return res.status(400).json({ success: false, message: 'startDate and endDate are required' })
+    const result = await ReportService.getConsolidatedBikeReadings({ startDate, endDate, surveyorId: surveyorId ? Number(surveyorId) : undefined, projectId: projectId ? Number(projectId) : undefined, locationId: locationId ? Number(locationId) : undefined })
+    res.json({ success: true, data: result })
+  } catch (err: any) {
+    console.error('consolidatedBikeReadings error', err)
+    res.status(500).json({ success: false, message: 'Failed to generate consolidated bike readings' })
+  }
+}

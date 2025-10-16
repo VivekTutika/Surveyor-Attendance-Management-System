@@ -109,6 +109,10 @@ export default function SurveyorsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   // Bike filter: 'all' | 'yes' | 'no'
   const [bikeFilter, setBikeFilter] = useState<'all' | 'yes' | 'no'>('all')
+  // Additional filter selections to mirror Reports page
+  const [selectedSurveyorFilter, setSelectedSurveyorFilter] = useState<string>('')
+  const [selectedProjectFilter, setSelectedProjectFilter] = useState<string>('')
+  const [selectedLocationFilter, setSelectedLocationFilter] = useState<string>('')
 
   useEffect(() => {
     fetchSurveyors()
@@ -414,6 +418,9 @@ export default function SurveyorsPage() {
     if (statusFilter === 'inactive' && s.isActive) return false
     if (bikeFilter === 'yes' && !s.hasBike) return false
     if (bikeFilter === 'no' && s.hasBike) return false
+    if (selectedSurveyorFilter && String(s.id) !== String(selectedSurveyorFilter)) return false
+    if (selectedProjectFilter && String(s.project?.id) !== String(selectedProjectFilter)) return false
+    if (selectedLocationFilter && String(s.location?.id) !== String(selectedLocationFilter)) return false
     return true
   })
 
@@ -507,6 +514,32 @@ export default function SurveyorsPage() {
       </Box>
 
       {/* Surveyors Table */}
+      {/* Filters: moved under stats cards per request */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 240 }}>
+            <InputLabel>Surveyor</InputLabel>
+            <Select value={selectedSurveyorFilter} label="Surveyor" onChange={(e) => { setSelectedSurveyorFilter(e.target.value as string); setPage(0) }}>
+              <MenuItem value=""><em>All Surveyors</em></MenuItem>
+              {surveyors.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 240 }}>
+            <InputLabel>Project</InputLabel>
+            <Select value={selectedProjectFilter} label="Project" onChange={(e) => { setSelectedProjectFilter(e.target.value as string); setPage(0) }}>
+              <MenuItem value=""><em>All Projects</em></MenuItem>
+              {projects.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 240 }}>
+            <InputLabel>Location</InputLabel>
+            <Select value={selectedLocationFilter} label="Location" onChange={(e) => { setSelectedLocationFilter(e.target.value as string); setPage(0) }}>
+              <MenuItem value=""><em>All Locations</em></MenuItem>
+              {locations.map(l => <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Box>
+      </Paper>
       <Paper>
         <TableContainer>
           <Table>

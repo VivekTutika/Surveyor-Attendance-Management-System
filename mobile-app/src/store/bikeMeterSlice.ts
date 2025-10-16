@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { bikeService } from '../api/bikeService';
+import { isoToDateKey, nowIso } from '../utils/date';
 import { 
   BikeMeterState, 
   BikeReading, 
@@ -116,7 +117,7 @@ const bikeMeterSlice = createSlice({
           try {
             const args = (action as any).meta?.arg;
             const argType = (args?.type || '').toString().toLowerCase();
-            const baseDate = args?.timestamp ? args.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
+            const baseDate = isoToDateKey(args?.timestamp ?? null);
             payload = {
               id: `${argType}-${baseDate}-${Date.now()}`,
               userId: '',
@@ -124,7 +125,7 @@ const bikeMeterSlice = createSlice({
               type: argType === 'morning' ? 'Morning' : 'Evening',
               photoPath: args?.photoUri ?? '',
               reading: args?.reading,
-              capturedAt: args?.timestamp ?? new Date().toISOString(),
+              capturedAt: args?.timestamp ?? nowIso(),
             } as any;
           } catch (e) {
             // If anything fails, bail out
@@ -146,7 +147,7 @@ const bikeMeterSlice = createSlice({
         if (isFlagStyle(payload)) {
           const args = (action as any).meta?.arg;
           const argType = (args?.type || '').toString().toLowerCase();
-          const baseDate = args?.timestamp ? args.timestamp.split('T')[0] : (payload.date || new Date().toISOString().split('T')[0]);
+          const baseDate = isoToDateKey(args?.timestamp ?? (payload.date ?? null));
           const normalizedReading = {
             id: `${argType}-${baseDate}-${Date.now()}`,
             userId: '',
@@ -154,7 +155,7 @@ const bikeMeterSlice = createSlice({
             type: argType === 'morning' ? 'Morning' : 'Evening',
             photoPath: args?.photoUri ?? '',
             reading: args?.reading,
-            capturedAt: args?.timestamp ?? (payload.morningTime || payload.morning_time || payload.eveningTime || payload.evening_time || new Date().toISOString()),
+            capturedAt: args?.timestamp ?? (payload.morningTime || payload.morning_time || payload.eveningTime || payload.evening_time || nowIso()),
           } as any;
 
           if (argType === 'morning') state.todayReadings.morning = normalizedReading;
@@ -168,7 +169,7 @@ const bikeMeterSlice = createSlice({
         try {
           // Payload might be the created BikeReading or an API envelope
           const readingType = (payload.type || payload.data?.type || '').toString().toLowerCase();
-          const baseDate = payload.date || payload.data?.date || new Date().toISOString().split('T')[0];
+          const baseDate = isoToDateKey(payload.date ?? payload.data?.date ?? null);
 
           const normalizedReading = payload && (payload.id || payload.data?.id) ? (payload.data ?? payload) : {
             id: payload.id ?? payload.data?.id ?? `${readingType}-${baseDate}`,
@@ -177,7 +178,7 @@ const bikeMeterSlice = createSlice({
             type: (readingType === 'morning' ? 'Morning' : 'Evening') as 'Morning' | 'Evening',
             photoPath: payload.photoPath ?? payload.data?.photoPath ?? '',
             reading: payload.reading ?? payload.data?.reading,
-            capturedAt: payload.capturedAt ?? payload.data?.capturedAt ?? new Date().toISOString(),
+            capturedAt: payload.capturedAt ?? payload.data?.capturedAt ?? nowIso(),
           } as any;
 
           if (readingType === 'morning') {

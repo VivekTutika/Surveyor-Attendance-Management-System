@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { attendanceService } from '../api/attendanceService';
+import { isoToDateKey, nowIso } from '../utils/date';
 import { 
   AttendanceState, 
   AttendanceRecord, 
@@ -153,7 +154,7 @@ const attendanceSlice = createSlice({
         }
 
         if (payload.morningMarked !== undefined || payload.eveningMarked !== undefined) {
-          const baseDate = (payload.date || new Date().toISOString().split('T')[0]);
+          const baseDate = isoToDateKey(payload.date ?? null);
           const morning = payload.morningMarked ? ({
             id: `morning-${baseDate}`,
             userId: '',
@@ -162,7 +163,7 @@ const attendanceSlice = createSlice({
             photoPath: '',
             latitude: 0,
             longitude: 0,
-            capturedAt: payload.morningTime || new Date().toISOString(),
+            capturedAt: payload.morningTime || nowIso(),
           } as AttendanceRecord) : null;
           const evening = payload.eveningMarked ? ({
             id: `evening-${baseDate}`,
@@ -172,7 +173,7 @@ const attendanceSlice = createSlice({
             photoPath: '',
             latitude: 0,
             longitude: 0,
-            capturedAt: payload.eveningTime || new Date().toISOString(),
+            capturedAt: payload.eveningTime || nowIso(),
           } as AttendanceRecord) : null;
           state.todayAttendance = { morning, evening };
           return;
