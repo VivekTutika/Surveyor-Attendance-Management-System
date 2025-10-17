@@ -50,7 +50,16 @@ export default function AttendanceReportPage() {
     // Call consolidated endpoint
   if (projectId) params.projectId = projectId
   if (locationId) params.locationId = locationId
-  const res = await reportService.getConsolidatedAttendance(params)
+    const res = await reportService.getConsolidatedAttendance(params)
+    // ensure surveyors list sorted by employeeId
+    res.data.surveyors = [...(res.data.surveyors || [])].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
     await exportConsolidatedAttendanceToCSV(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
@@ -63,6 +72,14 @@ export default function AttendanceReportPage() {
     if (projectId) params.projectId = projectId
     if (locationId) params.locationId = locationId
     const res = await reportService.getConsolidatedAttendance(params)
+    res.data.surveyors = [...(res.data.surveyors || [])].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     await exportConsolidatedAttendanceToPDF(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
@@ -74,6 +91,14 @@ export default function AttendanceReportPage() {
     // Use the backend consolidated endpoint for previews as well so that preview matches exported data
     const res = await reportService.getConsolidatedAttendance(params)
     const consolidated = res.data
+    consolidated.surveyors = [...(consolidated.surveyors || [])].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     setPreviewTotal(consolidated.surveyors.length)
     if (previewType === 'CSV') {
       // build combined header: date on first row, day on second row (we'll show combined in preview column titles)

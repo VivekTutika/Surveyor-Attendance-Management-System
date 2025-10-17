@@ -187,12 +187,14 @@ export default function BikeReadingsPage() {
 
   const handleExportCSV = () => {
     const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
-    exportBikeReadingsToCSV(readings ?? [], { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
+    const readingsSorted = [...(readings ?? [])].sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
+    exportBikeReadingsToCSV(readingsSorted, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleExportPDF = () => {
     const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
-    exportBikeReadingsToPDF(readings ?? [], { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
+    const readingsSorted = [...(readings ?? [])].sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
+    exportBikeReadingsToPDF(readingsSorted, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleConfirmUpload = async () => {
@@ -261,6 +263,9 @@ export default function BikeReadingsPage() {
   // Compute check ins/outs similar to attendance
   const checkIns = readings?.filter(r => r.type === 'MORNING').length || 0
   const checkOuts = readings?.filter(r => r.type === 'EVENING').length || 0
+
+  // Sort readings latest-first for display and exports
+  const readingsSorted = [...(readings ?? [])].sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
 
   if (loading && page === 0) {
     return (
@@ -457,7 +462,7 @@ export default function BikeReadingsPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(readings ?? [])
+                  {readingsSorted
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((reading) => (
                       <TableRow key={reading.id} hover>
@@ -489,12 +494,12 @@ export default function BikeReadingsPage() {
         ) : (
           /* Gallery View */
           <Box>
-              {(readings ?? []).length === 0 ? (
+              {readingsSorted.length === 0 ? (
               <Alert severity="info">No bike readings found.</Alert>
             ) : (
               <>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-                    {(readings ?? [])
+                    {readingsSorted
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       .map((reading) => (
                     <Box key={reading.id}>

@@ -121,8 +121,16 @@ export const exportBikeReadingsToPDF = async (data: BikeMeterReading[], opts: { 
   doc.setFontSize(12)
   doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 35)
   
-  // Table
-  const tableData = data.map(record => [
+  // Table - sort by employeeId (numeric when possible) to ensure predictable ordering in PDF
+  const sorted = [...(data ?? [])].sort((x, y) => {
+    const ax = String((x.user as any)?.employeeId ?? '')
+    const ay = String((y.user as any)?.employeeId ?? '')
+    const nx = Number(ax)
+    const ny = Number(ay)
+    if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+    return ax.localeCompare(ay)
+  })
+  const tableData = sorted.map(record => [
     new Date(record.capturedAt).toLocaleDateString(),
     new Date(record.capturedAt).toLocaleTimeString(),
     record.user.name,
@@ -198,8 +206,9 @@ export const formatDateTime = (date: string | Date): string => {
 
 // Surveyor details exports
 export const exportSurveyorsToCSV = async (data: any[], opts: { surveyorName?: string | null; createdBy?: string | null; userId?: number | null }) => {
-  const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']
-  const csvContent = [headers.join(','), ...data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''].join(','))].join('\n')
+  // Mobile and Aadhar adjacent per requirement
+  const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Aadhar', 'Bike', 'Project', 'Location']
+  const csvContent = [headers.join(','), ...data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.aadharNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''].join(','))].join('\n')
   const filenameBase = opts.userId ? `surveyor-details-${opts.surveyorName ?? 'single'}` : 'surveyor-details-all'
   const filename = `${buildFileName(filenameBase, null, null, null)}.csv`
   downloadCSV(csvContent, filename)
@@ -213,8 +222,8 @@ export const exportSurveyorsToPDF = async (data: any[], opts: { surveyorName?: s
   const doc = new jsPDF()
   doc.setFontSize(18)
   doc.text('Surveyor Details', 14, 22)
-  const tableData = data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
-  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']], body: tableData, startY: 35, styles: { halign: 'center' }, columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } } })
+  const tableData = data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.aadharNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
+  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Aadhar', 'Bike', 'Project', 'Location']], body: tableData, startY: 35, styles: { halign: 'center' }, columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } } })
   const filenameBase = opts.userId ? `surveyor-details-${opts.surveyorName ?? 'single'}` : 'surveyor-details-all'
   const filename = `${buildFileName(filenameBase, null, null, null)}.pdf`
   doc.save(filename)
@@ -311,8 +320,8 @@ export const buildAttendancePDFBlob = (data: Attendance[], opts: { surveyorName?
 }
 
 export const buildSurveyorsCSVString = (data: any[]) => {
-  const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']
-  const csvContent = [headers.join(','), ...data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''].join(','))].join('\n')
+  const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Aadhar', 'Bike', 'Project', 'Location']
+  const csvContent = [headers.join(','), ...data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.aadharNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''].join(','))].join('\n')
   return csvContent
 }
 
@@ -320,8 +329,8 @@ export const buildSurveyorsPDFBlob = (data: any[]) => {
   const doc = new jsPDF()
   doc.setFontSize(18)
   doc.text('Surveyor Details', 14, 20)
-  const tableData = data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
-  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']], body: tableData, startY: 35, styles: { halign: 'center' }, columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } } })
+  const tableData = data.map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.aadharNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
+  autoTable(doc, { head: [['Employee ID', 'Surveyor Name', 'Mobile', 'Aadhar', 'Bike', 'Project', 'Location']], body: tableData, startY: 35, styles: { halign: 'center' }, columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' } } })
   return doc.output('blob')
 }
 
@@ -442,7 +451,16 @@ export const buildConsolidatedBikeReadingsPDFBlob = (data: { dates: string[]; su
   doc.setFontSize(10)
   const headRow1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => d)]
   const headRow2 = ['', '', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { weekday: 'short' }))]
-  const body = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? 0))])
+  // Sort internally by employeeId to guarantee ordering for PDF output
+  const sortedSurveyors = [...(data.surveyors || [])].sort((a: any, b: any) => {
+    const ax = String(a.employeeId ?? '')
+    const ay = String(b.employeeId ?? '')
+    const nx = Number(ax)
+    const ny = Number(ay)
+    if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+    return ax.localeCompare(ay)
+  })
+  const body = sortedSurveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? 0))])
   autoTable(doc, {
     head: [headRow1, headRow2],
     body,
@@ -506,7 +524,16 @@ export const buildBikeTripsPDFBlob = (trips: any[], opts?: { surveyorName?: stri
   doc.text('Bike Trips (Raw)', 14, 16)
   doc.setFontSize(10)
   const head = ['Employee ID', 'Surveyor Name', 'Date', 'Morning Reading', 'Evening Reading', 'Distance (KM)']
-  const body = trips.map(t => [t.surveyor?.employeeId ?? '', t.surveyor?.name ?? '', t.date ? new Date(t.date).toLocaleDateString() : '', t.morningKm != null ? String(t.morningKm) : '', t.eveningKm != null ? String(t.eveningKm) : '', t.isApproved ? String(t.finalKm ?? 0) : '0'])
+  // Sort trips by employeeId for predictable ordering in PDF
+  const sortedTrips = [...(trips ?? [])].sort((x: any, y: any) => {
+    const ax = String((x.surveyor?.employeeId ?? x.surveyorId ?? '') ?? '')
+    const ay = String((y.surveyor?.employeeId ?? y.surveyorId ?? '') ?? '')
+    const nx = Number(ax)
+    const ny = Number(ay)
+    if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+    return ax.localeCompare(ay)
+  })
+  const body = sortedTrips.map(t => [t.surveyor?.employeeId ?? '', t.surveyor?.name ?? '', t.date ? new Date(t.date).toLocaleDateString() : '', t.morningKm != null ? String(t.morningKm) : '', t.eveningKm != null ? String(t.eveningKm) : '', t.isApproved ? String(t.finalKm ?? 0) : '0'])
   autoTable(doc, {
     head: [head],
     body,

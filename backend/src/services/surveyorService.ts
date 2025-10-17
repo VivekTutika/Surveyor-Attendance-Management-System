@@ -11,6 +11,7 @@ export interface CreateSurveyorData {
   password: string;
   projectId?: number;
   locationId?: number;
+  aadharNumber?: string;
 }
 
 export interface UpdateSurveyorData {
@@ -21,6 +22,7 @@ export interface UpdateSurveyorData {
   locationId?: number;
   isActive?: boolean;
   hasBike?: boolean;
+  aadharNumber?: string | null;
 }
 
 export interface SurveyorFilters {
@@ -55,6 +57,7 @@ export class SurveyorService {
         name,
         mobileNumber,
         employeeId,
+        aadharNumber: (data as any).aadharNumber ?? null,
         hasBike: (data as any).hasBike ?? false,
         passwordHash,
         role: Role.SURVEYOR,
@@ -64,8 +67,9 @@ export class SurveyorService {
       // Cast select to any because generated Prisma client types may not yet include
       // the `hasBike` field. This preserves runtime selection while avoiding
       // TypeScript compile errors until prisma generate is run.
-      select: {
+      select: ({
         employeeId: true,
+        aadharNumber: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -88,7 +92,7 @@ export class SurveyorService {
   hasBike: true,
         createdAt: true,
         updatedAt: true,
-      },
+      } as any),
     });
 
     return surveyor;
@@ -132,8 +136,9 @@ export class SurveyorService {
 
     const surveyors = await prisma.user.findMany({
       where,
-      select: {
+      select: ({
         employeeId: true,
+        aadharNumber: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -162,7 +167,7 @@ export class SurveyorService {
             bikeMeterReadings: true,
           },
         },
-      },
+      } as any),
       orderBy: [
         { isActive: 'desc' },
         { name: 'asc' },
@@ -176,8 +181,9 @@ export class SurveyorService {
   static async getSurveyorById(surveyorId: number) {
     const surveyor = await prisma.user.findUnique({
       where: { id: surveyorId },
-      select: {
+      select: ({
         employeeId: true,
+        aadharNumber: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -206,7 +212,7 @@ export class SurveyorService {
             bikeMeterReadings: true,
           },
         },
-      },
+      } as any),
     });
 
     if (!surveyor) {
@@ -247,13 +253,15 @@ export class SurveyorService {
         ...(employeeId !== undefined && { employeeId }),
         ...(name && { name }),
         ...(mobileNumber && { mobileNumber }),
+        ...(updateData.aadharNumber !== undefined && { aadharNumber: updateData.aadharNumber }),
         ...(projectId !== undefined && { projectId }),
         ...(locationId !== undefined && { locationId }),
         ...(typeof isActive === 'boolean' && { isActive }),
         ...(typeof hasBike === 'boolean' && { hasBike }),
       } as any),
-      select: {
+      select: ({
         employeeId: true,
+        aadharNumber: true,
         id: true,
         name: true,
         mobileNumber: true,
@@ -276,7 +284,7 @@ export class SurveyorService {
         hasBike: true,
         createdAt: true,
         updatedAt: true,
-      },
+      } as any),
     });
 
     return updatedSurveyor;

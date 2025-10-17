@@ -49,12 +49,12 @@ export class ReportService {
     if (projectId) surveyorWhere.projectId = projectId
     if (locationId) surveyorWhere.locationId = locationId
 
-    const surveyors = await prisma.user.findMany({ where: surveyorWhere, select: { id: true, employeeId: true, name: true } })
+  const surveyors = await prisma.user.findMany({ where: surveyorWhere, select: { id: true, employeeId: true, name: true, aadharNumber: true } as any })
 
     // Fetch attendance rows in the date range for these surveyors
     const attendanceRows = await prisma.attendance.findMany({
       where: {
-        userId: { in: surveyors.map(s => s.id) },
+    userId: { in: (surveyors.map(s => s.id) as any) },
         date: { gte: new Date(startDate), lte: new Date(endDate) }
       },
       select: { userId: true, date: true, type: true }
@@ -95,12 +95,12 @@ export class ReportService {
     if (projectId) surveyorWhere.projectId = projectId
     if (locationId) surveyorWhere.locationId = locationId
 
-    const surveyors = await prisma.user.findMany({ where: surveyorWhere, select: { id: true, employeeId: true, name: true } })
+  const surveyors = await prisma.user.findMany({ where: surveyorWhere, select: { id: true, employeeId: true, name: true, aadharNumber: true } as any })
 
     // fetch bike trips in date range for these surveyors
     const trips = await prisma.bikeTrip.findMany({
       where: {
-        surveyorId: { in: surveyors.map(s => s.id) },
+  surveyorId: { in: (surveyors.map(s => s.id) as any) },
         date: { gte: new Date(startDate), lte: new Date(endDate) },
       },
       select: { surveyorId: true, date: true, finalKm: true, isApproved: true }

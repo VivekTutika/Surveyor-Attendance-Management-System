@@ -51,6 +51,7 @@ interface SurveyorFormData {
   mobileNumber: string
   password: string
   employeeId?: string
+  aadharNumber?: string
   isActive: boolean
   hasBike?: boolean
   projectId?: number | ''
@@ -81,6 +82,7 @@ export default function SurveyorsPage() {
     mobileNumber: '',
     password: '',
     employeeId: '',
+    aadharNumber: '',
     isActive: true,
     hasBike: false,
     projectId: '',
@@ -158,6 +160,7 @@ export default function SurveyorsPage() {
       setFormData({
         name: surveyor.name,
         mobileNumber: surveyor.mobileNumber,
+        aadharNumber: (surveyor as any).aadharNumber ?? '',
         employeeId: surveyor.employeeId ?? '',
         password: '', // Don't populate password for editing
         isActive: surveyor.isActive,
@@ -171,6 +174,7 @@ export default function SurveyorsPage() {
         mobileNumber: '',
         password: '',
         employeeId: '',
+        aadharNumber: '',
         isActive: true,
         hasBike: false,
         projectId: '',
@@ -198,8 +202,22 @@ export default function SurveyorsPage() {
 
   const handleSubmit = async () => {
     try {
+      // Client-side Aadhar validation: required on create, optional on update (but if present must be 12 digits)
+      const aadhar = formData.aadharNumber ?? ''
+      if (dialogMode === 'create') {
+        if (!/^\d{12}$/.test(aadhar)) {
+          setError('Aadhar Number must be exactly 12 digits')
+          return
+        }
+      } else {
+        if (aadhar && !/^\d{12}$/.test(aadhar)) {
+          setError('Aadhar Number must be exactly 12 digits')
+          return
+        }
+      }
+
       setDialogLoading(true)
-      
+
       if (dialogMode === 'create') {
         await surveyorService.create(formData)
       } else if (selectedSurveyor) {
@@ -209,7 +227,7 @@ export default function SurveyorsPage() {
         }
         await surveyorService.update(selectedSurveyor.id, updateData)
       }
-      
+
       await fetchSurveyors()
       handleCloseDialog()
     } catch (error: any) {
@@ -424,6 +442,16 @@ export default function SurveyorsPage() {
     return true
   })
 
+  // sort filtered surveyors by employeeId (numeric if possible)
+  const filteredAndSortedSurveyors = [...filteredSurveyors].sort((a, b) => {
+    const ax = (a.employeeId ?? '').toString()
+    const ay = (b.employeeId ?? '').toString()
+    const nx = Number(ax)
+    const ny = Number(ay)
+    if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+    return ax.localeCompare(ay)
+  })
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -575,7 +603,7 @@ export default function SurveyorsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredSurveyors
+              {filteredAndSortedSurveyors
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((surveyor) => (
                 <TableRow key={surveyor.id} hover>
@@ -673,7 +701,7 @@ export default function SurveyorsPage() {
         <TablePagination
           rowsPerPageOptions={[10, 25, 50, 100]}
           component="div"
-          count={filteredSurveyors.length}
+          count={filteredAndSortedSurveyors.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -874,6 +902,16 @@ export default function SurveyorsPage() {
               margin="normal"
               required
               type="tel"
+            />
+            <TextField
+              fullWidth
+              label="Aadhar Number"
+              value={formData.aadharNumber}
+              onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value })}
+              margin="normal"
+              required={dialogMode === 'create'}
+              helperText={dialogMode === 'create' ? 'Enter 12 digit Aadhar number (numbers only)' : 'Optional — 12 digits if present'}
+              inputProps={{ maxLength: 12 }}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>Project</InputLabel>
