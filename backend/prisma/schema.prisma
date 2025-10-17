@@ -33,6 +33,7 @@ model User {
   role              Role               @default(SURVEYOR)
   name              String
   mobileNumber      String             @unique @map("mobile_number")
+  aadharNumber      String?            @map("aadhar_number")
   passwordHash      String             @map("password_hash")
   projectId         Int?               @map("project_id")
   locationId        Int?               @map("location_id")

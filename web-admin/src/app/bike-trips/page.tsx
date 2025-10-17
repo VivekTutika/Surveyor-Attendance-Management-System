@@ -81,6 +81,16 @@ export default function BikeTripsPage() {
     fetchTrips()
   }, [page, rowsPerPage, startDate, endDate, selectedSurveyor, selectedProject, selectedLocation])
 
+  // derive a display-sorted trips list by employeeId (numeric when possible)
+  const tripsSorted = [...trips].sort((x, y) => {
+    const ax = (x.surveyor?.employeeId ?? x.surveyorId ?? '').toString()
+    const ay = (y.surveyor?.employeeId ?? y.surveyorId ?? '').toString()
+    const nx = Number(ax)
+    const ny = Number(ay)
+    if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+    return ax.localeCompare(ay)
+  })
+
   useEffect(() => {
     // load surveyors for filter
     (async () => {
@@ -437,9 +447,9 @@ export default function BikeTripsPage() {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    indeterminate={selectedIds.length > 0 && selectedIds.length < Math.min(rowsPerPage, trips.length)}
-                    checked={selectedIds.length > 0 && selectedIds.length === Math.min(rowsPerPage, trips.length)}
-                    onChange={() => selectAllOnPage(trips.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage))}
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < Math.min(rowsPerPage, tripsSorted.length)}
+                    checked={selectedIds.length > 0 && selectedIds.length === Math.min(rowsPerPage, tripsSorted.length)}
+                    onChange={() => selectAllOnPage(tripsSorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage))}
                   />
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Employee ID</TableCell>
@@ -452,7 +462,7 @@ export default function BikeTripsPage() {
                 <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
+                <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={9} align="center"><CircularProgress /></TableCell>
@@ -462,7 +472,17 @@ export default function BikeTripsPage() {
                   <TableCell colSpan={9} align="center">No records</TableCell>
                 </TableRow>
               ) : (
-                trips.map((t: any) => (
+                (() => {
+                  const tripsSorted = [...trips].sort((x, y) => {
+                    const ax = (x.surveyor?.employeeId ?? x.surveyorId ?? '').toString()
+                    const ay = (y.surveyor?.employeeId ?? y.surveyorId ?? '').toString()
+                    // prefer numeric compare when both are numeric
+                    const nx = Number(ax);
+                    const ny = Number(ay);
+                    if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+                    return ax.localeCompare(ay)
+                  })
+                  return tripsSorted.map((t: any) => (
                   <TableRow key={t.id}>
                     <TableCell padding="checkbox">
                       <Checkbox checked={selectedIds.includes(t.id)} onChange={() => toggleSelect(t.id)} />
@@ -519,7 +539,8 @@ export default function BikeTripsPage() {
                       </Box>
                     </TableCell>
                   </TableRow>
-                ))
+                  ))
+                })()
               )}
             </TableBody>
           </Table>

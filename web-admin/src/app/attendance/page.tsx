@@ -275,20 +275,23 @@ export default function AttendancePage() {
     setOpenMapDialog(true)
   }
 
+  // Sort attendanceData to show latest first (capturedAt descending)
+  const attendanceSorted = [...attendanceData].sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
+
   const handleViewAllLocations = () => {
-    setSelectedAttendance(attendanceData)
+    setSelectedAttendance(attendanceSorted)
     setMapTitle('All Attendance Locations')
     setOpenMapDialog(true)
   }
 
   const handleExportCSV = () => {
     const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
-    exportAttendanceToCSV(attendanceData, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
+    exportAttendanceToCSV(attendanceSorted, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleExportPDF = () => {
     const surveyorName = filters.userId ? (surveyors.find(s => String(s.id) === String(filters.userId))?.name ?? null) : null
-    exportAttendanceToPDF(attendanceData, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
+    exportAttendanceToPDF(attendanceSorted, { surveyorName, startDate: filters.startDate?.format?.('YYYY-MM-DD') ?? null, endDate: filters.endDate?.format?.('YYYY-MM-DD') ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -495,9 +498,9 @@ export default function AttendancePage() {
                 <TableRow>
                   <TableCell padding="checkbox">
                     <Checkbox
-                      indeterminate={selectedIds.length > 0 && selectedIds.length < Math.min(rowsPerPage, attendanceData.length)}
-                      checked={selectedIds.length > 0 && selectedIds.length === Math.min(rowsPerPage, attendanceData.length)}
-                      onChange={() => selectAllOnPage(attendanceData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage))}
+                      indeterminate={selectedIds.length > 0 && selectedIds.length < Math.min(rowsPerPage, attendanceSorted.length)}
+                      checked={selectedIds.length > 0 && selectedIds.length === Math.min(rowsPerPage, attendanceSorted.length)}
+                      onChange={() => selectAllOnPage(attendanceSorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage))}
                     />
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, textAlign: 'center', py: 1 }}>Employee ID</TableCell>
@@ -510,7 +513,7 @@ export default function AttendancePage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {attendanceData
+                {attendanceSorted
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((record) => (
                   <TableRow key={record.id} hover>

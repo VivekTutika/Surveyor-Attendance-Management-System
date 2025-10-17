@@ -61,7 +61,16 @@ export default function BikeReadingsReportPage() {
     if (locationId) params.locationId = locationId
     // For RAW report call existing service, for COMPREHENSIVE call consolidated endpoint
     if (reportKind === 'RAW') {
-      const trips = await bikeTripService.getTrips(params)
+      let trips = await bikeTripService.getTrips(params)
+      // Ensure trips sorted by employeeId before exporting
+      trips = [...(Array.isArray(trips) ? trips : trips.trips || trips)].sort((x: any, y: any) => {
+        const ax = (x.surveyor?.employeeId ?? x.surveyorId ?? '').toString()
+        const ay = (y.surveyor?.employeeId ?? y.surveyorId ?? '').toString()
+        const nx = Number(ax)
+        const ny = Number(ay)
+        if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+        return ax.localeCompare(ay)
+      })
       const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
       await exportBikeTripsToCSV(trips, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
       return
@@ -69,6 +78,14 @@ export default function BikeReadingsReportPage() {
     // consolidated endpoint expects 'surveyorId' query param name
     if (params.userId) { params.surveyorId = params.userId; delete params.userId }
     const res = await reportService.getConsolidatedBikeReadings(params)
+    res.data.surveyors = [...(res.data.surveyors || [])].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     await exportConsolidatedBikeReadingsToCSV(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
 
@@ -80,8 +97,16 @@ export default function BikeReadingsReportPage() {
     if (projectId) params.projectId = projectId
     if (locationId) params.locationId = locationId
     if (reportKind === 'RAW') {
-      const trips = await bikeTripService.getTrips(params)
+      let trips = await bikeTripService.getTrips(params)
       const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
+      trips = [...(Array.isArray(trips) ? trips : trips.trips || trips)].sort((x: any, y: any) => {
+        const ax = (x.surveyor?.employeeId ?? x.surveyorId ?? '').toString()
+        const ay = (y.surveyor?.employeeId ?? y.surveyorId ?? '').toString()
+        const nx = Number(ax)
+        const ny = Number(ay)
+        if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+        return ax.localeCompare(ay)
+      })
       await exportBikeTripsToPDF(trips, { surveyorName, startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, reportKind, createdBy: adminProfile?.name ?? 'admin' })
       return
     }
@@ -102,6 +127,14 @@ export default function BikeReadingsReportPage() {
       if (params.userId) { params.surveyorId = params.userId; delete params.userId }
       const res = await reportService.getConsolidatedBikeReadings(params)
       const consolidated = res.data
+      consolidated.surveyors = [...(consolidated.surveyors || [])].sort((a: any, b: any) => {
+        const ax = (a.employeeId ?? '').toString()
+        const ay = (b.employeeId ?? '').toString()
+        const nx = Number(ax)
+        const ny = Number(ay)
+        if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+        return ax.localeCompare(ay)
+      })
       setPreviewTotal(consolidated.surveyors.length)
         if (previewType === 'CSV') {
         const headers = ['Employee ID', 'Surveyor Name', ...consolidated.dates.slice(0, 10).map((d: string) => {
@@ -123,9 +156,17 @@ export default function BikeReadingsReportPage() {
     }
 
     // RAW preview path
-    const trips = await bikeTripService.getTrips(params)
+    let trips = await bikeTripService.getTrips(params)
     if (previewType === 'CSV') {
       const headers = ['Employee ID', 'Surveyor Name', 'Date', 'Morning Reading', 'Evening Reading', 'Distance (KM)']
+      trips = [...(Array.isArray(trips) ? trips : trips.trips || trips)].sort((x: any, y: any) => {
+        const ax = (x.surveyor?.employeeId ?? x.surveyorId ?? '').toString()
+        const ay = (y.surveyor?.employeeId ?? y.surveyorId ?? '').toString()
+        const nx = Number(ax)
+        const ny = Number(ay)
+        if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+        return ax.localeCompare(ay)
+      })
       const total = trips.length
       const rows = trips.slice(0, 10).map((t: any) => {
         const emp = t.surveyor?.employeeId ?? ''

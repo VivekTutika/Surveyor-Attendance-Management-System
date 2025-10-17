@@ -154,6 +154,8 @@ async function main() {
         role: Role.SURVEYOR,
         name: surveyor.name,
         mobileNumber: surveyor.mobileNumber,
+        // sample 12-digit aadhar numbers for seeded surveyors
+        aadharNumber: (Math.floor(100000000000 + Math.random() * 899999999999)).toString(),
         passwordHash: hashedSurveyorPassword,
         projectId: surveyor.projectId,
         locationId: surveyor.locationId,

@@ -45,37 +45,61 @@ export default function SurveyorsReportPage() {
 
   const handleExportCSV = async () => {
     const data = await surveyorService.getAll()
-    const filtered = data.filter(d =>
+    let filtered = data.filter(d =>
       (!userId || String(d.id) === String(userId)) &&
       (!projectId || String(d.project?.id) === String(projectId)) &&
       (!locationId || String(d.location?.id) === String(locationId))
     )
+    filtered = [...filtered].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
     await exportSurveyorsToCSV(filtered, { surveyorName, createdBy: adminProfile?.name ?? 'admin', userId: adminProfile?.id ?? null })
   }
 
   const handleExportPDF = async () => {
     const data = await surveyorService.getAll()
-    const filtered = data.filter(d =>
+    let filtered = data.filter(d =>
       (!userId || String(d.id) === String(userId)) &&
       (!projectId || String(d.project?.id) === String(projectId)) &&
       (!locationId || String(d.location?.id) === String(locationId))
     )
+    filtered = [...filtered].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     const surveyorName = userId ? (surveyors.find(s => String(s.id) === String(userId))?.name ?? null) : null
     await exportSurveyorsToPDF(filtered, { surveyorName, createdBy: adminProfile?.name ?? 'admin', userId: adminProfile?.id ?? null })
   }
 
   const generatePreview = async () => {
     const all = await surveyorService.getAll()
-    const filtered = all.filter(d =>
+    let filtered = all.filter(d =>
       (!userId || String(d.id) === String(userId)) &&
       (!projectId || String(d.project?.id) === String(projectId)) &&
       (!locationId || String(d.location?.id) === String(locationId))
     )
+    filtered = [...filtered].sort((a: any, b: any) => {
+      const ax = (a.employeeId ?? '').toString()
+      const ay = (b.employeeId ?? '').toString()
+      const nx = Number(ax)
+      const ny = Number(ay)
+      if (!isNaN(nx) && !isNaN(ny)) return nx - ny
+      return ax.localeCompare(ay)
+    })
     if (previewType === 'CSV') {
-      const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Bike', 'Project', 'Location']
+      const headers = ['Employee ID', 'Surveyor Name', 'Mobile', 'Aadhar', 'Bike', 'Project', 'Location']
       const total = filtered.length
-      const rows = filtered.slice(0, 10).map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
+      const rows = filtered.slice(0, 10).map(s => [s.employeeId ?? '', s.name ?? '', s.mobileNumber ?? '', (s as any).aadharNumber ?? '', s.hasBike ? 'Yes' : 'No', s.project?.name ?? '', s.location?.name ?? ''])
       setPreviewRows({ headers, rows })
       setPreviewTotal(total)
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null) }
