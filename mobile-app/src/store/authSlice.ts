@@ -50,6 +50,8 @@ export const logoutUser = createAsyncThunk<
       // Remove token from AsyncStorage
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userData');
+      // Note: We preserve rememberMe setting and cachedCredentials during logout
+      // They are only cleared when user explicitly toggles "Remember Me" off
       
       return true;
     } catch (error: any) {
@@ -82,7 +84,9 @@ export const loadStoredAuth = createAsyncThunk<
       
       return null;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to load stored auth');
+      // Don't reject on error to prevent app from hanging
+      console.log('Error loading stored auth:', error);
+      return null;
     }
   }
 );
@@ -191,6 +195,13 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
       })
+      .addCase(logoutUser.rejected, (state, action) => {
+        // Even if logout fails, clear local state
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = action.payload || 'Logout failed';
+      })
       // Load stored auth
       .addCase(loadStoredAuth.pending, (state) => {
         state.loading = true;
@@ -201,10 +212,18 @@ const authSlice = createSlice({
           state.user = action.payload.user;
           state.token = action.payload.token;
           state.isAuthenticated = true;
+        } else {
+          // Reset state if no stored auth
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
         }
       })
       .addCase(loadStoredAuth.rejected, (state) => {
         state.loading = false;
+        // Reset state on error
+        state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       })
       // Get profile

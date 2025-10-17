@@ -88,6 +88,8 @@ export default function AttendanceReportPage() {
     if (startDate) params.startDate = startDate.format('YYYY-MM-DD')
     if (endDate) params.endDate = endDate.format('YYYY-MM-DD')
     if (userId) params.userId = userId
+    if (projectId) params.projectId = projectId
+    if (locationId) params.locationId = locationId
     // Use the backend consolidated endpoint for previews as well so that preview matches exported data
     const res = await reportService.getConsolidatedAttendance(params)
     const consolidated = res.data

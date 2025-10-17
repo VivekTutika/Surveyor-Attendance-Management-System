@@ -58,6 +58,8 @@ interface BikeFilters {
   endDate: Dayjs | null
   userId: string
   type: string
+  projectId?: string
+  locationId?: string
 }
 
 export default function BikeReadingsPage() {
@@ -80,6 +82,8 @@ export default function BikeReadingsPage() {
     endDate: dayjs(),
     userId: '',
     type: '',
+    projectId: '',
+    locationId: '',
   })
 
   // Photo dialog
@@ -150,8 +154,12 @@ export default function BikeReadingsPage() {
       if (filters.type) {
         params.type = filters.type
       }
-      if ((filters as any).projectId) params.projectId = (filters as any).projectId
-      if ((filters as any).locationId) params.locationId = (filters as any).locationId
+      if (filters.projectId) {
+        params.projectId = filters.projectId
+      }
+      if (filters.locationId) {
+        params.locationId = filters.locationId
+      }
 
       const data = await bikeMeterService.getAll(params)
       setReadings(data.readings)
@@ -175,6 +183,8 @@ export default function BikeReadingsPage() {
       endDate: dayjs(),
       userId: '',
       type: '',
+      projectId: '',
+      locationId: '',
     })
     setPage(0)
   }
@@ -628,7 +638,12 @@ export default function BikeReadingsPage() {
                 fullWidth
                 size="small"
                 type="number"
-                inputProps={{ min: 0, step: 0.1 }}
+                slotProps={{
+                  htmlInput: {
+                    min: 0,
+                    step: 0.1
+                  }
+                }}
                 value={confirmValue}
                 onChange={(e) => setConfirmValue(e.target.value)}
                 sx={{ mb: 2 }}

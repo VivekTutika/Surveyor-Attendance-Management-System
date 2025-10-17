@@ -116,9 +116,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    // Clear all auth related data
     Cookies.remove('adminToken')
+    // Clear cached credentials
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cachedCredentials')
+      localStorage.removeItem('rememberMe')
+    }
     setUser(null)
-    router.push('/login')
+    
+    // Force a hard redirect to login to ensure clean state
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    } else {
+      router.push('/login')
+    }
   }
 
   const value = {

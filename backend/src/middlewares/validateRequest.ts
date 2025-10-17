@@ -162,6 +162,8 @@ export const schemas = {
       // allow numeric user ids (stringified) or UUIDs to support different clients
       userId: z.union([z.string().uuid(), z.string().regex(/^[0-9]+$/)]).optional(),
       type: z.enum(['MORNING', 'EVENING']).optional(),
+      projectId: z.string().regex(/^[0-9]+$/).optional(),
+      locationId: z.string().regex(/^[0-9]+$/).optional(),
     }),
   },
 };

@@ -7,20 +7,20 @@ async function main() {
   console.log('🌱 Starting database seeding...');
 
   // Create default admin users
-  const hashedPassword = await bcrypt.hash('admin123', 12);
-  
+  const hashedPasswordA = await bcrypt.hash('AA@SAMS', 12);
   const adminA = await prisma.user.upsert({
-    where: { mobileNumber: '+1234567890' },
+    where: { mobileNumber: '1234567890' },
     update: {},
     create: {
       role: Role.ADMIN,
-      name: 'Admin A',
-      mobileNumber: '+1234567890',
-      passwordHash: hashedPassword,
+      name: 'Attendance Admin',
+      mobileNumber: '1234567890',
+      passwordHash: hashedPasswordA,
       isActive: true,
     },
   });
-
+  
+  const hashedPasswordB = await bcrypt.hash('BRA@SAMS', 12);
   console.log('✅ Created Admin A:', {
     id: adminA.id,
     name: adminA.name,
@@ -29,13 +29,13 @@ async function main() {
   });
 
   const adminB = await prisma.user.upsert({
-    where: { mobileNumber: '+1234567891' },
+    where: { mobileNumber: '1234567891' },
     update: {},
     create: {
       role: Role.ADMIN,
-      name: 'Admin B',
-      mobileNumber: '+1234567891',
-      passwordHash: hashedPassword,
+      name: 'Bike Readings Admin',
+      mobileNumber: '1234567891',
+      passwordHash: hashedPasswordB,
       isActive: true,
     },
   });
@@ -47,118 +47,75 @@ async function main() {
     role: adminB.role,
   });
 
-  // Create sample projects
-  const sampleProjects = [
-    {
-      name: 'Highway Survey Project',
+  // Create single project
+  const project = await prisma.project.upsert({
+    where: { name: 'Office' },
+    update: {},
+    create: {
+      name: 'Office',
     },
-    {
-      name: 'Urban Planning Survey',
-    },
-    {
-      name: 'Rural Development Survey',
-    },
-    {
-      name: 'Coastal Area Survey',
-    },
-  ];
+  });
 
-  const createdProjects: any[] = [];
-  for (const project of sampleProjects) {
-    const createdProject = await prisma.project.upsert({
-      where: { name: project.name },
-      update: {},
-      create: project,
-    });
-    createdProjects.push(createdProject);
-    console.log('✅ Created project:', {
-      id: createdProject.id,
-      name: createdProject.name,
-    });
-  }
+  console.log('✅ Created project:', {
+    id: project.id,
+    name: project.name,
+  });
 
-  // Create sample locations
-  const sampleLocations = [
-    {
-      name: 'Zone A - North District',
+  // Create single location
+  const location = await prisma.location.upsert({
+    where: { name: 'Head Quarters' },
+    update: {},
+    create: {
+      name: 'Head Quarters',
     },
-    {
-      name: 'Zone B - Central District',
-    },
-    {
-      name: 'Zone C - South District',
-    },
-    {
-      name: 'Zone D - East District',
-    },
-    {
-      name: 'Zone E - West District',
-    },
-  ];
+  });
 
-  const createdLocations: any[] = [];
-  for (const location of sampleLocations) {
-    const createdLocation = await prisma.location.upsert({
-      where: { name: location.name },
-      update: {},
-      create: location,
-    });
-    createdLocations.push(createdLocation);
-    console.log('✅ Created location:', {
-      id: createdLocation.id,
-      name: createdLocation.name,
-    });
-  }
+  console.log('✅ Created location:', {
+    id: location.id,
+    name: location.name,
+  });
 
-  // Create sample surveyor users with project and location assignments
+  // Create sample surveyor users
+  const surveyorPassword1 = await bcrypt.hash('AT1@LRMC', 12);
+  const surveyorPassword2 = await bcrypt.hash('AT2@LRMC', 12);
+  
   const sampleSurveyors = [
     {
-      name: 'John Smith',
-      mobileNumber: '+1234567892',
-      projectId: createdProjects[0].id, // Highway Survey Project
-      locationId: createdLocations[0].id, // Zone A - North District
+      name: 'LRMC Developer',
+      employeeId: 'LRMCT001',
+      mobileNumber: '9876543210',
+      aadharNumber: '123456789012',
+      passwordHash: surveyorPassword1,
+      projectId: project.id,
+      locationId: location.id,
+      hasBike: true,
     },
     {
-      name: 'Sarah Johnson',
-      mobileNumber: '+1234567893',
-      projectId: createdProjects[1].id, // Urban Planning Survey
-      locationId: createdLocations[1].id, // Zone B - Central District
-    },
-    {
-      name: 'Mike Wilson',
-      mobileNumber: '+1234567894',
-      projectId: createdProjects[2].id, // Rural Development Survey
-      locationId: createdLocations[2].id, // Zone C - South District
-    },
-    {
-      name: 'Emily Davis',
-      mobileNumber: '+1234567895',
-      projectId: createdProjects[3].id, // Coastal Area Survey
-      locationId: createdLocations[3].id, // Zone D - East District
-    },
-    {
-      name: 'David Brown',
-      mobileNumber: '+1234567896',
-      projectId: createdProjects[0].id, // Highway Survey Project
-      locationId: createdLocations[4].id, // Zone E - West District
+      name: 'LRMC Tester',
+      employeeId: 'LRMCT002',
+      mobileNumber: '8765432109',
+      aadharNumber: '987654321098',
+      passwordHash: surveyorPassword2,
+      projectId: project.id,
+      locationId: location.id,
+      hasBike: false,
     },
   ];
 
   for (const surveyor of sampleSurveyors) {
-    const hashedSurveyorPassword = await bcrypt.hash('surveyor123', 12);
-    
     const surveyorUser = await prisma.user.upsert({
       where: { mobileNumber: surveyor.mobileNumber },
       update: {},
       create: {
         role: Role.SURVEYOR,
         name: surveyor.name,
+        employeeId: surveyor.employeeId,
         mobileNumber: surveyor.mobileNumber,
-        // sample 12-digit aadhar numbers for seeded surveyors
-        aadharNumber: (Math.floor(100000000000 + Math.random() * 899999999999)).toString(),
-        passwordHash: hashedSurveyorPassword,
+        aadharNumber: surveyor.aadharNumber,
+        passwordHash: surveyor.passwordHash,
         projectId: surveyor.projectId,
         locationId: surveyor.locationId,
+        hasBike: surveyor.hasBike,
         isActive: true,
       },
     });
@@ -166,25 +123,24 @@ async function main() {
     console.log('✅ Created surveyor user:', {
       id: surveyorUser.id,
       name: surveyorUser.name,
+      employeeId: surveyorUser.employeeId,
       mobileNumber: surveyorUser.mobileNumber,
       projectId: surveyorUser.projectId,
       locationId: surveyorUser.locationId,
+      hasBike: surveyorUser.hasBike,
     });
   }
 
   console.log('🎉 Database seeding completed successfully!');
   console.log('');
   console.log('📋 Default Login Credentials:');
-  console.log('👨‍💼 Admin A: +1234567890 / admin123');
-  console.log('👨‍💼 Admin B: +1234567891 / admin123');
-  console.log('👷‍♂️ Surveyor (John): +1234567892 / surveyor123');
-  console.log('👷‍♀️ Surveyor (Sarah): +1234567893 / surveyor123');
-  console.log('👷‍♂️ Surveyor (Mike): +1234567894 / surveyor123');
-  console.log('👷‍♀️ Surveyor (Emily): +1234567895 / surveyor123');
-  console.log('👷‍♂️ Surveyor (David): +1234567896 / surveyor123');
+  console.log('👨‍💼 Attendance Admin: 1234567890 / AA@SAMS');
+  console.log('👨‍💼 Bike Readings Admin: +1234567891 / BRA@SAMS');
+  console.log('👷‍♂️ LRMC Developer: +9876543210 / AT1@LRMC (Employee ID: LRMCT001, Has Bike: Yes)');
+  console.log('👷‍♀️ LRMC Tester: +8765432109 / AT2@LRMC (Employee ID: LRMCT002, Has Bike: No)');
   console.log('');
-  console.log('🏢 Created Projects:', createdProjects.length);
-  console.log('📍 Created Locations:', createdLocations.length);
+  console.log('🏢 Created Project:', project.name);
+  console.log('📍 Created Location:', location.name);
   console.log('👥 Created Users:', sampleSurveyors.length + 2, '(including 2 admins)');
 }
 

@@ -5,6 +5,8 @@ export interface BikeTripFilters {
   date?: string;
   startDate?: string;
   endDate?: string;
+  projectId?: number;
+  locationId?: number;
 }
 
 export class BikeTripService {
@@ -98,7 +100,7 @@ export class BikeTripService {
   }
 
   static async getTrips(filters: BikeTripFilters, userRole: string, requestingUserId: number) {
-    const { userId, date, startDate, endDate } = filters;
+    const { userId, date, startDate, endDate, projectId, locationId } = filters;
 
     const where: any = {};
 
@@ -136,6 +138,20 @@ export class BikeTripService {
         e.setUTCHours(23, 59, 59, 999);
         where.date = { gte: s, lte: e };
       }
+    }
+
+    // Project filtering
+    if (projectId) {
+      // Add a relation filter to only include surveyors with the specified projectId
+      where.surveyor = where.surveyor || {};
+      where.surveyor.projectId = parseInt(projectId as any, 10);
+    }
+
+    // Location filtering
+    if (locationId) {
+      // Add a relation filter to only include surveyors with the specified locationId
+      where.surveyor = where.surveyor || {};
+      where.surveyor.locationId = parseInt(locationId as any, 10);
     }
 
     const trips = await (prisma as any).bikeTrip.findMany({

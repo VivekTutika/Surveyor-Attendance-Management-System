@@ -52,6 +52,7 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
   const [capturedImage, setCapturedImage] = useState<CapturedPhoto | null>(null);
   const [location, setLocation] = useState<LocationCoords | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
 
   useEffect(() => {
     requestPermissions();
@@ -121,6 +122,7 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
     }
 
     try {
+      setProcessingImage(true);
       const photo = await cameraRef.takePictureAsync({
         quality: 0.8,
         base64: false,
@@ -130,6 +132,8 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to capture photo. Please try again.');
+    } finally {
+      setProcessingImage(false);
     }
   };
 
@@ -140,6 +144,12 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
   const submitAttendance = async () => {
     if (!capturedImage || !location) {
       Alert.alert('Error', 'Photo and location are required.');
+      return;
+    }
+
+    // Check if image is still processing
+    if (processingImage) {
+      Alert.alert('Please Wait', 'Image is still processing. Please wait a moment before submitting.');
       return;
     }
 
@@ -232,12 +242,13 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
               variant="outline"
               onPress={retakePicture}
               style={styles.actionButton}
+              disabled={processingImage || submittingAttendance}
             />
             <Button
               title="Submit"
               onPress={submitAttendance}
               loading={submittingAttendance}
-              disabled={submittingAttendance || !location}
+              disabled={submittingAttendance || !location || processingImage}
               style={styles.actionButton}
             />
           </View>
@@ -259,7 +270,7 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
             <TouchableOpacity
               style={styles.captureButton}
               onPress={takePicture}
-              disabled={!location || loadingLocation}
+              disabled={!location || loadingLocation || processingImage}
             >
               <View style={styles.captureButtonInner} />
             </TouchableOpacity>
@@ -267,7 +278,7 @@ const AttendanceScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       )}
 
-      {loadingLocation && <LoadingSpinner overlay />}
+      {(loadingLocation || processingImage) && <LoadingSpinner overlay />}
     </SafeAreaView>
   );
 };

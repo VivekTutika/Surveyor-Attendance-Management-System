@@ -66,6 +66,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     return isActive ? 'Active' : 'Inactive';
   };
 
+  // Get the first letter of the user's name for avatar
+  const getUserInitial = (): string => {
+    if (!user?.name) return '?';
+    return user.name.charAt(0).toUpperCase();
+  };
+
   if (loading && !user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -81,7 +87,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <Ionicons name="person" size={48} color={Colors.white} />
+              <Text style={styles.avatarText}>{getUserInitial()}</Text>
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.userName}>{user?.name || 'Unknown User'}</Text>
@@ -256,6 +262,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: Colors.white,
   },
   profileInfo: {
     flex: 1,
