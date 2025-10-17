@@ -176,10 +176,12 @@ export default function AttendancePage() {
 
   const clearFilters = () => {
     setFilters({
-      startDate: dayjs().subtract(7, 'day'),
+      startDate: dayjs(),
       endDate: dayjs(),
       userId: '',
       type: '',
+      projectId: '',
+      locationId: '',
     })
     setPage(0)
   }
@@ -230,6 +232,8 @@ export default function AttendancePage() {
       if (filters.endDate) params.endDate = filters.endDate.format('YYYY-MM-DD')
       if (filters.userId) params.userId = filters.userId
       if (filters.type) params.type = filters.type
+      if (filters.projectId) params.projectId = filters.projectId
+      if (filters.locationId) params.locationId = filters.locationId
       // fetch without pagination to get all matching ids
       const data = await attendanceService.getAll(params)
       const ids = (data.attendance || []).map((a: Attendance) => a.id)

@@ -19,6 +19,8 @@ export interface AttendanceFilters {
   type?: AttendanceType;
   page?: number;
   limit?: number;
+  projectId?: number;
+  locationId?: number;
 }
 
 export interface PaginatedAttendanceResult {
@@ -89,7 +91,7 @@ export class AttendanceService {
 
   // Get attendance records with filters and pagination
   static async getAttendanceRecords(filters: AttendanceFilters, userRole: string, requestingUserId: number) {  // Changed from string to number
-    let { userId, date, startDate, endDate, type, page = 1, limit = 10 } = filters as any;
+    let { userId, date, startDate, endDate, type, page = 1, limit = 10, projectId, locationId } = filters as any;
     // Coerce userId which may come as a query string into a number for Prisma
     if (typeof userId === 'string') {
       const parsed = parseInt(userId, 10)
@@ -127,6 +129,20 @@ export class AttendanceService {
     // Type filtering
     if (type) {
       where.type = type;
+    }
+
+    // Project filtering
+    if (projectId) {
+      // Add a relation filter to only include users with the specified projectId
+      where.user = where.user || {};
+      where.user.projectId = parseInt(projectId, 10);
+    }
+
+    // Location filtering
+    if (locationId) {
+      // Add a relation filter to only include users with the specified locationId
+      where.user = where.user || {};
+      where.user.locationId = parseInt(locationId, 10);
     }
 
   // Get total count for pagination

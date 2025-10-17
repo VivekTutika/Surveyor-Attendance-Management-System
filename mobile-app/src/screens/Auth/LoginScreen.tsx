@@ -8,12 +8,14 @@ import {
   ScrollView,
   Alert,
   Image,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Button, InputField, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
@@ -44,12 +46,45 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     password: '',
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const auth = useSelector((state: RootState) => state.auth);
+  const [rememberMe, setRememberMe] = useState<boolean>(false); // Default to false for security
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   useEffect(() => {
-    // Load stored authentication on component mount
-    dispatch(loadStoredAuth());
+    // Load stored authentication and cached credentials
+    const initialize = async () => {
+      try {
+        await loadCachedCredentials();
+        await dispatch(loadStoredAuth());
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    
+    initialize();
   }, [dispatch]);
+
+  const loadCachedCredentials = async () => {
+    try {
+      // Load rememberMe setting first
+      const cachedRememberMe = await AsyncStorage.getItem('rememberMe');
+      if (cachedRememberMe === 'true') {
+        setRememberMe(true);
+        
+        // Load cached credentials if rememberMe was enabled
+        const cachedCredentials = await AsyncStorage.getItem('cachedCredentials');
+        if (cachedCredentials) {
+          const { employeeId, password } = JSON.parse(cachedCredentials);
+          setFormData({
+            employeeId: employeeId || '',
+            password: password || '',
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Error loading cached credentials:', error);
+    }
+  };
 
   useEffect(() => {
     // Clear any previous errors when component mounts
@@ -57,10 +92,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       dispatch(clearError());
     };
   }, [dispatch]);
-
-  useEffect(() => {
-    // No modal alert. The error will be rendered inline in the form so it persists until cleared.
-  }, [error, dispatch]);
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
@@ -104,14 +135,28 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     try {
+      // Save rememberMe setting
+      await AsyncStorage.setItem('rememberMe', rememberMe.toString());
+      
+      // Cache the credentials for next login if rememberMe is true
+      if (rememberMe) {
+        await AsyncStorage.setItem('cachedCredentials', JSON.stringify({
+          employeeId: formData.employeeId,
+          password: formData.password
+        }));
+      } else {
+        // Clear cached credentials if rememberMe is false
+        await AsyncStorage.removeItem('cachedCredentials');
+      }
+      
       const result: any = await dispatch(loginUser({
         mobileNumber: formData.employeeId, // backend expects employeeId; thunk maps this
         password: formData.password,
       })).unwrap();
 
       // Prevent non-surveyor roles from using the mobile app.
-      const role = (result?.user?.role || result?.role || (auth.user && auth.user.role) || null);
-      if (role && String(role).toLowerCase() !== 'surveyor') {
+      const userRole = result?.user?.role || null;
+      if (userRole && String(userRole).toLowerCase() !== 'surveyor') {
         // Immediately clear auth state so admin credentials don't remain active here.
         dispatch(logoutUser());
         Alert.alert('Access Denied', 'This mobile app is only for Surveyor users. Please use the admin portal.', [{ text: 'OK' }]);
@@ -121,6 +166,31 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       // Error handling is done through useEffect
     }
   };
+
+  const handleRememberMeToggle = (value: boolean) => {
+    setRememberMe(value);
+    
+    // If toggled off, clear cached credentials but preserve the setting
+    if (!value) {
+      AsyncStorage.removeItem('cachedCredentials');
+    }
+    // Always save the rememberMe setting
+    AsyncStorage.setItem('rememberMe', value.toString());
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Show loading spinner while initializing
+  if (isInitializing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadingSpinner />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -161,12 +231,30 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               placeholder="Enter your password"
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               error={formErrors.password}
               leftIcon={
                 <Ionicons name="lock-closed-outline" size={20} color={Colors.gray} />
               }
+              rightIcon={
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color={Colors.gray} 
+                  onPress={togglePasswordVisibility}
+                />
+              }
             />
+
+            <View style={styles.rememberMeContainer}>
+              <Text style={styles.rememberMeText}>Remember Me</Text>
+              <Switch
+                trackColor={{ false: Colors.gray, true: Colors.primary }}
+                thumbColor={rememberMe ? Colors.surface : Colors.surface}
+                onValueChange={handleRememberMeToggle}
+                value={rememberMe}
+              />
+            </View>
 
             {/* Inline login error message (persistent) */}
             {error ? (
@@ -181,8 +269,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.loginButton}
             />
           </View>
-
-
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -261,32 +347,18 @@ const styles = StyleSheet.create({
   formContainer: {
     marginBottom: 32,
   },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 12,
+  },
+  rememberMeText: {
+    fontSize: 16,
+    color: Colors.textPrimary,
+  },
   loginButton: {
     marginTop: 8,
-  },
-  demoContainer: {
-    marginBottom: 32,
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  demoTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  demoButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  demoButton: {
-    flex: 1,
   },
   footer: {
     alignItems: 'center',

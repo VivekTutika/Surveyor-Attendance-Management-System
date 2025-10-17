@@ -45,13 +45,6 @@ npm run db:migrate   # Run database migrations
 npm run db:seed      # Seed database with default users
 ```
 
-## 📚 API Documentation
-
-- **Base URL**: `http://localhost:5000/api`
-- **Health Check**: `http://localhost:5000/health`
-- **Full Documentation**: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
-- **Database Schema**: [DATABASE.md](./DATABASE.md)
-
 ## 🔐 Default Credentials
 
 **Admin:**
@@ -207,7 +200,7 @@ MOBILE_APP_URL="exp://localhost:19000"
 ## 🧪 Testing
 
 The API can be tested using:
-- Postman collection (import from API_DOCUMENTATION.md)
+- Postman collection
 - cURL commands
 - Frontend applications (mobile-app, web-admin)
 

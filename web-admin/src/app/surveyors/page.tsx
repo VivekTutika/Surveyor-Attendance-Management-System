@@ -911,7 +911,11 @@ export default function SurveyorsPage() {
               margin="normal"
               required={dialogMode === 'create'}
               helperText={dialogMode === 'create' ? 'Enter 12 digit Aadhar number (numbers only)' : 'Optional — 12 digits if present'}
-              inputProps={{ maxLength: 12 }}
+              slotProps={{
+                htmlInput: {
+                  maxLength: 12
+                }
+              }}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>Project</InputLabel>

@@ -38,7 +38,7 @@ export class ReportService {
     return out
   }
 
-  // Consolidated attendance: returns list of surveyors and matrix of A/P per date
+  // Consolidated attendance: returns list of surveyors and matrix of H/P/A per date
   static async getConsolidatedAttendance(opts: { startDate: string; endDate: string; surveyorId?: number; projectId?: number; locationId?: number }) {
     const { startDate, endDate, surveyorId, projectId, locationId } = opts
     const dates = ReportService.getDateRange(startDate, endDate)
@@ -70,14 +70,29 @@ export class ReportService {
       map.set(key, existing)
     })
 
-    // Construct matrix
+    // Construct matrix with new logic:
+    // H - Half Day (only one of checkIn or checkOut)
+    // P - Present (both checkIn and checkOut)
+    // A - Absent (neither checkIn nor checkOut)
     const rows = surveyors.map(s => {
       const row: any = { employeeId: s.employeeId ?? '', name: s.name }
       dates.forEach(d => {
         const key = `${s.id}::${d}`
         const val = map.get(key)
-        // present if both checkIn and checkOut exist
-        row[d] = (val && val.checkIn && val.checkOut) ? 'P' : 'A'
+        
+        if (!val) {
+          // No attendance records for this date
+          row[d] = 'A'
+        } else if (val.checkIn && val.checkOut) {
+          // Both checkIn and checkOut exist
+          row[d] = 'P'
+        } else if (val.checkIn || val.checkOut) {
+          // Only one of checkIn or checkOut exists
+          row[d] = 'H'
+        } else {
+          // Neither checkIn nor checkOut exists
+          row[d] = 'A'
+        }
       })
       return row
     })

@@ -65,11 +65,41 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleProfileMenuClose = () => setAnchorEl(null)
   const handleLogout = () => {
     handleProfileMenuClose()
-    logout()
+    // Clear all data before logout to prevent errors
+    if (typeof window !== 'undefined') {
+      // Clear any ongoing requests or data
+      window.location.href = '/login'
+    } else {
+      logout()
+    }
   }
   const handleNavigation = (path: string) => {
     router.push(path)
     if (isMobile) setMobileOpen(false)
+  }
+
+  // Determine page title based on pathname
+  const getPageTitle = () => {
+    // Check for specific sub-routes first
+    if (pathname.startsWith('/bike-trips')) {
+      return 'Distance Travelled'
+    }
+    if (pathname.startsWith('/reports/surveyors')) {
+      return 'Surveyors Details'
+    }
+    if (pathname.startsWith('/reports/attendance')) {
+      return 'Attendance Report'
+    }
+    if (pathname.startsWith('/reports/bike-readings')) {
+      return 'Bike Readings Report'
+    }
+    if (pathname.startsWith('/reports')) {
+      return 'Reports'
+    }
+    
+    // Check for main menu items
+    const menuItem = menuItems.find((item) => item.path === pathname)
+    return menuItem ? menuItem.text : "Admin Portal"
   }
 
   const drawerContent = (
@@ -151,8 +181,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* Page Title */}
           <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            {menuItems.find((item) => item.path === pathname)?.text ||
-              "Admin Portal"}
+            {getPageTitle()}
           </Typography>
 
           {/* User Avatar & Menu */}

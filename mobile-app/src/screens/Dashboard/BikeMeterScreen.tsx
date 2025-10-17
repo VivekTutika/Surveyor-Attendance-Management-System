@@ -37,6 +37,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
   const readingType = route.params?.type || 'MORNING';
   
   const [capturedImage, setCapturedImage] = useState<any>(null);
+  const [processingImage, setProcessingImage] = useState(false);
 
   useEffect(() => {
     requestPermissions();
@@ -60,6 +61,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const openCamera = async () => {
     try {
+      setProcessingImage(true);
       const result = await ImagePicker.launchCameraAsync({
         // Use  for compatibility across SDKs
           mediaTypes: ['images'],
@@ -72,6 +74,8 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error opening camera:', error);
       Alert.alert('Error', 'Failed to open camera. Please try again.');
+    } finally {
+      setProcessingImage(false);
     }
   };
 
@@ -84,6 +88,12 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
   const submitReading = async () => {
     if (!capturedImage) {
       Alert.alert('Error', 'Please capture a photo of the bike meter.');
+      return;
+    }
+
+    // Check if image is still processing
+    if (processingImage) {
+      Alert.alert('Please Wait', 'Image is still processing. Please wait a moment before submitting.');
       return;
     }
 
@@ -142,6 +152,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
                 size="small"
                 onPress={openCamera}
                 style={styles.imageActionButton}
+                disabled={processingImage || submittingReading}
               />
               <Button
                 title="Remove"
@@ -149,6 +160,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
                 size="small"
                 onPress={removeImage}
                 style={styles.imageActionButton}
+                disabled={processingImage || submittingReading}
               />
             </View>
           </View>
@@ -157,6 +169,7 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
             <TouchableOpacity
               style={styles.imageUploadButton}
               onPress={openCamera}
+              disabled={processingImage || submittingReading}
             >
               <Ionicons name="camera" size={48} color={Colors.primary} />
               <Text style={styles.imageUploadText}>Tap to capture bike meter photo</Text>
@@ -172,11 +185,18 @@ const BikeMeterScreen: React.FC<Props> = ({ navigation, route }) => {
             title="Upload Reading"
             onPress={submitReading}
             loading={submittingReading}
-            disabled={submittingReading || !capturedImage}
+            disabled={submittingReading || !capturedImage || processingImage}
             style={styles.submitButton}
           />
         </View>
       </ScrollView>
+
+      {processingImage && (
+        <View style={styles.overlay}>
+          <LoadingSpinner />
+          <Text style={styles.overlayText}>Processing image, please wait...</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -259,6 +279,19 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 16,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  overlayText: {
+    color: Colors.white,
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

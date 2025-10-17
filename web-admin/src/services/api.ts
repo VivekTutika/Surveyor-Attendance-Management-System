@@ -10,10 +10,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5
 // Debug axios instance creation
 console.log('Creating axios instance with baseURL:', API_BASE_URL)
 
-// Create axios instance
+// Create axios instance with increased timeout
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10000ms to 30000ms to prevent timeout errors
   headers: {
     'Content-Type': 'application/json',
   },
@@ -42,7 +42,6 @@ api.interceptors.response.use(
     return response
   },
   (error: AxiosError) => {
-    console.error('Response error:', error.response?.status, error.response?.data, error.config?.url)
     // Handle network errors
     if (!error.response) {
       console.error('Network error:', error.message)
@@ -50,12 +49,21 @@ api.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
-      // remove token but do not force a navigation here; let the app decide how to handle
+      // Remove token but do not force a navigation here; let the app decide how to handle
       Cookies.remove('adminToken')
       // Previously we redirected immediately which caused the app to reload on auth failures.
       // Keeping the redirect out of the interceptor allows the UI (AuthContext) to show a friendly
       // error message and remain on the login page until the user chooses to navigate/refresh.
+      
+      // Don't log 401 errors as they're expected after logout
+      // Return a more specific error that can be handled appropriately
+      const authError = new Error('Authentication required')
+      ;(authError as any).status = 401
+      return Promise.reject(authError)
     }
+    
+    // For other errors, log them but still reject the promise
+    console.error('Response error:', error.response?.status, error.config?.url)
     return Promise.reject(error)
   }
 )
@@ -166,7 +174,10 @@ export const authService = {
         await api.get('/api/auth/profile')
       return response.data.data!
     } catch (error) {
-      console.error('Get profile error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get profile error:', error)
+      }
       throw error
     }
   },
@@ -180,7 +191,10 @@ export const surveyorService = {
         await api.get('/api/surveyors')
       return response.data.data!
     } catch (error) {
-      console.error('Get surveyors error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get surveyors error:', error)
+      }
       throw error
     }
   },
@@ -191,7 +205,10 @@ export const surveyorService = {
         await api.get(`/api/surveyors/${id}`)
       return response.data.data!
     } catch (error) {
-      console.error('Get surveyor by id error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get surveyor by id error:', error)
+      }
       throw error
     }
   },
@@ -202,7 +219,10 @@ export const surveyorService = {
         await api.post('/api/surveyors', userData)
       return response.data.data!
     } catch (error) {
-      console.error('Create surveyor error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Create surveyor error:', error)
+      }
       throw error
     }
   },
@@ -213,7 +233,10 @@ export const surveyorService = {
         await api.put(`/api/surveyors/${id}`, userData)
       return response.data.data!
     } catch (error) {
-      console.error('Update surveyor error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Update surveyor error:', error)
+      }
       throw error
     }
   },
@@ -224,7 +247,10 @@ export const surveyorService = {
         await api.delete(`/api/surveyors/${id}`)
       return response.data
     } catch (error) {
-      console.error('Delete surveyor error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Delete surveyor error:', error)
+      }
       throw error
     }
   },
@@ -235,7 +261,10 @@ export const surveyorService = {
         await api.patch(`/api/surveyors/${id}/toggle-status`)
       return response.data.data!
     } catch (error) {
-      console.error('Toggle surveyor status error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Toggle surveyor status error:', error)
+      }
       throw error
     }
   },
@@ -245,7 +274,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/api/projects')
       return response.data.data!
     } catch (error) {
-      console.error('Get projects error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get projects error:', error)
+      }
       throw error
     }
   },
@@ -255,7 +287,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/api/locations')
       return response.data.data!
     } catch (error) {
-      console.error('Get locations error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get locations error:', error)
+      }
       throw error
     }
   },
@@ -264,7 +299,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.post('/api/projects', payload)
       return response.data.data!
     } catch (error) {
-      console.error('Create project error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Create project error:', error)
+      }
       throw error
     }
   },
@@ -274,7 +312,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/projects/${id}`, payload)
       return response.data.data!
     } catch (error) {
-      console.error('Update project error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Update project error:', error)
+      }
       throw error
     }
   },
@@ -284,7 +325,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/api/projects/${id}`)
       return response.data
     } catch (error) {
-      console.error('Delete project error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Delete project error:', error)
+      }
       throw error
     }
   },
@@ -294,7 +338,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.post('/api/locations', payload)
       return response.data.data!
     } catch (error) {
-      console.error('Create location error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Create location error:', error)
+      }
       throw error
     }
   },
@@ -303,7 +350,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/locations/${id}`, payload)
       return response.data.data!
     } catch (error) {
-      console.error('Update location error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Update location error:', error)
+      }
       throw error
     }
   },
@@ -313,7 +363,10 @@ export const surveyorService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/api/locations/${id}`)
       return response.data
     } catch (error) {
-      console.error('Delete location error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Delete location error:', error)
+      }
       throw error
     }
   },
@@ -328,6 +381,8 @@ export const attendanceService = {
     type?: string;
     page?: number;
     limit?: number;
+    projectId?: number | string;
+    locationId?: number | string;
   }) => {
     try {
       const response: AxiosResponse<ApiResponse<{ 
@@ -338,7 +393,10 @@ export const attendanceService = {
       }>> = await api.get('/api/attendance/list', { params })
       return response.data.data!
     } catch (error) {
-      console.error('Get attendance error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get attendance error:', error)
+      }
       throw error
     }
   },
@@ -349,7 +407,10 @@ export const attendanceService = {
         await api.get(`/api/attendance/user/${userId}`, { params })
       return response.data.data!
     } catch (error) {
-      console.error('Get attendance by user id error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get attendance by user id error:', error)
+      }
       throw error
     }
   },
@@ -359,7 +420,10 @@ export const attendanceService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.post(`/api/attendance/${attendanceId}/approve`)
       return response.data.data
     } catch (error) {
-      console.error('Approve attendance error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Approve attendance error:', error)
+      }
       throw error
     }
   },
@@ -373,6 +437,8 @@ export const bikeMeterService = {
     userId?: string;
     page?: number;
     limit?: number;
+    projectId?: number | string;
+    locationId?: number | string;
   }) => {
     try {
       const response: AxiosResponse<ApiResponse<{ 
@@ -406,7 +472,10 @@ export const bikeMeterService = {
         readings: (d.readings || []).map(normalize),
       }
     } catch (error) {
-      console.error('Get bike meter readings error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get bike meter readings error:', error)
+      }
       throw error
     }
   },
@@ -421,7 +490,10 @@ export const bikeMeterService = {
         readings: (d.readings || []).map((r: any) => ({ ...r, reading: r.kmReading !== undefined ? r.kmReading : r.reading })),
       }
     } catch (error) {
-      console.error('Get bike meter readings by user id error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get bike meter readings by user id error:', error)
+      }
       throw error
     }
   },
@@ -431,7 +503,10 @@ export const bikeMeterService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/bike/${id}/km-reading`, { kmReading })
       return response.data.data
     } catch (error) {
-      console.error('Update KM reading error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Update KM reading error:', error)
+      }
       throw error
     }
   },
@@ -441,7 +516,10 @@ export const bikeMeterService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/api/bike/${id}`)
       return response.data
     } catch (error) {
-      console.error('Delete bike meter reading error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Delete bike meter reading error:', error)
+      }
       throw error
     }
   },
@@ -451,7 +529,10 @@ export const bikeMeterService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.patch(`/api/bike/${id}/clear-reading`)
       return response.data.data
     } catch (error) {
-      console.error('Clear bike meter reading error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Clear bike meter reading error:', error)
+      }
       throw error
     }
   },
@@ -465,7 +546,10 @@ export const dashboardService = {
         await api.get('/api/dashboard/stats')
       return response.data.data!
     } catch (error) {
-      console.error('Get dashboard stats error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get dashboard stats error:', error)
+      }
       throw error
     }
   },
@@ -482,12 +566,15 @@ export type {
 
 // Bike Trip (Distance Travelled) Service - uses backend /api/bike/trips endpoints
 export const bikeTripService = {
-  getTrips: async (params?: { startDate?: string; endDate?: string; date?: string; userId?: string; page?: number; limit?: number; hasBike?: boolean }) => {
+  getTrips: async (params?: { startDate?: string; endDate?: string; date?: string; userId?: string; page?: number; limit?: number; hasBike?: boolean; projectId?: number | string; locationId?: number | string }) => {
     try {
       const response: AxiosResponse<ApiResponse<any>> = await api.get('/api/bike/trips', { params })
       return response.data.data
     } catch (error) {
-      console.error('Get bike trips error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get bike trips error:', error)
+      }
       throw error
     }
   },
@@ -497,7 +584,10 @@ export const bikeTripService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/bike/trips/${id}/final-km`, { finalKm })
       return response.data.data
     } catch (error) {
-      console.error('Set final km error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Set final km error:', error)
+      }
       throw error
     }
   },
@@ -507,7 +597,10 @@ export const bikeTripService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.put(`/api/bike/trips/${id}/toggle-approve`)
       return response.data.data
     } catch (error) {
-      console.error('Toggle approve error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Toggle approve error:', error)
+      }
       throw error
     }
   }
@@ -520,7 +613,10 @@ export const reportService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.post('/api/reports', payload)
       return response.data.data
     } catch (error) {
-      console.error('Create report record error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Create report record error:', error)
+      }
       // Do not block downloads if recording fails; just log and continue
       return null
     }
@@ -531,7 +627,10 @@ export const reportService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.get('/api/reports/consolidated/attendance', { params })
       return response.data
     } catch (error) {
-      console.error('Get consolidated attendance error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get consolidated attendance error:', error)
+      }
       throw error
     }
   },
@@ -541,7 +640,10 @@ export const reportService = {
       const response: AxiosResponse<ApiResponse<any>> = await api.get('/api/reports/consolidated/bike-readings', { params })
       return response.data
     } catch (error) {
-      console.error('Get consolidated bike readings error:', error)
+      // Don't log 401 errors as they're expected after logout
+      if ((error as AxiosError).response?.status !== 401 && (error as Error).message !== 'Authentication required') {
+        console.error('Get consolidated bike readings error:', error)
+      }
       throw error
     }
   }

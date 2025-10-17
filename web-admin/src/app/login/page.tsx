@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Paper,
@@ -11,6 +11,8 @@ import {
   Container,
   InputAdornment,
   IconButton,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material'
 import { Visibility, VisibilityOff, AdminPanelSettings } from '@mui/icons-material'
 import { useAuth } from '@/context/AuthContext'
@@ -19,13 +21,60 @@ export default function LoginPage() {
   const [employeeId, setEmployeeId] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false) // Default to false for security
   const { login, loading, error } = useAuth()
+
+  // Load cached credentials and rememberMe setting on component mount
+  useEffect(() => {
+    const cachedRememberMe = localStorage.getItem('rememberMe')
+    if (cachedRememberMe === 'true') {
+      setRememberMe(true)
+      
+      // Only load credentials if rememberMe was enabled
+      const cachedCredentials = localStorage.getItem('cachedCredentials')
+      if (cachedCredentials) {
+        const { employeeId: cachedEmployeeId, password: cachedPassword } = JSON.parse(cachedCredentials)
+        setEmployeeId(cachedEmployeeId || '')
+        setPassword(cachedPassword || '')
+      }
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const id = employeeId.trim()
+    
+    // Save the rememberMe setting
+    localStorage.setItem('rememberMe', rememberMe.toString())
+    
+    // Cache the credentials for next login if rememberMe is checked
+    if (rememberMe) {
+      localStorage.setItem('cachedCredentials', JSON.stringify({ employeeId: id, password }))
+    } else {
+      // Clear cached credentials if rememberMe is unchecked
+      localStorage.removeItem('cachedCredentials')
+    }
+    
     await login(id, password)
+  }
+
+  const handleEmployeeIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmployeeId(e.target.value)
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value)
+  }
+
+  const handleRememberMeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked
+    setRememberMe(isChecked)
+    
+    // If unchecked, clear cached credentials
+    if (!isChecked) {
+      localStorage.removeItem('cachedCredentials')
+    }
   }
 
   return (
@@ -77,7 +126,7 @@ export default function LoginPage() {
               label="Employee ID"
               type="text"
               value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
+              onChange={handleEmployeeIdChange}
               margin="normal"
               required
               autoComplete="username"
@@ -88,22 +137,36 @@ export default function LoginPage() {
               label="Password"
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
               margin="normal"
               required
               autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }
               }}
+            />
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={rememberMe}
+                  onChange={handleRememberMeChange}
+                  color="primary"
+                />
+              }
+              label="Remember Me"
+              sx={{ mt: 1, mb: 1 }}
             />
 
             <Button
@@ -112,7 +175,7 @@ export default function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
-              sx={{ mt: 3, mb: 2 }}
+              sx={{ mt: 2, mb: 2 }}
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>

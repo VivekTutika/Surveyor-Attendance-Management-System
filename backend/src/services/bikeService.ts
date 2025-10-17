@@ -17,6 +17,8 @@ export interface BikeMeterFilters {
   startDate?: string;
   endDate?: string;
   type?: AttendanceType;
+  projectId?: number;
+  locationId?: number;
 }
 
 export class BikeService {
@@ -92,7 +94,7 @@ export class BikeService {
 
   // Get bike meter readings with filters
   static async getBikeMeterReadings(filters: BikeMeterFilters, userRole: string, requestingUserId: number) {  // Changed from string to number
-    const { userId, date, startDate, endDate, type } = filters;
+    const { userId, date, startDate, endDate, type, projectId, locationId } = filters;
 
     // Build where clause
     const where: any = {};
@@ -132,6 +134,20 @@ export class BikeService {
     // Type filtering
     if (type) {
       where.type = type;
+    }
+
+    // Project filtering
+    if (projectId) {
+      // Add a relation filter to only include users with the specified projectId
+      where.user = where.user || {};
+      where.user.projectId = parseInt(projectId as any, 10);
+    }
+
+    // Location filtering
+    if (locationId) {
+      // Add a relation filter to only include users with the specified locationId
+      where.user = where.user || {};
+      where.user.locationId = parseInt(locationId as any, 10);
     }
 
     const bikeMeterReadings = await prisma.bikeMeterReading.findMany({
@@ -202,7 +218,7 @@ export class BikeService {
       throw new Error('Bike meter reading not found');
     }
 
-    const updatedReading = await prisma.bikeMeterReading.update({
+    const updated = await prisma.bikeMeterReading.update({
       where: { id: readingId },
       data: { kmReading },
       include: {
@@ -218,27 +234,83 @@ export class BikeService {
       },
     });
 
-    // After updating the km reading, upsert bike trip to recompute computedKm/finalKm
-    try {
-      void BikeTripService.upsertTripForReading(updatedReading as any);
-    } catch (err) {
-      // swallow for now
-    }
-
-    return updatedReading;
+    return updated;
   }
 
-  // Clear only the kmReading for a bike meter reading (Admin only) - logical revert
+  // Get bike meter summary for date range
+  static async getBikeMeterSummary(userId: number, startDate: string, endDate: string) {
+    const start = startOfDayUTC(startDate);
+    const end = endOfDayUTC(endDate);
+
+    const readings = await prisma.bikeMeterReading.findMany({
+      where: {
+        userId,
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    // Calculate summary statistics
+    let totalDistance = 0;
+    let morningCount = 0;
+    let eveningCount = 0;
+
+    readings.forEach(reading => {
+      if (reading.kmReading) {
+        totalDistance += reading.kmReading;
+      }
+      if (reading.type === 'MORNING') {
+        morningCount++;
+      } else if (reading.type === 'EVENING') {
+        eveningCount++;
+      }
+    });
+
+    return {
+      userId,
+      startDate,
+      endDate,
+      totalReadings: readings.length,
+      morningReadings: morningCount,
+      eveningReadings: eveningCount,
+      totalDistance,
+      readings,
+    };
+  }
+
+  // Delete bike meter reading (Admin only)
+  static async deleteBikeMeterReading(readingId: string) {
+    const bikeMeterReading = await prisma.bikeMeterReading.findUnique({
+      where: { id: readingId },
+    });
+
+    if (!bikeMeterReading) {
+      throw new Error('Bike meter reading not found');
+    }
+
+    await prisma.bikeMeterReading.delete({
+      where: { id: readingId },
+    });
+
+    return { message: 'Bike meter reading deleted successfully' };
+  }
+
+  // Clear KM reading (Admin only)
   static async clearKmReading(readingId: string) {
     const bikeMeterReading = await prisma.bikeMeterReading.findUnique({
       where: { id: readingId },
-    })
+    });
 
     if (!bikeMeterReading) {
-      throw new Error('Bike meter reading not found')
+      throw new Error('Bike meter reading not found');
     }
 
-    const updatedReading = await prisma.bikeMeterReading.update({
+    const updated = await prisma.bikeMeterReading.update({
       where: { id: readingId },
       data: { kmReading: null },
       include: {
@@ -252,69 +324,8 @@ export class BikeService {
           },
         },
       },
-    })
-
-    // After clearing the km reading, upsert bike trip to recompute computedKm/finalKm
-    try {
-      void BikeTripService.upsertTripForReading(updatedReading as any)
-    } catch (err) {
-      // swallow for now
-    }
-
-    return updatedReading
-  }
-
-  // Get bike meter summary for a user in a date range
-  static async getBikeMeterSummary(userId: number, startDate: string, endDate: string) {  // Changed from string to number
-    const start = startOfDayUTC(startDate);
-    const end = endOfDayUTC(endDate);
-
-    const readings = await prisma.bikeMeterReading.findMany({
-      where: {
-        userId,  // Now correctly typed as number
-        date: {
-          gte: start,
-          lte: end,
-        },
-      },
-      orderBy: { date: 'asc' },
     });
 
-    // Group by date
-    const summary: { [date: string]: any } = {};
-    readings.forEach(reading => {
-      const dateKey = reading.date.toISOString().split('T')[0];
-      if (!summary[dateKey]) {
-        summary[dateKey] = {
-          date: dateKey,
-          morning: null,
-          evening: null,
-        };
-      }
-      summary[dateKey][reading.type.toLowerCase()] = {
-        time: reading.capturedAt.toISOString(),
-        photoPath: reading.photoPath,
-        kmReading: reading.kmReading,
-      };
-    });
-
-    return Object.values(summary);
-  }
-
-  // Delete bike meter reading (Admin only)
-  static async deleteBikeMeterReading(readingId: string) {
-    const reading = await prisma.bikeMeterReading.findUnique({
-      where: { id: readingId },
-    });
-
-    if (!reading) {
-      throw new Error('Bike meter reading not found');
-    }
-
-    await prisma.bikeMeterReading.delete({
-      where: { id: readingId },
-    });
-
-    return { message: 'Bike meter reading deleted successfully' };
+    return updated;
   }
 }

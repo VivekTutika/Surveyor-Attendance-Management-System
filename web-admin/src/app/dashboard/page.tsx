@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Box,
   Card,
@@ -32,6 +32,7 @@ import {
   Bar,
 } from 'recharts'
 import { dashboardService, DashboardStats, attendanceService, bikeMeterService } from '@/services/api'
+import { useAuth } from '@/context/AuthContext'
 import dayjs from 'dayjs'
 
 interface StatsCardProps {
@@ -65,77 +66,150 @@ function StatsCard({ title, value, icon, color, subtitle }: StatsCardProps) {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [weeklyAttendanceDataState, setWeeklyAttendanceDataState] = useState<Array<{ date: string; count: number }>>([])
   const [monthlyStatsDataState, setMonthlyStatsDataState] = useState<Array<{ month: string; attendance: number; bikeReadings: number }>>([])
+  const isMounted = useRef(true)
+  const fetchInProgress = useRef(false)
 
   useEffect(() => {
+    isMounted.current = true
+    
+    // Fetch data when component mounts
     fetchDashboardStats()
-  }, [])
+    
+    return () => {
+      isMounted.current = false
+      fetchInProgress.current = false
+    }
+  }, []) // Only run once on mount
+
+  useEffect(() => {
+    // If user becomes null (logged out), stop loading and clear data
+    if (!user && isMounted.current) {
+      setLoading(false)
+      setStats(null)
+      setError(null)
+      setWeeklyAttendanceDataState([])
+      setMonthlyStatsDataState([])
+    }
+  }, [user])
 
   const fetchDashboardStats = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await dashboardService.getStats()
-      setStats(data)
-      // fetch raw attendance/bike data to compute client-side buckets using capturedAt (same approach as Attendance page)
-      try {
-        // Weekly: last 7 days (including today)
-        const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD')
-        const end = dayjs().format('YYYY-MM-DD')
-        const attResp: any = await attendanceService.getAll({ startDate: start, endDate: end, page: 1, limit: 10000 })
-        const attArr = attResp.attendance || []
-        const weekMap: Record<string, number> = {}
-        attArr.forEach((a: any) => {
-          const key = dayjs(a.capturedAt).format('YYYY-MM-DD')
-          weekMap[key] = (weekMap[key] || 0) + 1
-        })
-        const weekly = Array.from({ length: 7 }).map((_, i) => {
-          const k = dayjs().subtract(6 - i, 'day').format('YYYY-MM-DD')
-          return { date: k, count: weekMap[k] || 0 }
-        })
-        setWeeklyAttendanceDataState(weekly)
+    // Prevent multiple concurrent fetches
+    if (fetchInProgress.current || !user) {
+      return
+    }
 
-        // Monthly: last 6 months (including current)
-        const monthsBack = 6
-        const startMonthDate = dayjs().subtract(monthsBack - 1, 'month').startOf('month').format('YYYY-MM-DD')
-        const endMonthDate = dayjs().endOf('month').format('YYYY-MM-DD')
-        const attMonthlyResp: any = await attendanceService.getAll({ startDate: startMonthDate, endDate: endMonthDate, page: 1, limit: 10000 })
-        const bikeResp: any = await bikeMeterService.getAll({ startDate: startMonthDate, endDate: endMonthDate, page: 1, limit: 10000 })
-        const attMonthlyArr = attMonthlyResp.attendance || []
-        const bikeArr = bikeResp.readings || []
-        const attMonthMap: Record<string, number> = {}
-        attMonthlyArr.forEach((a: any) => {
-          const key = dayjs(a.capturedAt).format('YYYY-MM')
-          attMonthMap[key] = (attMonthMap[key] || 0) + 1
-        })
-        const bikeMonthMap: Record<string, number> = {}
-        bikeArr.forEach((b: any) => {
-          // bike readings may use 'date' or 'capturedAt'
-          const dateField = b.capturedAt || b.date
-          const key = dayjs(dateField).format('YYYY-MM')
-          bikeMonthMap[key] = (bikeMonthMap[key] || 0) + 1
-        })
-        const months: string[] = []
-        for (let i = monthsBack - 1; i >= 0; i--) {
-          months.push(dayjs().subtract(i, 'month').format('YYYY-MM'))
+    fetchInProgress.current = true
+
+    try {
+      if (isMounted.current) {
+        setLoading(true)
+        setError(null)
+      }
+      
+      const data = await dashboardService.getStats()
+      
+      if (!isMounted.current) {
+        fetchInProgress.current = false
+        return
+      }
+      
+      if (isMounted.current) {
+        setStats(data)
+        // fetch raw attendance/bike data to compute client-side buckets using capturedAt (same approach as Attendance page)
+        try {
+          // Weekly: last 7 days (including today)
+          const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD')
+          const end = dayjs().format('YYYY-MM-DD')
+          const attResp: any = await attendanceService.getAll({ startDate: start, endDate: end, page: 1, limit: 10000 })
+          
+          if (!isMounted.current) {
+            fetchInProgress.current = false
+            return
+          }
+          
+          const attArr = attResp.attendance || []
+          const weekMap: Record<string, number> = {}
+          attArr.forEach((a: any) => {
+            const key = dayjs(a.capturedAt).format('YYYY-MM-DD')
+            weekMap[key] = (weekMap[key] || 0) + 1
+          })
+          const weekly = Array.from({ length: 7 }).map((_, i) => {
+            const k = dayjs().subtract(6 - i, 'day').format('YYYY-MM-DD')
+            return { date: k, count: weekMap[k] || 0 }
+          })
+          setWeeklyAttendanceDataState(weekly)
+
+          // Monthly: last 6 months (including current)
+          const monthsBack = 6
+          const startMonthDate = dayjs().subtract(monthsBack - 1, 'month').startOf('month').format('YYYY-MM-DD')
+          const endMonthDate = dayjs().endOf('month').format('YYYY-MM-DD')
+          const attMonthlyResp: any = await attendanceService.getAll({ startDate: startMonthDate, endDate: endMonthDate, page: 1, limit: 10000 })
+          
+          if (!isMounted.current) {
+            fetchInProgress.current = false
+            return
+          }
+          
+          const bikeResp: any = await bikeMeterService.getAll({ startDate: startMonthDate, endDate: endMonthDate, page: 1, limit: 10000 })
+          
+          if (!isMounted.current) {
+            fetchInProgress.current = false
+            return
+          }
+          
+          const attMonthlyArr = attMonthlyResp.attendance || []
+          const bikeArr = bikeResp.readings || []
+          const attMonthMap: Record<string, number> = {}
+          attMonthlyArr.forEach((a: any) => {
+            const key = dayjs(a.capturedAt).format('YYYY-MM')
+            attMonthMap[key] = (attMonthMap[key] || 0) + 1
+          })
+          const bikeMonthMap: Record<string, number> = {}
+          bikeArr.forEach((b: any) => {
+            // bike readings may use 'date' or 'capturedAt'
+            const dateField = b.capturedAt || b.date
+            const key = dayjs(dateField).format('YYYY-MM')
+            bikeMonthMap[key] = (bikeMonthMap[key] || 0) + 1
+          })
+          const months: string[] = []
+          for (let i = monthsBack - 1; i >= 0; i--) {
+            months.push(dayjs().subtract(i, 'month').format('YYYY-MM'))
+          }
+          const monthly = months.map(m => ({
+            month: dayjs(`${m}-01`).format('MMM YYYY'),
+            attendance: attMonthMap[m] || 0,
+            bikeReadings: bikeMonthMap[m] || 0,
+          }))
+          setMonthlyStatsDataState(monthly)
+        } catch (err) {
+          if (isMounted.current) {
+            console.error('Error fetching raw attendance/bike data for charts:', err)
+          }
         }
-        const monthly = months.map(m => ({
-          month: dayjs(`${m}-01`).format('MMM YYYY'),
-          attendance: attMonthMap[m] || 0,
-          bikeReadings: bikeMonthMap[m] || 0,
-        }))
-        setMonthlyStatsDataState(monthly)
-      } catch (err) {
-        console.error('Error fetching raw attendance/bike data for charts:', err)
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to fetch dashboard statistics')
+      if (isMounted.current) {
+        // Handle network timeout errors specifically
+        if (error.message && error.message.includes('timeout')) {
+          setError('Network timeout. Please check your connection and try again.')
+        } 
+        // Only set error if it's not an auth error (which should be handled by ProtectedRoute)
+        else if (error.response?.status !== 401 && error.message !== 'Authentication required') {
+          setError(error.message || 'Failed to fetch dashboard statistics')
+        }
+        // For auth errors, we just silently stop since ProtectedRoute will handle navigation
+      }
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
+      fetchInProgress.current = false
     }
   }
 
