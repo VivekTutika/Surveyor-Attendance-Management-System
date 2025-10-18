@@ -96,15 +96,16 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={{ fontWeight: 'bold' }}>Employee ID</Text>
                 <Text>{' - '}{user?.employeeId ?? 'NA'}</Text>
               </Text>
+              <Text style={[styles.infoValue, { marginTop: 1 }]}> 
+                <Text style={{ fontWeight: 'bold' }}>Aadhar Number</Text>
+                <Text>{' - '}{user?.aadharNumber ?? 'NA'}</Text>
+              </Text>
               <View style={styles.statusContainer}>
                 <View 
-                  style={[
-                    styles.statusDot, 
-                    { backgroundColor: getStatusColor(true) }
-                  ]} 
+                  style={[styles.statusDot, { backgroundColor: getStatusColor(user?.isActive) }]} 
                 />
                 <Text style={styles.statusText}>
-                  {getStatusText(true)}
+                  {getStatusText(user?.isActive)}
                 </Text>
               </View>
             </View>
@@ -204,31 +205,33 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          <Button
-            title="Refresh Profile"
-            variant="outline"
-            onPress={async () => {
-              try {
-                await dispatch(getUserProfile()).unwrap();
-                // After profile refresh, refresh today's bike meter status so UI updates immediately
-                await dispatch(getTodayBikeMeterStatus()).unwrap();
-                Alert.alert('Refreshed', 'Profile and today status refreshed.');
-              } catch (err: any) {
-                Alert.alert('Error', err?.message || 'Failed to refresh profile');
-              }
-            }}
-            loading={loading}
-            style={styles.actionButton}
-            icon={<Ionicons name="refresh" size={16} color={Colors.primary} />}
-          />
-          
-          <Button
-            title="Logout"
-            variant="danger"
-            onPress={handleLogout}
-            style={styles.actionButton}
-            icon={<Ionicons name="log-out" size={16} color={Colors.white} />}
-          />
+          <View style={styles.buttonRow}>
+            <Button
+              title="Refresh Profile"
+              variant="outline"
+              onPress={async () => {
+                try {
+                  await dispatch(getUserProfile()).unwrap();
+                  // After profile refresh, refresh today's bike meter status so UI updates immediately
+                  await dispatch(getTodayBikeMeterStatus()).unwrap();
+                  Alert.alert('Refreshed', 'Profile and today status refreshed.');
+                } catch (err: any) {
+                  Alert.alert('Error', err?.message || 'Failed to refresh profile');
+                }
+              }}
+              loading={loading}
+              style={styles.actionButton}
+              icon={<Ionicons name="refresh" size={16} color={Colors.primary} />}
+            />
+            
+            <Button
+              title="Logout"
+              variant="danger"
+              onPress={handleLogout}
+              style={styles.actionButton}
+              icon={<Ionicons name="log-out" size={16} color={Colors.white} />}
+            />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,10 +248,23 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingTop: 0, // Remove padding to move content closer to header
   },
   profileCard: {
-    marginBottom: 16,
-    padding: 12,
+    marginBottom: 8,
+    padding: 8,
+    marginTop: 8, // Add a small top margin to ensure visibility
+    // Ensure the card is not cut off
+    overflow: 'visible',
+    // Add a slight shadow to make it stand out
+    shadowColor: Colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -330,11 +346,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   actionsContainer: {
-    marginTop: 24,
+    marginTop: 8, // Reduced margin
+    marginBottom: 16, // Add bottom margin
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 12,
   },
   actionButton: {
-    marginBottom: 8,
+    flex: 1,
+    marginHorizontal: 4,
   },
   helperText: {
     marginTop: 6,
