@@ -88,6 +88,7 @@ export function normalizeUser(apiUser: any): User {
     location: locationName,
     createdAt: raw.createdAt ?? raw.created_at ?? '',
     updatedAt: raw.updatedAt ?? raw.updated_at ?? '',
+    aadharNumber: raw.aadharNumber ?? raw.aadhar_number ?? null,
   };
 
   if (hasBikeRaw !== undefined) {

@@ -23,6 +23,7 @@ export interface AuthResponse {
   user: {
     id: number;
     name: string;
+    employeeId: string | null;
     mobileNumber: string;
     role: Role;
     projectId: number | null;
@@ -35,6 +36,9 @@ export interface AuthResponse {
       id: number;
       name: string;
     } | null;
+    hasBike: boolean;
+    isActive: boolean;
+    aadharNumber: string | null;
   };
   token: string;
 }
@@ -121,19 +125,17 @@ export class AuthService {
         projectId,
         locationId,
       },
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        location: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        employeeId: true,
+        mobileNumber: true,
+        role: true,
+        projectId: true,
+        locationId: true,
+        hasBike: true,
+        isActive: true,
+        aadharNumber: true,
       },
     });
 
@@ -141,24 +143,26 @@ export class AuthService {
     const tokenPayload: JWTPayload = {
       userId: user.id,
       mobileNumber: user.mobileNumber,
-      employeeId: (user as any).employeeId ?? null,
+      employeeId: user.employeeId ?? null,
       role: user.role,
     };
     const token = generateToken(tokenPayload);
 
     return {
-      user: ({
+      user: {
         id: user.id,
         name: user.name,
-        employeeId: (user as any).employeeId ?? null,
+        employeeId: user.employeeId ?? null,
         mobileNumber: user.mobileNumber,
         role: user.role,
         projectId: user.projectId,
         locationId: user.locationId,
-        project: user.project,
-        location: user.location,
-        hasBike: (user as any).hasBike ?? false,
-      } as any),
+        project: null,
+        location: null,
+        hasBike: user.hasBike ?? false,
+        isActive: user.isActive,
+        aadharNumber: user.aadharNumber ?? null,
+      },
       token,
     };
   }
@@ -170,7 +174,19 @@ export class AuthService {
     // Lookup only by employeeId
     const user = await prisma.user.findFirst({
       where: { employeeId: employeeId },
-      include: { project: true, location: true },
+      select: {
+        id: true,
+        name: true,
+        employeeId: true,
+        mobileNumber: true,
+        role: true,
+        projectId: true,
+        locationId: true,
+        hasBike: true,
+        isActive: true,
+        passwordHash: true,
+        aadharNumber: true,
+      },
     });
 
     if (!user) {
@@ -192,23 +208,26 @@ export class AuthService {
     const tokenPayload: JWTPayload = {
       userId: user.id,
       mobileNumber: user.mobileNumber,
+      employeeId: user.employeeId ?? null,
       role: user.role,
     };
     const token = generateToken(tokenPayload);
 
     return {
-      user: ({
+      user: {
         id: user.id,
         name: user.name,
-        employeeId: (user as any).employeeId ?? null,
+        employeeId: user.employeeId ?? null,
         mobileNumber: user.mobileNumber,
         role: user.role,
         projectId: user.projectId,
         locationId: user.locationId,
-        project: user.project || null,
-        location: user.location || null,
-        hasBike: (user as any).hasBike ?? false,
-      } as any),
+        project: null,
+        location: null,
+        hasBike: user.hasBike ?? false,
+        isActive: user.isActive,
+        aadharNumber: user.aadharNumber ?? null,
+      },
       token,
     };
   }
@@ -229,6 +248,7 @@ export class AuthService {
         hasBike: true,
         createdAt: true,
         updatedAt: true,
+        aadharNumber: true,
       },
     });
 
@@ -257,6 +277,7 @@ export class AuthService {
         isActive: true,
         hasBike: true,
         updatedAt: true,
+        aadharNumber: true,
       },
     });
 

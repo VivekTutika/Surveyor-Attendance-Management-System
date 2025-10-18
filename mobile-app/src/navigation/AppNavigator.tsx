@@ -34,6 +34,10 @@ const DashboardStack: React.FC = () => {
           fontWeight: Typography.styles.h3.fontWeight as any,
           color: Colors.textOnPrimary,
         },
+        headerTitleContainerStyle: {
+          paddingLeft: 16,
+          paddingRight: 16,
+        },
       }}
     >
       <DashboardStackNavigator.Screen
@@ -64,12 +68,18 @@ const ProfileStack: React.FC = () => {
           backgroundColor: Colors.primary,
           elevation: 4,
           shadowOpacity: 0.3,
+          // Reduce header height
+          height: 60,
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {
           fontSize: Typography.styles.h3.fontSize,
           fontWeight: Typography.styles.h3.fontWeight as any,
           color: Colors.textOnPrimary,
+        },
+        headerTitleContainerStyle: {
+          paddingLeft: 16,
+          paddingRight: 16,
         },
       }}
     >

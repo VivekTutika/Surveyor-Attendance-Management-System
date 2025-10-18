@@ -11,6 +11,7 @@ export interface User {
   hasBike?: boolean;
   createdAt: string;
   updatedAt: string;
+  aadharNumber?: string | null;
 }
 
 export interface AuthState {
