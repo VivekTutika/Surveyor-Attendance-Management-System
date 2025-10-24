@@ -38,6 +38,13 @@ const DashboardStack: React.FC = () => {
           paddingLeft: 16,
           paddingRight: 16,
         },
+        // Remove any default padding
+        headerLeftContainerStyle: {
+          paddingLeft: 0,
+        },
+        headerRightContainerStyle: {
+          paddingRight: 0,
+        },
       }}
     >
       <DashboardStackNavigator.Screen
@@ -69,7 +76,7 @@ const ProfileStack: React.FC = () => {
           elevation: 4,
           shadowOpacity: 0.3,
           // Reduce header height
-          height: 60,
+          height: 56,
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {
@@ -80,6 +87,13 @@ const ProfileStack: React.FC = () => {
         headerTitleContainerStyle: {
           paddingLeft: 16,
           paddingRight: 16,
+        },
+        // Remove any default padding
+        headerLeftContainerStyle: {
+          paddingLeft: 0,
+        },
+        headerRightContainerStyle: {
+          paddingRight: 0,
         },
       }}
     >

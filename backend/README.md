@@ -48,13 +48,12 @@ npm run db:seed      # Seed database with default users
 ## 🔐 Default Credentials
 
 **Admin:**
-- Mobile: `+1234567890`
-- Password: `admin123`
+- Attendance Admin: `1234567890` / `AA@SAMS`
+- Bike Readings Admin: `1234567891` / `BRA@SAMS`
 
 **Sample Surveyors:**
-- John Smith: `+1234567891` / `surveyor123`
-- Sarah Johnson: `+1234567892` / `surveyor123`
-- Mike Wilson: `+1234567893` / `surveyor123`
+- LRMC Developer: `9876543210` / `AT1@LRMC` (Employee ID: LRMCT001, Has Bike: Yes)
+- LRMC Tester: `8765432109` / `AT2@LRMC` (Employee ID: LRMCT002, Has Bike: No)
 
 ## 🏗️ Architecture
 
@@ -89,6 +88,12 @@ src/
 - Morning/Evening readings
 - Bike meter history and reporting
 
+### 🚴 Bike Trip Management (v2 Feature)
+- Bike trip creation and tracking
+- Admin approval workflow
+- Trip distance calculation
+- Trip history and reporting
+
 ### 👥 Surveyor Management
 - CRUD operations for surveyors
 - Project and location assignment
@@ -118,9 +123,10 @@ src/
 - **Seeding**: Default admin and sample users
 
 ### Models
-- **User**: Admin and surveyor accounts
+- **User**: Admin and surveyor accounts with enhanced profile fields
 - **Attendance**: GPS-tracked attendance records
 - **BikeMeterReading**: Odometer readings with photos
+- **BikeTrip**: Enhanced bike tracking with approval workflow
 - **GeoFence**: Geographical boundaries (v2)
 - **Report**: Generated report metadata
 
@@ -180,6 +186,12 @@ MOBILE_APP_URL="exp://localhost:19000"
 - `GET /summary` - Get summary
 - `DELETE /:id` - Delete record (Admin)
 
+### Bike Trips (`/api/bike-trips`)
+- `POST /` - Create new bike trip
+- `GET /` - List bike trips
+- `PUT /:id/approve` - Approve bike trip (Admin)
+- `DELETE /:id` - Delete bike trip (Admin)
+
 ### Surveyors (`/api/surveyors`)
 - `POST /` - Create surveyor (Admin)
 - `GET /` - List surveyors (Admin)
@@ -225,7 +237,7 @@ The API can be tested using:
 
 ## 📝 Version History
 
-- **v1.0.0**: MVP with core attendance and bike meter features
+- **v1.0.0**: Production ready with core attendance and bike meter features
 - **v2.0.0**: Geo-fencing and advanced analytics (planned)
 - **v3.0.0**: OCR and mobile optimizations (planned)
 
@@ -240,3 +252,9 @@ The API can be tested using:
 ## 📄 License
 
 Private project for LRMC Solutions.
+
+---
+
+**Project Status**: 95% Complete - Production Ready  
+**Last Updated**: October 2025  
+**Version**: 1.0.0

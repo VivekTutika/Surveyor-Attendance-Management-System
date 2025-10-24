@@ -39,6 +39,12 @@ The Web Admin Portal for the Surveyor Attendance Management System (SAMS) built 
 - **Photo Gallery**: Masonry layout with zoom functionality
 - **Data Export**: Comprehensive reporting in multiple formats
 
+### 🚲 Bike Trip Management (v2 Feature)
+- **Trip Creation**: View and manage bike trips
+- **Approval Workflow**: Approve/reject bike trips
+- **Trip Details**: View trip information and photos
+- **Statistics**: Trip analytics and reporting
+
 ### 📈 Export & Reporting
 - **CSV Export**: Structured data export for spreadsheet analysis
 - **PDF Reports**: Professional formatted reports with branding
@@ -48,9 +54,9 @@ The Web Admin Portal for the Surveyor Attendance Management System (SAMS) built 
 ## Tech Stack
 
 ### Frontend
-- **Next.js 13+**: App Router with Server/Client Components
+- **Next.js 15+**: App Router with Server/Client Components
 - **TypeScript**: Full type safety and better development experience
-- **Material-UI v5**: Modern React component library
+- **Material-UI v7**: Modern React component library
 - **Leaflet & React-Leaflet**: Interactive maps for location visualization
 - **Recharts**: Interactive and responsive charts
 - **Day.js**: Lightweight date manipulation library
@@ -112,21 +118,23 @@ src/
 │   ├── login/             # Authentication pages
 │   ├── dashboard/         # Admin dashboard
 │   ├── surveyors/         # Surveyor management
-│   ├── attendance/        # Attendance reports
-│   └── bike-readings/     # Bike meter reports
-├── components/            # Reusable React components
-│   ├── AdminLayout.tsx    # Main admin layout with navigation
-│   ├── AttendanceMap.tsx  # Interactive map component for coordinates
-│   └── ProtectedRoute.tsx # Route protection wrapper
-├── context/               # React Context providers
-│   └── AuthContext.tsx    # Authentication state management
-├── services/              # API service layer
-│   └── api.ts            # Axios configuration and API calls
-├── utils/                 # Utility functions
-│   ├── exportUtils.ts    # CSV and PDF export functions
-│   └── leafletSetup.ts   # Leaflet configuration for Next.js
-└── lib/                   # Configuration and setup
-    └── theme.ts          # Material-UI theme configuration
+│   ├── attendance/         # Attendance reports
+│   ├── bike-readings/     # Bike meter reports
+│   ├── bike-trips/        # Bike trip management
+│   └── reports/           # Advanced reporting
+├── components/             # Reusable React components
+│   ├── AdminLayout.tsx     # Main admin layout with navigation
+│   ├── AttendanceMap.tsx   # Interactive map component for coordinates
+│   └── ProtectedRoute.tsx  # Route protection wrapper
+├── context/                # React Context providers
+│   └── AuthContext.tsx     # Authentication state management
+├── services/               # API service layer
+│   └── api.ts             # Axios configuration and API calls
+├── utils/                  # Utility functions
+│   ├── exportUtils.ts     # CSV and PDF export functions
+│   └── leafletSetup.ts    # Leaflet configuration for Next.js
+└── lib/                    # Configuration and setup
+    └── theme.ts           # Material-UI theme configuration
 ```
 
 ## API Integration
@@ -142,6 +150,7 @@ The web admin portal integrates with the SAMS backend API:
 - `GET /api/surveyors` - Surveyor management
 - `GET /api/attendance/list` - Attendance data
 - `GET /api/bike/list` - Bike meter readings
+- `GET /api/bike-trips` - Bike trip management
 
 ### Security Features
 - JWT token authentication
@@ -266,4 +275,6 @@ This project is part of the SAMS (Surveyor Attendance Management System) and is 
 
 ---
 
-**Built with ❤️ by the SAMS Development Team**
+**Project Status**: 95% Complete - Production Ready  
+**Last Updated**: October 2025  
+**Version**: 1.0.0
