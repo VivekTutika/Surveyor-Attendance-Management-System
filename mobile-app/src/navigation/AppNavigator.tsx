@@ -27,6 +27,7 @@ const DashboardStack: React.FC = () => {
           backgroundColor: Colors.primary,
           elevation: 4,
           shadowOpacity: 0.3,
+          height: 80,
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {
@@ -73,10 +74,10 @@ const ProfileStack: React.FC = () => {
       screenOptions={{
         headerStyle: {
           backgroundColor: Colors.primary,
-          elevation: 4,
+          elevation: 6,
           shadowOpacity: 0.3,
           // Reduce header height
-          height: 56,
+          height: 75,
         },
         headerTintColor: Colors.textOnPrimary,
         headerTitleStyle: {

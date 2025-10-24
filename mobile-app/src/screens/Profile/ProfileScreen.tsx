@@ -252,20 +252,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 0, // Remove all padding
-    // Ensure content starts immediately after header
-    paddingTop: 0,
+    padding: 4, // Remove all padding
+    paddingTop: 8,
   },
   profileCard: {
     marginBottom: 16,
     padding: 12,
-    marginTop: 0, // Remove top margin to eliminate spacing
-    // Override default Card margin
+    marginTop: 16, // Add top margin to create space from navigation bar
     marginVertical: 0,
     marginHorizontal: 16,
-    // Ensure the card is not cut off
     overflow: 'visible',
-    // Add a slight shadow to make it stand out
     shadowColor: Colors.black,
     shadowOffset: {
       width: 0,
@@ -274,7 +270,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
-    // Override Card component's default styling
     backgroundColor: Colors.surface,
     borderRadius: 12,
   },
@@ -359,8 +354,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   actionsContainer: {
-    marginTop: 8, // Reduced margin
-    marginBottom: 16, // Add bottom margin
+    marginTop: 8,
+    marginBottom: 16,
     marginHorizontal: 16,
   },
   buttonRow: {

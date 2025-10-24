@@ -26,7 +26,7 @@ export class BikeTripService {
       // the UTC day range for the reading's timestamp.
       const startOfDay = new Date(Date.UTC(tripTimestamp.getUTCFullYear(), tripTimestamp.getUTCMonth(), tripTimestamp.getUTCDate(), 0, 0, 0, 0));
       const endOfDay = new Date(Date.UTC(tripTimestamp.getUTCFullYear(), tripTimestamp.getUTCMonth(), tripTimestamp.getUTCDate(), 23, 59, 59, 999));
-      const existingArr = await (tx as any).bikeTrip.findMany({
+      const existingArr = await tx.bikeTrip.findMany({
         where: { surveyorId: userId, date: { gte: startOfDay, lte: endOfDay } },
       });
       const existing = existingArr.length ? existingArr[0] : null;
@@ -54,13 +54,13 @@ export class BikeTripService {
 
         if (computedKm !== null) {
           data.computedKm = computedKm;
-          // if finalKm is null, set it to computedKm by default
-          if (existing.finalKm === null) {
+          // if finalKm is null or trip is not approved, set it to computedKm by default
+          if (existing.finalKm === null || !existing.isApproved) {
             data.finalKm = computedKm;
           }
         }
 
-        const updated = await (tx as any).bikeTrip.update({
+        const updated = await tx.bikeTrip.update({
           where: { id: existing.id },
           data: { ...data, updatedAt: new Date() },
         });
@@ -88,11 +88,11 @@ export class BikeTripService {
         createData.finalKm = computed;
       }
 
-  // Set createdAt and updatedAt from the application/system time to avoid DB timezone offsets
-  createData.createdAt = new Date();
-  createData.updatedAt = new Date();
+      // Set createdAt and updatedAt from the application/system time to avoid DB timezone offsets
+      createData.createdAt = new Date();
+      createData.updatedAt = new Date();
 
-  const created = await (tx as any).bikeTrip.create({ data: createData });
+      const created = await tx.bikeTrip.create({ data: createData });
       return created;
     });
 
@@ -154,9 +154,23 @@ export class BikeTripService {
       where.surveyor.locationId = parseInt(locationId as any, 10);
     }
 
-    const trips = await (prisma as any).bikeTrip.findMany({
+    const trips = await prisma.bikeTrip.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        surveyorId: true,
+        date: true,
+        morningReadingId: true,
+        eveningReadingId: true,
+        morningKm: true,
+        eveningKm: true,
+        computedKm: true,
+        finalKm: true,
+        isApproved: true,
+        approvedBy: true,
+        approvedAt: true,
+        createdAt: true,
+        updatedAt: true,
         surveyor: {
           select: { id: true, name: true, employeeId: true, mobileNumber: true, project: true, location: true },
         },
@@ -168,7 +182,7 @@ export class BikeTripService {
   }
 
   static async setFinalKm(tripId: number, finalKm: number) {
-    const updated = await (prisma as any).bikeTrip.update({
+    const updated = await prisma.bikeTrip.update({
       where: { id: tripId },
       data: { finalKm, updatedAt: new Date() },
     });
@@ -176,18 +190,18 @@ export class BikeTripService {
   }
 
   static async toggleApproveTrip(tripId: number, adminId: number) {
-    const trip = await (prisma as any).bikeTrip.findUnique({ where: { id: tripId } });
+    const trip = await prisma.bikeTrip.findUnique({ where: { id: tripId } });
     if (!trip) throw new Error('Bike trip not found');
 
     if (!trip.isApproved) {
-      const updated = await (prisma as any).bikeTrip.update({
+      const updated = await prisma.bikeTrip.update({
         where: { id: tripId },
         data: { isApproved: true, approvedBy: adminId, approvedAt: new Date(), updatedAt: new Date() },
       });
       return updated;
     }
 
-    const updated = await (prisma as any).bikeTrip.update({
+    const updated = await prisma.bikeTrip.update({
       where: { id: tripId },
       data: { isApproved: false, approvedBy: null, approvedAt: null, updatedAt: new Date() },
     });

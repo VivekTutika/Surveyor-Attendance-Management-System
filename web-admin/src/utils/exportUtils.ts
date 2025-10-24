@@ -432,8 +432,14 @@ export const exportConsolidatedAttendanceToPDF = async (data: { dates: string[];
 
 // Consolidated bike readings (date-distance matrix)
 export const buildConsolidatedBikeReadingsCSVString = (data: { dates: string[]; surveyors: any[] }) => {
-  const row1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }))]
-  const row2 = ['', '', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { weekday: 'short' }))]
+  const row1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => {
+    const dt = new Date(`${d}T00:00:00.000Z`)
+    return dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
+  })]
+  const row2 = ['', '', ...data.dates.map(d => {
+    const dt = new Date(`${d}T00:00:00.000Z`)
+    return dt.toLocaleDateString(undefined, { weekday: 'short' })
+  })]
   const esc = (v: any) => {
     if (v === null || v === undefined) return ''
     const s = String(v)
@@ -449,8 +455,14 @@ export const buildConsolidatedBikeReadingsPDFBlob = (data: { dates: string[]; su
   doc.setFontSize(16)
   doc.text('Bike Readings (Consolidated)', 14, 16)
   doc.setFontSize(10)
-  const headRow1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => d)]
-  const headRow2 = ['', '', ...data.dates.map(d => new Date(`${d}T00:00:00.000Z`).toLocaleDateString(undefined, { weekday: 'short' }))]
+  const headRow1 = ['Employee ID', 'Surveyor Name', ...data.dates.map(d => {
+    const dt = new Date(`${d}T00:00:00.000Z`)
+    return dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
+  })]
+  const headRow2 = ['', '', ...data.dates.map(d => {
+    const dt = new Date(`${d}T00:00:00.000Z`)
+    return dt.toLocaleDateString(undefined, { weekday: 'short' })
+  })]
   // Sort internally by employeeId to guarantee ordering for PDF output
   const sortedSurveyors = [...(data.surveyors || [])].sort((a: any, b: any) => {
     const ax = String(a.employeeId ?? '')
@@ -505,7 +517,8 @@ export const buildBikeTripsCSVString = (trips: any[]) => {
     const dt = t.date ? new Date(t.date).toISOString().split('T')[0] : ''
     const morning = t.morningKm != null ? t.morningKm : ''
     const evening = t.eveningKm != null ? t.eveningKm : ''
-    const distance = t.isApproved ? (t.finalKm ?? 0) : 0
+    // Show the finalKm value if it exists and the trip is approved
+    const distance = t.isApproved && t.finalKm != null ? t.finalKm : 0
     return [esc(emp), esc(name), esc(dt), esc(morning), esc(evening), esc(distance)].join(',')
   })
   return [headers.join(','), ...lines].join('\n')
@@ -533,7 +546,7 @@ export const buildBikeTripsPDFBlob = (trips: any[], opts?: { surveyorName?: stri
     if (!isNaN(nx) && !isNaN(ny)) return nx - ny
     return ax.localeCompare(ay)
   })
-  const body = sortedTrips.map(t => [t.surveyor?.employeeId ?? '', t.surveyor?.name ?? '', t.date ? new Date(t.date).toLocaleDateString() : '', t.morningKm != null ? String(t.morningKm) : '', t.eveningKm != null ? String(t.eveningKm) : '', t.isApproved ? String(t.finalKm ?? 0) : '0'])
+  const body = sortedTrips.map(t => [t.surveyor?.employeeId ?? '', t.surveyor?.name ?? '', t.date ? new Date(t.date).toLocaleDateString() : '', t.morningKm != null ? String(t.morningKm) : '', t.eveningKm != null ? String(t.eveningKm) : '', t.isApproved && t.finalKm != null ? String(t.finalKm) : '0'])
   autoTable(doc, {
     head: [head],
     body,
