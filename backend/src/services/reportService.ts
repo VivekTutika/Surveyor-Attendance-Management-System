@@ -51,11 +51,28 @@ export class ReportService {
 
   const surveyors = await prisma.user.findMany({ where: surveyorWhere, select: { id: true, employeeId: true, name: true, aadharNumber: true } as any })
 
+    // Parse incoming date filters as UTC date-only to avoid local timezone shifts.
+    // Expecting date/startDate/endDate in YYYY-MM-DD format.
+    const sParts = (startDate as string).split('-').map((p) => parseInt(p, 10));
+    const eParts = (endDate as string).split('-').map((p) => parseInt(p, 10));
+    let sUtc: Date;
+    let eUtc: Date;
+    
+    if (sParts.length === 3 && eParts.length === 3) {
+      sUtc = new Date(Date.UTC(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0, 0));
+      eUtc = new Date(Date.UTC(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999));
+    } else {
+      sUtc = new Date(startDate as string);
+      sUtc.setUTCHours(0, 0, 0, 0);
+      eUtc = new Date(endDate as string);
+      eUtc.setUTCHours(23, 59, 59, 999);
+    }
+
     // Fetch attendance rows in the date range for these surveyors
     const attendanceRows = await prisma.attendance.findMany({
       where: {
     userId: { in: (surveyors.map(s => s.id) as any) },
-        date: { gte: new Date(startDate), lte: new Date(endDate) }
+        date: { gte: sUtc, lte: eUtc }
       },
       select: { userId: true, date: true, type: true }
     })
@@ -71,8 +88,9 @@ export class ReportService {
     })
 
     // Construct matrix with new logic:
-    // H - Half Day (only one of checkIn or checkOut)
     // P - Present (both checkIn and checkOut)
+    // MH - Morning Half (only checkIn)
+    // EH - Evening Half (only checkOut)
     // A - Absent (neither checkIn nor checkOut)
     const rows = surveyors.map(s => {
       const row: any = { employeeId: s.employeeId ?? '', name: s.name }
@@ -86,9 +104,12 @@ export class ReportService {
         } else if (val.checkIn && val.checkOut) {
           // Both checkIn and checkOut exist
           row[d] = 'P'
-        } else if (val.checkIn || val.checkOut) {
-          // Only one of checkIn or checkOut exists
-          row[d] = 'H'
+        } else if (val.checkIn) {
+          // Only checkIn exists (Morning Half)
+          row[d] = 'MH'
+        } else if (val.checkOut) {
+          // Only checkOut exists (Evening Half)
+          row[d] = 'EH'
         } else {
           // Neither checkIn nor checkOut exists
           row[d] = 'A'
@@ -112,11 +133,30 @@ export class ReportService {
 
   const surveyors = await prisma.user.findMany({ where: surveyorWhere, select: { id: true, employeeId: true, name: true, aadharNumber: true } as any })
 
+    // Parse incoming date filters as UTC date-only to avoid local timezone shifts.
+    // Expecting date/startDate/endDate in YYYY-MM-DD format.
+    const sParts = (startDate as string).split('-').map((p) => parseInt(p, 10));
+    const eParts = (endDate as string).split('-').map((p) => parseInt(p, 10));
+    let sUtc: Date;
+    let eUtc: Date;
+    
+    if (sParts.length === 3 && eParts.length === 3) {
+      sUtc = new Date(Date.UTC(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0, 0));
+      eUtc = new Date(Date.UTC(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999));
+    } else {
+      sUtc = new Date(startDate as string);
+      sUtc.setUTCHours(0, 0, 0, 0);
+      eUtc = new Date(endDate as string);
+      eUtc.setUTCHours(23, 59, 59, 999);
+    }
+
     // fetch bike trips in date range for these surveyors
     const trips = await prisma.bikeTrip.findMany({
       where: {
   surveyorId: { in: (surveyors.map(s => s.id) as any) },
-        date: { gte: new Date(startDate), lte: new Date(endDate) },
+        date: { gte: sUtc, lte: eUtc },
+        // Only include approved trips
+        isApproved: true
       },
       select: { surveyorId: true, date: true, finalKm: true, isApproved: true }
     })
@@ -125,7 +165,8 @@ export class ReportService {
     trips.forEach(t => {
       const d = new Date(t.date).toISOString().split('T')[0]
       const key = `${t.surveyorId}::${d}`
-      map.set(key, t.isApproved ? (t.finalKm ?? 0) : 0)
+      // Show the finalKm value if it exists and the trip is approved
+      map.set(key, t.finalKm ?? 0)
     })
 
     const rows = surveyors.map(s => {

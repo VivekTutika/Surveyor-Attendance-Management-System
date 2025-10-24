@@ -85,8 +85,8 @@ export class BikeService {
       // pass the created reading to the trip service to link/create trips
       void BikeTripService.upsertTripForReading(bikeMeterReading as any);
     } catch (err) {
-      // swallow errors to avoid breaking upload; log in future
-      // console.error('BikeTrip upsert failed', err);
+      // log errors to help with debugging
+      console.error('BikeTrip upsert failed', err);
     }
 
     return bikeMeterReading;
@@ -234,6 +234,13 @@ export class BikeService {
       },
     });
 
+    // Update corresponding bike trip record with the new KM reading
+    try {
+      await BikeTripService.upsertTripForReading(updated);
+    } catch (err) {
+      console.error('Failed to update bike trip with new KM reading', err);
+    }
+
     return updated;
   }
 
@@ -297,6 +304,16 @@ export class BikeService {
       where: { id: readingId },
     });
 
+    // Update corresponding bike trip record to remove the reading reference
+    try {
+      await BikeTripService.upsertTripForReading({
+        ...bikeMeterReading,
+        kmReading: null // Set kmReading to null to indicate deletion
+      });
+    } catch (err) {
+      console.error('Failed to update bike trip after deleting bike meter reading', err);
+    }
+
     return { message: 'Bike meter reading deleted successfully' };
   }
 
@@ -325,6 +342,13 @@ export class BikeService {
         },
       },
     });
+
+    // Update corresponding bike trip record with the cleared KM reading
+    try {
+      await BikeTripService.upsertTripForReading(updated);
+    } catch (err) {
+      console.error('Failed to update bike trip with cleared KM reading', err);
+    }
 
     return updated;
   }

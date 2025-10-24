@@ -139,8 +139,8 @@ export default function BikeReadingsReportPage() {
         if (previewType === 'CSV') {
         const headers = ['Employee ID', 'Surveyor Name', ...consolidated.dates.slice(0, 10).map((d: string) => {
           const dt = new Date(`${d}T00:00:00.000Z`)
-          const dateShort = dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
-          const dayShort = dt.toLocaleDateString(undefined, { weekday: 'short' })
+          const dateShort = dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' } as any)
+          const dayShort = dt.toLocaleDateString(undefined, { weekday: 'short' } as any)
           return `${dateShort}\n${dayShort}`
         })]
         const rows = consolidated.surveyors.slice(0, 10).map((r: any) => [r.employeeId, r.name, ...consolidated.dates.slice(0, 10).map((d: string) => r[d] ?? 0)])
@@ -175,7 +175,8 @@ export default function BikeReadingsReportPage() {
         const dateStr = dt ? dt.toLocaleDateString() : ''
         const morning = t.morningKm != null ? String(t.morningKm) : ''
         const evening = t.eveningKm != null ? String(t.eveningKm) : ''
-        const distance = t.isApproved ? String(t.finalKm ?? 0) : '0'
+        // Show the finalKm value if it exists and the trip is approved
+        const distance = t.isApproved && t.finalKm != null ? String(t.finalKm) : '0'
         return [emp, name, dateStr, morning, evening, distance]
       })
       setPreviewRows({ headers, rows })

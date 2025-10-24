@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 16, // Reduce margin
     marginHorizontal: 16, // Add horizontal margin
-    marginTop: 16, // Add top margin
+    marginTop: 8, // Add top margin
   },
   headerLeft: {
     flex: 1,
@@ -438,9 +438,6 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 14,
     color: Colors.textSecondary,
-  },
-  logoutButton: {
-    padding: 8,
   },
   statsContainer: {
     flexDirection: 'row',
