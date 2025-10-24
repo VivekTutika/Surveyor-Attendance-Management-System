@@ -147,13 +147,12 @@ We provide cross-platform setup scripts for easy environment initialization:
 ## 🔐 Default Credentials
 
 **Admin Access:**
-- Mobile: `+1234567890`
-- Password: `admin123`
+- Attendance Admin: `1234567890` / `AA@SAMS`
+- Bike Readings Admin: `1234567891` / `BRA@SAMS`
 
 **Sample Surveyors:**
-- John Smith: `+1234567891` / `surveyor123`
-- Sarah Johnson: `+1234567892` / `surveyor123`
-- Mike Wilson: `+1234567893` / `surveyor123`
+- LRMC Developer: `9876543210` / `AT1@LRMC` (Employee ID: LRMCT001, Has Bike: Yes)
+- LRMC Tester: `8765432109` / `AT2@LRMC` (Employee ID: LRMCT002, Has Bike: No)
 
 ## 🌐 Service URLs
 
@@ -319,6 +318,6 @@ Private project developed for LRMC Solutions.
 
 **Built with ❤️ by the SAMS Development Team**
 
-**Last Updated**: January 2025  
-**Version**: 1.0.0  
-**Status**: Production Ready
+**Project Status**: 95% Complete - Production Ready  
+**Last Updated**: October 2025  
+**Version**: 1.0.0

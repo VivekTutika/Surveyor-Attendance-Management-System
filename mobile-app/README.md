@@ -59,6 +59,12 @@ Surveyor Attendance Management System - Mobile application built with React Nati
 - **Gallery Support**: Choose photos from gallery or capture new ones
 - **Reading History**: Track morning and evening meter readings
 
+### 🚴 Bike Trip Management (v2 Feature)
+- **Trip Creation**: Log bike trips with start/end photos
+- **Distance Tracking**: Automatic distance calculation
+- **Trip History**: View previous trips and status
+- **Admin Approval**: Trips require admin approval
+
 ### 👤 Profile Management
 - **User Information**: View personal and work details
 - **Account Status**: Check active/inactive status
@@ -149,6 +155,12 @@ The app connects to the SAMS backend API. Ensure the backend is running and acce
 - Photo preview and editing
 - Upload progress tracking
 
+### 🚴 Bike Trip Screen (v2 Feature)
+- Start trip with photo capture
+- End trip with photo capture
+- Distance calculation display
+- Trip status tracking
+
 ### 👤 Profile Screen
 - User information display
 - Account status and details
@@ -161,8 +173,9 @@ The app connects to the SAMS backend API. Ensure the backend is running and acce
 2. **Dashboard**: View today's tasks and status
 3. **Mark Attendance**: Take selfie with GPS location
 4. **Upload Bike Meter**: Capture odometer photo
-5. **View Profile**: Check account information
-6. **Logout**: Secure session termination
+5. **Log Bike Trip**: Record bike trips (if applicable)
+6. **View Profile**: Check account information
+7. **Logout**: Secure session termination
 
 ## 🔐 Security Features
 
@@ -256,6 +269,8 @@ Enable debugging in Expo Dev Tools for detailed logs and network inspection.
 
 Developed by LRMC Solutions for field surveyor attendance and bike meter tracking.
 
+**Project Status**: 95% Complete - Production Ready  
+**Last Updated**: October 2025  
 **Version**: 1.0.0  
 **Platform**: React Native with Expo  
 **Backend**: Node.js API integration

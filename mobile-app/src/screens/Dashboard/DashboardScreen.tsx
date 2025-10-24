@@ -412,13 +412,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 0, // Remove all padding to eliminate spacing
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 16, // Reduce margin
+    marginHorizontal: 16, // Add horizontal margin
+    marginTop: 16, // Add top margin
   },
   headerLeft: {
     flex: 1,
@@ -445,7 +447,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 16, // Reduce margin
+    marginHorizontal: 16, // Add horizontal margin
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -480,6 +483,7 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flex: 1,
+    marginHorizontal: 16, // Add horizontal margin
   },
   sectionTitle: {
     fontSize: 18,
@@ -496,6 +500,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 120,
     marginVertical: 0,
+    // Override default Card margin
+    margin: 0,
   },
   cardContent: {
     flex: 1,

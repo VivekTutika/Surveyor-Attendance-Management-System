@@ -81,10 +81,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Header */}
-        <Card style={styles.profileCard}>
+        {/* Profile Header - Custom card without internal padding */}
+        <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <Text style={styles.avatarText}>{getUserInitial()}</Text>
@@ -110,97 +110,102 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
           </View>
-        </Card>
+        </View>
 
         {/* Contact Information */}
         <Card style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Contact Information</Text>
-          
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="call" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Mobile Number</Text>
-              <Text style={styles.infoValue}>{user?.mobileNumber || 'N/A'}</Text>
-            </View>
-          </View>
+          {{
+            ...React.createElement(View, { style: { padding: 0, margin: 0, marginTop: 0 } },
+              React.createElement(Text, { style: styles.cardTitle }, 'Contact Information'),
+              React.createElement(View, { style: styles.infoRow },
+                React.createElement(View, { style: styles.infoIcon },
+                  React.createElement(Ionicons, { name: "call", size: 20, color: Colors.primary })
+                ),
+                React.createElement(View, { style: styles.infoContent },
+                  React.createElement(Text, { style: styles.infoLabel }, 'Mobile Number'),
+                  React.createElement(Text, { style: styles.infoValue }, user?.mobileNumber || 'N/A')
+                )
+              )
+            )
+          }}
         </Card>
 
         {/* Work Information */}
         <Card style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Work Information</Text>
-          
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="briefcase" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Project</Text>
-              <Text style={styles.infoValue}>{
-                typeof user?.project === 'object'
-                  ? ((user?.project as any)?.name || 'Not Assigned')
-                  : (user?.project || 'Not Assigned')
-              }</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="location" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Location</Text>
-              <Text style={styles.infoValue}>{
-                typeof user?.location === 'object'
-                  ? ((user?.location as any)?.name || 'Not Assigned')
-                  : (user?.location || 'Not Assigned')
-              }</Text>
-            </View>
-          </View>
-        
-          {/* Bike Status (Option B) */}
-          <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-              <MaterialCommunityIcons name="motorbike" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Bike</Text>
-              <Text style={styles.infoValue}>{
-                typeof user?.hasBike === 'boolean'
-                  ? (user?.hasBike ? 'Yes' : 'No')
-                  : 'Not set'
-              }</Text>
-              {typeof user?.hasBike !== 'boolean' && (
-                <Text style={styles.helperText}>If this shows "Not set", tap Refresh Profile after your admin updates your bike status.</Text>
-              )}
-            </View>
-          </View>
+          {{
+            ...React.createElement(View, { style: { padding: 0, margin: 0, marginTop: 0 } },
+              React.createElement(Text, { style: styles.cardTitle }, 'Work Information'),
+              React.createElement(View, { style: styles.infoRow },
+                React.createElement(View, { style: styles.infoIcon },
+                  React.createElement(Ionicons, { name: "briefcase", size: 20, color: Colors.primary })
+                ),
+                React.createElement(View, { style: styles.infoContent },
+                  React.createElement(Text, { style: styles.infoLabel }, 'Project'),
+                  React.createElement(Text, { style: styles.infoValue },
+                    typeof user?.project === 'object'
+                      ? ((user?.project as any)?.name || 'Not Assigned')
+                      : (user?.project || 'Not Assigned')
+                  )
+                )
+              ),
+              React.createElement(View, { style: styles.infoRow },
+                React.createElement(View, { style: styles.infoIcon },
+                  React.createElement(Ionicons, { name: "location", size: 20, color: Colors.primary })
+                ),
+                React.createElement(View, { style: styles.infoContent },
+                  React.createElement(Text, { style: styles.infoLabel }, 'Location'),
+                  React.createElement(Text, { style: styles.infoValue },
+                    typeof user?.location === 'object'
+                      ? ((user?.location as any)?.name || 'Not Assigned')
+                      : (user?.location || 'Not Assigned')
+                  )
+                )
+              ),
+              // Bike Status (Option B)
+              React.createElement(View, { style: styles.infoRow },
+                React.createElement(View, { style: styles.infoIcon },
+                  React.createElement(MaterialCommunityIcons, { name: "motorbike", size: 20, color: Colors.primary })
+                ),
+                React.createElement(View, { style: styles.infoContent },
+                  React.createElement(Text, { style: styles.infoLabel }, 'Bike'),
+                  React.createElement(Text, { style: styles.infoValue },
+                    typeof user?.hasBike === 'boolean'
+                      ? (user?.hasBike ? 'Yes' : 'No')
+                      : 'Not set'
+                  ),
+                  typeof user?.hasBike !== 'boolean' && 
+                    React.createElement(Text, { style: styles.helperText }, 'If this shows "Not set", tap Refresh Profile after your admin updates your bike status.')
+                )
+              )
+            )
+          }}
         </Card>
 
         {/* Account Information */}
         <Card style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Account Information</Text>
-          
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="calendar" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Account Created</Text>
-              <Text style={styles.infoValue}>{formatDate(user?.createdAt)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="time" size={20} color={Colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Last Updated</Text>
-              <Text style={styles.infoValue}>{formatDate(user?.updatedAt)}</Text>
-            </View>
-          </View>
+          {{
+            ...React.createElement(View, { style: { padding: 0, margin: 0, marginTop: 0 } },
+              React.createElement(Text, { style: styles.cardTitle }, 'Account Information'),
+              React.createElement(View, { style: styles.infoRow },
+                React.createElement(View, { style: styles.infoIcon },
+                  React.createElement(Ionicons, { name: "calendar", size: 20, color: Colors.primary })
+                ),
+                React.createElement(View, { style: styles.infoContent },
+                  React.createElement(Text, { style: styles.infoLabel }, 'Account Created'),
+                  React.createElement(Text, { style: styles.infoValue }, formatDate(user?.createdAt))
+                )
+              ),
+              React.createElement(View, { style: styles.infoRow },
+                React.createElement(View, { style: styles.infoIcon },
+                  React.createElement(Ionicons, { name: "time", size: 20, color: Colors.primary })
+                ),
+                React.createElement(View, { style: styles.infoContent },
+                  React.createElement(Text, { style: styles.infoLabel }, 'Last Updated'),
+                  React.createElement(Text, { style: styles.infoValue }, formatDate(user?.updatedAt))
+                )
+              )
+            )
+          }}
         </Card>
 
         {/* Actions */}
@@ -247,13 +252,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingTop: 0, // Remove padding to move content closer to header
+    padding: 0, // Remove all padding
+    // Ensure content starts immediately after header
+    paddingTop: 0,
   },
   profileCard: {
-    marginBottom: 8,
-    padding: 8,
-    marginTop: 8, // Add a small top margin to ensure visibility
+    marginBottom: 16,
+    padding: 12,
+    marginTop: 0, // Remove top margin to eliminate spacing
+    // Override default Card margin
+    marginVertical: 0,
+    marginHorizontal: 16,
     // Ensure the card is not cut off
     overflow: 'visible',
     // Add a slight shadow to make it stand out
@@ -265,6 +274,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+    // Override Card component's default styling
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -315,6 +327,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     marginBottom: 16,
+    marginHorizontal: 16,
   },
   cardTitle: {
     fontSize: 16,
@@ -348,6 +361,7 @@ const styles = StyleSheet.create({
   actionsContainer: {
     marginTop: 8, // Reduced margin
     marginBottom: 16, // Add bottom margin
+    marginHorizontal: 16,
   },
   buttonRow: {
     flexDirection: 'row',
