@@ -487,7 +487,7 @@ export default function BikeReadingsPage() {
                           <Chip label={reading.type === 'MORNING' ? 'Check In' : reading.type === 'EVENING' ? 'Check Out' : '—'} size="small" color={reading.type === 'MORNING' ? 'success' : reading.type === 'EVENING' ? 'warning' : 'default'} />
                         </TableCell>
                         <TableCell align="center">{reading.photoPath ? <Button size="small" variant="outlined" onClick={() => handlePhotoClick(reading)}>View Photo</Button> : null}</TableCell>
-                        <TableCell align="center">{reading.reading != null ? `${reading.reading} KM` : '-'}</TableCell>
+                        <TableCell align="center">{reading.reading != null ? `${Number(reading.reading).toFixed(1)} KM` : '-'}</TableCell>
                         <TableCell align="center">
                           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                             <Button size="small" variant={reading.reading != null ? 'contained' : 'outlined'} color={reading.reading != null ? 'success' : 'primary'} onClick={() => { setConfirmMode(reading.reading != null ? 'update' : 'upload'); setConfirmValue(reading.reading != null ? String(reading.reading) : ''); setSelectedReading(reading); setConfirmDialogOpen(true); }}>{reading.reading != null ? 'Update' : 'Upload'}</Button>
@@ -518,7 +518,7 @@ export default function BikeReadingsPage() {
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Box>
                               <Typography variant="h6" fontWeight="bold">
-                                {reading.reading} KM
+                                {reading.reading != null ? `${Number(reading.reading).toFixed(1)} KM` : '-'}
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
                                 {reading.user.name}
@@ -611,7 +611,7 @@ export default function BikeReadingsPage() {
             {selectedReading && (
               <Box sx={{ mt: 2, textAlign: 'center' }}>
                 <Typography variant="h6" fontWeight="bold">
-                  {selectedReading.reading} KM
+                  {selectedReading.reading != null ? `${Number(selectedReading.reading).toFixed(1)} KM` : '-'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {selectedReading.user.name} • {new Date(selectedReading.capturedAt).toLocaleString()}
@@ -672,7 +672,7 @@ export default function BikeReadingsPage() {
                 <strong>{selectedReading?.user.name}</strong>. The photo and record will remain.
               </Typography>
               <Typography sx={{ mt: 1, mb: 2 }} color="text.secondary">
-                Reading to clear: <strong>{selectedReading?.reading} KM</strong>
+                Reading to clear: <strong>{selectedReading?.reading != null ? `${Number(selectedReading?.reading).toFixed(1)} KM` : '-'}</strong>
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                 <Button onClick={() => setRevertDialogOpen(false)} disabled={isUploading}>Cancel</Button>

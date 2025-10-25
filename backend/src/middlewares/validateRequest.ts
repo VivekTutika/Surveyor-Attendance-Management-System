@@ -110,7 +110,7 @@ export const schemas = {
   // Common schemas
   idParam: {
     params: z.object({
-      id: z.string().uuid('Invalid ID format'),
+      id: z.uuid({ message: 'Invalid ID format' }),
     }),
   },
 
@@ -160,10 +160,12 @@ export const schemas = {
       startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format').optional(),
       endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format').optional(),
       // allow numeric user ids (stringified) or UUIDs to support different clients
-      userId: z.union([z.string().uuid(), z.string().regex(/^[0-9]+$/)]).optional(),
+      userId: z.union([z.uuid(), z.string().regex(/^[0-9]+$/)]).optional(),
       type: z.enum(['MORNING', 'EVENING']).optional(),
       projectId: z.string().regex(/^[0-9]+$/).optional(),
       locationId: z.string().regex(/^[0-9]+$/).optional(),
+      page: z.coerce.number().int().positive().optional(),
+      limit: z.coerce.number().int().positive().max(10000).optional(),
     }),
   },
 };

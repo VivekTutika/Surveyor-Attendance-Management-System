@@ -1,173 +1,726 @@
-Mobile App - React Native + Expo
---------------------------------
-
-mobile-app/
-│── app.json
-│── package.json
-│── babel.config.js
-│── metro.config.js
-│
-├── assets/               # Static assets (icons, splash, logos)
-│   ├── fonts/
-│   ├── images/
-│
-├── src/
-│   ├── api/              # API call functions (attendance, bike meter, auth)
-│   │   ├── authService.js
-│   │   ├── attendanceService.js
-│   │   ├── bikeService.js
-│   │   └── index.js
-│   │
-│   ├── components/       # Reusable UI components
-│   │   ├── Button.js
-│   │   ├── InputField.js
-│   │   └── CameraPreview.js
-│   │
-│   ├── navigation/       # React Navigation setup
-│   │   ├── AppNavigator.js
-│   │   ├── AuthNavigator.js
-│   │   └── index.js
-│   │
-│   ├── screens/          # App Screens
-│   │   ├── Auth/
-│   │   │   ├── LoginScreen.js
-│   │   │
-│   │   ├── Dashboard/
-│   │   │   ├── DashboardScreen.js
-│   │   │   ├── AttendanceScreen.js
-│   │   │   └── BikeMeterScreen.js
-│   │   │
-│   │   ├── Profile/
-│   │   │   └── ProfileScreen.js
-│   │   │
-│   │   └── Reports/      # Optional for later
-│   │       └── ReportsScreen.js
-│   │
-│   ├── utils/            # Helper functions
-│   │   ├── validation.js
-│   │   ├── geoUtils.js   # point-in-polygon check
-│   │   └── constants.js
-│   │
-│   ├── hooks/            # Custom hooks (state mgmt, location, camera)
-│   │   ├── useAuth.js
-│   │   ├── useLocation.js
-│   │   └── useCamera.js
-│   │
-│   ├── store/            # Global state (Redux/Zustand/Context)
-│   │   ├── authSlice.js
-│   │   ├── attendanceSlice.js
-│   │   └── index.js
-│   │
-│   ├── theme/            # Styles and theming
-│   │   ├── colors.js
-│   │   └── typography.js
-│   │
-│   └── App.js            # App entry
-│
-└── .env                  # API keys, environment variables
-
-Backend - Node.js + Express + Prisma + Supabase
------------------------------------------------
-
-backend/
-│── package.json
-│── tsconfig.json
-│── .env
-│
-├── prisma/
-│   ├── schema.prisma     # DB schema
-│   └── migrations/       # Auto-generated migrations
-│
-├── src/
-│   ├── config/           # Config files
-│   │   ├── db.ts
-│   │   ├── cloudinary.ts
-│   │   └── index.ts
-│   │
-│   ├── middlewares/      # Express middlewares
-│   │   ├── authMiddleware.ts
-│   │   ├── errorHandler.ts
-│   │   └── validateRequest.ts
-│   │
-│   ├── models/           # Prisma models auto-generated
-│   │   └── (handled by prisma client)
-│   │
-│   ├── controllers/      # Business logic
-│   │   ├── authController.ts
-│   │   ├── attendanceController.ts
-│   │   ├── bikeController.ts
-│   │   └── geoFenceController.ts
-│   │
-│   ├── services/         # Service layer (DB ops, external APIs)
-│   │   ├── authService.ts
-│   │   ├── attendanceService.ts
-│   │   ├── bikeService.ts
-│   │   └── geoFenceService.ts
-│   │
-│   ├── routes/           # API endpoints
-│   │   ├── authRoutes.ts
-│   │   ├── attendanceRoutes.ts
-│   │   ├── bikeRoutes.ts
-│   │   ├── geoFenceRoutes.ts
-│   │   └── index.ts
-│   │
-│   ├── utils/            # Helper utilities
-│   │   ├── jwtUtils.ts
-│   │   ├── geoUtils.ts   # point-in-polygon
-│   │   └── response.ts
-│   │
-│   ├── index.ts          # Express entry
-│   └── server.ts         # Start server
-
-
-Web Admin - Next.js
--------------------
-
-web-admin/
-│── package.json
-│── next.config.js
-│── .env
-│
-├── public/               # Static assets
-│   └── logo.png
-│
-├── src/
-│   ├── pages/            # Next.js routing
-│   │   ├── index.tsx     # Dashboard
-│   │   ├── login.tsx
-│   │   ├── surveyors/
-│   │   │   ├── index.tsx
-│   │   │   └── [id].tsx  # Edit Surveyor + GeoFence
-│   │   ├── attendance/
-│   │   │   └── index.tsx
-│   │   └── bike/
-│   │       └── index.tsx
-│   │
-│   ├── components/       # Reusable UI
-│   │   ├── Layout.tsx
-│   │   ├── DataTable.tsx
-│   │   └── MapViewer.tsx # show GPS coords
-│   │
-│   ├── services/         # API calls
-│   │   ├── authService.ts
-│   │   ├── surveyorService.ts
-│   │   ├── attendanceService.ts
-│   │   └── bikeService.ts
-│   │
-│   ├── utils/            # Helpers
-│   │   ├── request.ts
-│   │   ├── constants.ts
-│   │   └── dateUtils.ts
-│   │
-│   ├── hooks/            # React hooks
-│   │   ├── useAuth.ts
-│   │   └── useFetch.ts
-│   │
-│   ├── styles/           # Global styles (CSS/SCSS)
-│   │   └── globals.css
-│   │
-│   ├── context/          # React Context (Auth, Theme, etc.)
-│   │   └── AuthContext.tsx
-│   │
-│   └── lib/              # External libraries setup
-│       └── tesseract.ts  # OCR integration (future)
+Surveyor-Attendance-Management-System
+├── backend/
+│   ├── dist/
+│   │   ├── config/
+│   │   │   ├── cloudinary.d.ts
+│   │   │   ├── cloudinary.d.ts.map
+│   │   │   ├── cloudinary.js
+│   │   │   ├── cloudinary.js.map
+│   │   │   ├── db.d.ts
+│   │   │   ├── db.d.ts.map
+│   │   │   ├── db.js
+│   │   │   ├── db.js.map
+│   │   │   ├── index.d.ts
+│   │   │   ├── index.d.ts.map
+│   │   │   ├── index.js
+│   │   │   └── index.js.map
+│   │   ├── controllers/
+│   │   │   ├── attendanceController.d.ts
+│   │   │   ├── attendanceController.d.ts.map
+│   │   │   ├── attendanceController.js
+│   │   │   ├── attendanceController.js.map
+│   │   │   ├── authController.d.ts
+│   │   │   ├── authController.d.ts.map
+│   │   │   ├── authController.js
+│   │   │   ├── authController.js.map
+│   │   │   ├── bikeController.d.ts
+│   │   │   ├── bikeController.d.ts.map
+│   │   │   ├── bikeController.js
+│   │   │   ├── bikeController.js.map
+│   │   │   ├── bikeTripController.d.ts
+│   │   │   ├── bikeTripController.d.ts.map
+│   │   │   ├── bikeTripController.js
+│   │   │   ├── bikeTripController.js.map
+│   │   │   ├── geoFenceController.d.ts
+│   │   │   ├── geoFenceController.d.ts.map
+│   │   │   ├── geoFenceController.js
+│   │   │   ├── geoFenceController.js.map
+│   │   │   ├── locationController.d.ts
+│   │   │   ├── locationController.d.ts.map
+│   │   │   ├── locationController.js
+│   │   │   ├── locationController.js.map
+│   │   │   ├── projectController.d.ts
+│   │   │   ├── projectController.d.ts.map
+│   │   │   ├── projectController.js
+│   │   │   ├── projectController.js.map
+│   │   │   ├── surveyorController.d.ts
+│   │   │   ├── surveyorController.d.ts.map
+│   │   │   ├── surveyorController.js
+│   │   │   └── surveyorController.js.map
+│   │   ├── middlewares/
+│   │   │   ├── authMiddleware.d.ts
+│   │   │   ├── authMiddleware.d.ts.map
+│   │   │   ├── authMiddleware.js
+│   │   │   ├── authMiddleware.js.map
+│   │   │   ├── errorHandler.d.ts
+│   │   │   ├── errorHandler.d.ts.map
+│   │   │   ├── errorHandler.js
+│   │   │   ├── errorHandler.js.map
+│   │   │   ├── securityMiddleware.d.ts
+│   │   │   ├── securityMiddleware.d.ts.map
+│   │   │   ├── securityMiddleware.js
+│   │   │   ├── securityMiddleware.js.map
+│   │   │   ├── validateRequest.d.ts
+│   │   │   ├── validateRequest.d.ts.map
+│   │   │   ├── validateRequest.js
+│   │   │   └── validateRequest.js.map
+│   │   ├── routes/
+│   │   │   ├── attendanceRoutes.d.ts
+│   │   │   ├── attendanceRoutes.d.ts.map
+│   │   │   ├── attendanceRoutes.js
+│   │   │   ├── attendanceRoutes.js.map
+│   │   │   ├── authRoutes.d.ts
+│   │   │   ├── authRoutes.d.ts.map
+│   │   │   ├── authRoutes.js
+│   │   │   ├── authRoutes.js.map
+│   │   │   ├── bikeRoutes.d.ts
+│   │   │   ├── bikeRoutes.d.ts.map
+│   │   │   ├── bikeRoutes.js
+│   │   │   ├── bikeRoutes.js.map
+│   │   │   ├── dashboard.d.ts
+│   │   │   ├── dashboard.d.ts.map
+│   │   │   ├── dashboard.js
+│   │   │   ├── dashboard.js.map
+│   │   │   ├── geoFenceRoutes.d.ts
+│   │   │   ├── geoFenceRoutes.d.ts.map
+│   │   │   ├── geoFenceRoutes.js
+│   │   │   ├── geoFenceRoutes.js.map
+│   │   │   ├── locationRoutes.d.ts
+│   │   │   ├── locationRoutes.d.ts.map
+│   │   │   ├── locationRoutes.js
+│   │   │   ├── locationRoutes.js.map
+│   │   │   ├── projectRoutes.d.ts
+│   │   │   ├── projectRoutes.d.ts.map
+│   │   │   ├── projectRoutes.js
+│   │   │   ├── projectRoutes.js.map
+│   │   │   ├── surveyorRoutes.d.ts
+│   │   │   ├── surveyorRoutes.d.ts.map
+│   │   │   ├── surveyorRoutes.js
+│   │   │   └── surveyorRoutes.js.map
+│   │   ├── services/
+│   │   │   ├── attendanceService.d.ts
+│   │   │   ├── attendanceService.d.ts.map
+│   │   │   ├── attendanceService.js
+│   │   │   ├── attendanceService.js.map
+│   │   │   ├── authService.d.ts
+│   │   │   ├── authService.d.ts.map
+│   │   │   ├── authService.js
+│   │   │   ├── authService.js.map
+│   │   │   ├── bikeService.d.ts
+│   │   │   ├── bikeService.d.ts.map
+│   │   │   ├── bikeService.js
+│   │   │   ├── bikeService.js.map
+│   │   │   ├── bikeTripService.d.ts
+│   │   │   ├── bikeTripService.d.ts.map
+│   │   │   ├── bikeTripService.js
+│   │   │   ├── bikeTripService.js.map
+│   │   │   ├── geoFenceService.d.ts
+│   │   │   ├── geoFenceService.d.ts.map
+│   │   │   ├── geoFenceService.js
+│   │   │   ├── geoFenceService.js.map
+│   │   │   ├── locationService.d.ts
+│   │   │   ├── locationService.d.ts.map
+│   │   │   ├── locationService.js
+│   │   │   ├── locationService.js.map
+│   │   │   ├── projectService.d.ts
+│   │   │   ├── projectService.d.ts.map
+│   │   │   ├── projectService.js
+│   │   │   ├── projectService.js.map
+│   │   │   ├── surveyorService.d.ts
+│   │   │   ├── surveyorService.d.ts.map
+│   │   │   ├── surveyorService.js
+│   │   │   └── surveyorService.js.map
+│   │   ├── utils/
+│   │   │   ├── geoUtils.d.ts
+│   │   │   ├── geoUtils.d.ts.map
+│   │   │   ├── geoUtils.js
+│   │   │   ├── geoUtils.js.map
+│   │   │   ├── jwtUtils.d.ts
+│   │   │   ├── jwtUtils.d.ts.map
+│   │   │   ├── jwtUtils.js
+│   │   │   ├── jwtUtils.js.map
+│   │   │   ├── response.d.ts
+│   │   │   ├── response.d.ts.map
+│   │   │   ├── response.js
+│   │   │   └── response.js.map
+│   │   ├── index.d.ts
+│   │   ├── index.d.ts.map
+│   │   ├── index.js
+│   │   ├── index.js.map
+│   │   ├── server.d.ts
+│   │   ├── server.d.ts.map
+│   │   ├── server.js
+│   │   └── server.js.map
+│   ├── prisma/
+│   │   ├── migrations/
+│   │   │   ├── 20251010050144_init/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251011110240_add_attendance_approval/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251011123143_add_has_bike/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251011160838_add_bike_trip/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251014075616_add_employeeid/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251015100250_bike_trip_date_type_change/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251016065423_date_timestamp_to_timestampz/
+│   │   │   │   └── migration.sql
+│   │   │   ├── 20251017040201_add_aadhar_number/
+│   │   │   │   └── migration.sql
+│   │   │   └── migration_lock.toml
+│   │   ├── schema.prisma
+│   │   └── seed.ts
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── cloudinary.ts
+│   │   │   ├── db.ts
+│   │   │   └── index.ts
+│   │   ├── controllers/
+│   │   │   ├── attendanceController.ts
+│   │   │   ├── authController.ts
+│   │   │   ├── bikeController.ts
+│   │   │   ├── bikeTripController.ts
+│   │   │   ├── geoFenceController.ts
+│   │   │   ├── healthController.ts
+│   │   │   ├── locationController.ts
+│   │   │   ├── projectController.ts
+│   │   │   ├── reportController.ts
+│   │   │   └── surveyorController.ts
+│   │   ├── middlewares/
+│   │   │   ├── authMiddleware.ts
+│   │   │   ├── errorHandler.ts
+│   │   │   ├── securityMiddleware.ts
+│   │   │   └── validateRequest.ts
+│   │   ├── routes/
+│   │   │   ├── attendanceRoutes.ts
+│   │   │   ├── authRoutes.ts
+│   │   │   ├── bikeRoutes.ts
+│   │   │   ├── dashboard.ts
+│   │   │   ├── geoFenceRoutes.ts
+│   │   │   ├── healthRoutes.ts
+│   │   │   ├── locationRoutes.ts
+│   │   │   ├── projectRoutes.ts
+│   │   │   ├── reportRoutes.ts
+│   │   │   └── surveyorRoutes.ts
+│   │   ├── services/
+│   │   │   ├── attendanceService.ts
+│   │   │   ├── authService.ts
+│   │   │   ├── bikeService.ts
+│   │   │   ├── bikeTripService.ts
+│   │   │   ├── geoFenceService.ts
+│   │   │   ├── locationService.ts
+│   │   │   ├── projectService.ts
+│   │   │   ├── reportService.ts
+│   │   │   └── surveyorService.ts
+│   │   ├── utils/
+│   │   │   ├── dateUtils.ts
+│   │   │   ├── geoUtils.ts
+│   │   │   ├── jwtUtils.ts
+│   │   │   └── response.ts
+│   │   ├── index.ts
+│   │   └── server.ts
+│   ├── .env
+│   ├── .gitignore
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── prisma.config.ts
+│   ├── README.md
+│   └── tsconfig.json
+├── Essentials/
+│   ├── Documentation_Update_Summary.md
+│   ├── Documentation.txt
+│   ├── Folder Structure.txt
+│   ├── PRD.txt
+│   ├── Qoder_Master_Execution_Prompt.txt
+│   └── Risk Free PR Workflow.txt
+├── mobile-app/
+│   ├── .expo/
+│   │   ├── devices.json
+│   │   └── README.md
+│   ├── assets/
+│   │   ├── adaptive-icon.png
+│   │   ├── favicon.png
+│   │   ├── icon.png
+│   │   ├── logo.png
+│   │   └── splash-icon.png
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── attendanceService.ts
+│   │   │   ├── authService.ts
+│   │   │   ├── bikeService.ts
+│   │   │   └── index.ts
+│   │   ├── components/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── index.ts
+│   │   │   ├── InputField.tsx
+│   │   │   └── LoadingSpinner.tsx
+│   │   ├── navigation/
+│   │   │   ├── AppNavigator.tsx
+│   │   │   ├── AuthNavigator.tsx
+│   │   │   ├── index.ts
+│   │   │   └── RootNavigator.tsx
+│   │   ├── screens/
+│   │   │   ├── Auth/
+│   │   │   │   └── LoginScreen.tsx
+│   │   │   ├── Dashboard/
+│   │   │   │   ├── AttendanceScreen.tsx
+│   │   │   │   ├── BikeMeterScreen.tsx
+│   │   │   │   └── DashboardScreen.tsx
+│   │   │   └── Profile/
+│   │   │       └── ProfileScreen.tsx
+│   │   ├── store/
+│   │   │   ├── attendanceSlice.ts
+│   │   │   ├── authSlice.ts
+│   │   │   ├── bikeMeterSlice.ts
+│   │   │   ├── hooks.ts
+│   │   │   └── index.ts
+│   │   ├── theme/
+│   │   │   ├── colors.ts
+│   │   │   ├── index.ts
+│   │   │   └── typography.ts
+│   │   ├── types/
+│   │   │   ├── expo-constants.d.ts
+│   │   │   └── index.ts
+│   │   └── utils/
+│   │       ├── date.ts
+│   │       └── normalizers.ts
+│   ├── .env
+│   ├── .gitignore
+│   ├── app.json
+│   ├── App.tsx
+│   ├── index.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── README.md
+│   └── tsconfig.json
+├── web-admin/
+│   ├── .next/
+│   │   ├── cache/
+│   │   │   ├── swc/
+│   │   │   │   └── plugins/
+│   │   │   │       └── windows_x86_64_18.0.0/
+│   │   │   ├── webpack/
+│   │   │   │   ├── client-development/
+│   │   │   │   │   ├── 0.pack.gz
+│   │   │   │   │   ├── 1.pack.gz
+│   │   │   │   │   ├── 10.pack.gz
+│   │   │   │   │   ├── 11.pack.gz
+│   │   │   │   │   ├── 12.pack.gz
+│   │   │   │   │   ├── 13.pack.gz
+│   │   │   │   │   ├── 14.pack.gz
+│   │   │   │   │   ├── 15.pack.gz
+│   │   │   │   │   ├── 16.pack.gz
+│   │   │   │   │   ├── 17.pack.gz
+│   │   │   │   │   ├── 18.pack.gz
+│   │   │   │   │   ├── 19.pack.gz
+│   │   │   │   │   ├── 2.pack.gz
+│   │   │   │   │   ├── 20.pack.gz
+│   │   │   │   │   ├── 21.pack.gz
+│   │   │   │   │   ├── 22.pack.gz
+│   │   │   │   │   ├── 23.pack.gz
+│   │   │   │   │   ├── 24.pack.gz
+│   │   │   │   │   ├── 25.pack.gz
+│   │   │   │   │   ├── 26.pack.gz
+│   │   │   │   │   ├── 27.pack.gz
+│   │   │   │   │   ├── 28.pack.gz
+│   │   │   │   │   ├── 29.pack.gz
+│   │   │   │   │   ├── 3.pack.gz
+│   │   │   │   │   ├── 30.pack.gz
+│   │   │   │   │   ├── 31.pack.gz
+│   │   │   │   │   ├── 32.pack.gz
+│   │   │   │   │   ├── 33.pack.gz
+│   │   │   │   │   ├── 34.pack.gz
+│   │   │   │   │   ├── 35.pack.gz
+│   │   │   │   │   ├── 36.pack.gz
+│   │   │   │   │   ├── 37.pack.gz
+│   │   │   │   │   ├── 38.pack.gz
+│   │   │   │   │   ├── 39.pack.gz
+│   │   │   │   │   ├── 4.pack.gz
+│   │   │   │   │   ├── 40.pack.gz
+│   │   │   │   │   ├── 41.pack.gz
+│   │   │   │   │   ├── 5.pack.gz
+│   │   │   │   │   ├── 6.pack.gz
+│   │   │   │   │   ├── 7.pack.gz
+│   │   │   │   │   ├── 8.pack.gz
+│   │   │   │   │   ├── 9.pack.gz
+│   │   │   │   │   ├── index.pack.gz
+│   │   │   │   │   └── index.pack.gz.old
+│   │   │   │   ├── client-development-fallback/
+│   │   │   │   │   ├── 0.pack.gz
+│   │   │   │   │   └── index.pack.gz
+│   │   │   │   ├── client-production/
+│   │   │   │   │   ├── 0.pack
+│   │   │   │   │   └── index.pack
+│   │   │   │   ├── edge-server-production/
+│   │   │   │   │   ├── 0.pack
+│   │   │   │   │   └── index.pack
+│   │   │   │   ├── server-development/
+│   │   │   │   │   ├── 0.pack.gz
+│   │   │   │   │   ├── 1.pack.gz
+│   │   │   │   │   ├── 10.pack.gz
+│   │   │   │   │   ├── 11.pack.gz
+│   │   │   │   │   ├── 12.pack.gz
+│   │   │   │   │   ├── 13.pack.gz
+│   │   │   │   │   ├── 14.pack.gz
+│   │   │   │   │   ├── 15.pack.gz
+│   │   │   │   │   ├── 16.pack.gz
+│   │   │   │   │   ├── 17.pack.gz
+│   │   │   │   │   ├── 18.pack.gz
+│   │   │   │   │   ├── 19.pack.gz
+│   │   │   │   │   ├── 2.pack.gz
+│   │   │   │   │   ├── 20.pack.gz
+│   │   │   │   │   ├── 21.pack.gz
+│   │   │   │   │   ├── 22.pack.gz
+│   │   │   │   │   ├── 23.pack.gz
+│   │   │   │   │   ├── 24.pack.gz
+│   │   │   │   │   ├── 25.pack.gz
+│   │   │   │   │   ├── 26.pack.gz
+│   │   │   │   │   ├── 27.pack.gz
+│   │   │   │   │   ├── 28.pack.gz
+│   │   │   │   │   ├── 29.pack.gz
+│   │   │   │   │   ├── 3.pack.gz
+│   │   │   │   │   ├── 30.pack.gz
+│   │   │   │   │   ├── 31.pack.gz
+│   │   │   │   │   ├── 32.pack.gz
+│   │   │   │   │   ├── 33.pack.gz
+│   │   │   │   │   ├── 34.pack.gz
+│   │   │   │   │   ├── 35.pack.gz
+│   │   │   │   │   ├── 36.pack.gz
+│   │   │   │   │   ├── 37.pack.gz
+│   │   │   │   │   ├── 38.pack.gz
+│   │   │   │   │   ├── 39.pack.gz
+│   │   │   │   │   ├── 4.pack.gz
+│   │   │   │   │   ├── 40.pack.gz
+│   │   │   │   │   ├── 41.pack.gz
+│   │   │   │   │   ├── 5.pack.gz
+│   │   │   │   │   ├── 6.pack.gz
+│   │   │   │   │   ├── 7.pack.gz
+│   │   │   │   │   ├── 8.pack.gz
+│   │   │   │   │   ├── 9.pack.gz
+│   │   │   │   │   ├── index.pack.gz
+│   │   │   │   │   └── index.pack.gz.old
+│   │   │   │   └── server-production/
+│   │   │   │       ├── 0.pack
+│   │   │   │       └── index.pack
+│   │   │   ├── .previewinfo
+│   │   │   ├── .rscinfo
+│   │   │   ├── .tsbuildinfo
+│   │   │   ├── chrome-devtools-workspace-uuid
+│   │   │   └── next-devtools-config.json
+│   │   ├── server/
+│   │   │   ├── app/
+│   │   │   │   ├── attendance/
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── bike-readings/
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── bike-trips/
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── dashboard/
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── login/
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── reports/
+│   │   │   │   │   ├── attendance/
+│   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── bike-readings/
+│   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── surveyors/
+│   │   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── surveyors/
+│   │   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── page_client-reference-manifest.js
+│   │   │   │   └── page.js
+│   │   │   ├── vendor-chunks/
+│   │   │   │   ├── @babel.js
+│   │   │   │   ├── @emotion.js
+│   │   │   │   ├── @mui.js
+│   │   │   │   ├── @popperjs.js
+│   │   │   │   ├── @react-leaflet.js
+│   │   │   │   ├── @swc.js
+│   │   │   │   ├── asynckit.js
+│   │   │   │   ├── axios.js
+│   │   │   │   ├── call-bind-apply-helpers.js
+│   │   │   │   ├── canvg.js
+│   │   │   │   ├── clsx.js
+│   │   │   │   ├── combined-stream.js
+│   │   │   │   ├── core-js.js
+│   │   │   │   ├── d3-array.js
+│   │   │   │   ├── d3-color.js
+│   │   │   │   ├── d3-format.js
+│   │   │   │   ├── d3-interpolate.js
+│   │   │   │   ├── d3-path.js
+│   │   │   │   ├── d3-scale.js
+│   │   │   │   ├── d3-shape.js
+│   │   │   │   ├── d3-time-format.js
+│   │   │   │   ├── d3-time.js
+│   │   │   │   ├── dayjs.js
+│   │   │   │   ├── debug.js
+│   │   │   │   ├── decimal.js-light.js
+│   │   │   │   ├── delayed-stream.js
+│   │   │   │   ├── dom-helpers.js
+│   │   │   │   ├── dompurify.js
+│   │   │   │   ├── dunder-proto.js
+│   │   │   │   ├── es-define-property.js
+│   │   │   │   ├── es-errors.js
+│   │   │   │   ├── es-object-atoms.js
+│   │   │   │   ├── es-set-tostringtag.js
+│   │   │   │   ├── eventemitter3.js
+│   │   │   │   ├── fast-equals.js
+│   │   │   │   ├── fflate.js
+│   │   │   │   ├── follow-redirects.js
+│   │   │   │   ├── form-data.js
+│   │   │   │   ├── function-bind.js
+│   │   │   │   ├── get-intrinsic.js
+│   │   │   │   ├── get-proto.js
+│   │   │   │   ├── gopd.js
+│   │   │   │   ├── has-flag.js
+│   │   │   │   ├── has-symbols.js
+│   │   │   │   ├── has-tostringtag.js
+│   │   │   │   ├── hasown.js
+│   │   │   │   ├── hoist-non-react-statics.js
+│   │   │   │   ├── html2canvas.js
+│   │   │   │   ├── internmap.js
+│   │   │   │   ├── js-cookie.js
+│   │   │   │   ├── jspdf-autotable.js
+│   │   │   │   ├── jspdf.js
+│   │   │   │   ├── leaflet.js
+│   │   │   │   ├── lodash.js
+│   │   │   │   ├── math-intrinsics.js
+│   │   │   │   ├── mime-db.js
+│   │   │   │   ├── mime-types.js
+│   │   │   │   ├── ms.js
+│   │   │   │   ├── next.js
+│   │   │   │   ├── object-assign.js
+│   │   │   │   ├── performance-now.js
+│   │   │   │   ├── prop-types.js
+│   │   │   │   ├── proxy-from-env.js
+│   │   │   │   ├── raf.js
+│   │   │   │   ├── react-is.js
+│   │   │   │   ├── react-leaflet.js
+│   │   │   │   ├── react-smooth.js
+│   │   │   │   ├── react-transition-group.js
+│   │   │   │   ├── recharts-scale.js
+│   │   │   │   ├── recharts.js
+│   │   │   │   ├── rgbcolor.js
+│   │   │   │   ├── stackblur-canvas.js
+│   │   │   │   ├── stylis.js
+│   │   │   │   ├── supports-color.js
+│   │   │   │   ├── svg-pathdata.js
+│   │   │   │   ├── tiny-invariant.js
+│   │   │   │   └── victory-vendor.js
+│   │   │   ├── app-paths-manifest.json
+│   │   │   ├── interception-route-rewrite-manifest.js
+│   │   │   ├── middleware-build-manifest.js
+│   │   │   ├── middleware-manifest.json
+│   │   │   ├── middleware-react-loadable-manifest.js
+│   │   │   ├── next-font-manifest.js
+│   │   │   ├── next-font-manifest.json
+│   │   │   ├── pages-manifest.json
+│   │   │   ├── server-reference-manifest.js
+│   │   │   ├── server-reference-manifest.json
+│   │   │   └── webpack-runtime.js
+│   │   ├── static/
+│   │   │   ├── chunks/
+│   │   │   │   ├── app/
+│   │   │   │   │   ├── attendance/
+│   │   │   │   │   │   ├── layout.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── bike-readings/
+│   │   │   │   │   │   ├── layout.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── bike-trips/
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── dashboard/
+│   │   │   │   │   │   ├── layout.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── login/
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── reports/
+│   │   │   │   │   │   ├── attendance/
+│   │   │   │   │   │   │   └── page.js
+│   │   │   │   │   │   ├── bike-readings/
+│   │   │   │   │   │   │   └── page.js
+│   │   │   │   │   │   ├── surveyors/
+│   │   │   │   │   │   │   └── page.js
+│   │   │   │   │   │   ├── layout.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── surveyors/
+│   │   │   │   │   │   ├── layout.js
+│   │   │   │   │   │   └── page.js
+│   │   │   │   │   ├── layout.js
+│   │   │   │   │   └── page.js
+│   │   │   │   ├── _app-pages-browser_node_modules_canvg_lib_index_es_js.js
+│   │   │   │   ├── _app-pages-browser_node_modules_dompurify_dist_purify_js.js
+│   │   │   │   ├── _app-pages-browser_node_modules_html2canvas_dist_html2canvas_js.js
+│   │   │   │   ├── _app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js
+│   │   │   │   ├── app-pages-internals.js
+│   │   │   │   ├── main-app.js
+│   │   │   │   ├── polyfills.js
+│   │   │   │   └── webpack.js
+│   │   │   ├── css/
+│   │   │   │   └── app/
+│   │   │   │       ├── attendance/
+│   │   │   │       │   └── page.css
+│   │   │   │       └── layout.css
+│   │   │   ├── development/
+│   │   │   │   ├── _buildManifest.js
+│   │   │   │   └── _ssgManifest.js
+│   │   │   ├── media/
+│   │   │   │   ├── 19cfc7226ec3afaa-s.woff2
+│   │   │   │   ├── 21350d82a1f187e9-s.woff2
+│   │   │   │   ├── 8e9860b6e62d6359-s.woff2
+│   │   │   │   ├── ba9851c3c22cd980-s.woff2
+│   │   │   │   ├── c5fe6dc8356a8c31-s.woff2
+│   │   │   │   ├── df0a9ae256c0569c-s.woff2
+│   │   │   │   ├── e4af272ccee01ff0-s.p.woff2
+│   │   │   │   ├── layers-2x.9859cd12.png
+│   │   │   │   ├── layers.ef6db872.png
+│   │   │   │   └── marker-icon.d577052a.png
+│   │   │   └── webpack/
+│   │   │       ├── 320554672d8bcb28.webpack.hot-update.json
+│   │   │       ├── 3555642e781aff19.webpack.hot-update.json
+│   │   │       ├── 39a2cd3c31f7125d.webpack.hot-update.json
+│   │   │       ├── 61488c3e764bcff1.webpack.hot-update.json
+│   │   │       ├── 633457081244afec._.hot-update.json
+│   │   │       ├── 6dffdd9a830fea07.webpack.hot-update.json
+│   │   │       ├── c085aa7e4c101f4e.webpack.hot-update.json
+│   │   │       ├── c2e5a1b7c4d4522a.webpack.hot-update.json
+│   │   │       ├── cfec0e9011b18cbe.webpack.hot-update.json
+│   │   │       ├── e000cf06c72e9750.webpack.hot-update.json
+│   │   │       ├── fb2850e0348852a7.webpack.hot-update.json
+│   │   │       ├── webpack.320554672d8bcb28.hot-update.js
+│   │   │       ├── webpack.3555642e781aff19.hot-update.js
+│   │   │       ├── webpack.39a2cd3c31f7125d.hot-update.js
+│   │   │       ├── webpack.61488c3e764bcff1.hot-update.js
+│   │   │       ├── webpack.6dffdd9a830fea07.hot-update.js
+│   │   │       ├── webpack.c085aa7e4c101f4e.hot-update.js
+│   │   │       ├── webpack.c2e5a1b7c4d4522a.hot-update.js
+│   │   │       ├── webpack.cfec0e9011b18cbe.hot-update.js
+│   │   │       ├── webpack.e000cf06c72e9750.hot-update.js
+│   │   │       └── webpack.fb2850e0348852a7.hot-update.js
+│   │   ├── types/
+│   │   │   ├── app/
+│   │   │   │   ├── attendance/
+│   │   │   │   │   ├── layout.ts
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── bike-readings/
+│   │   │   │   │   ├── layout.ts
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── bike-trips/
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── dashboard/
+│   │   │   │   │   ├── layout.ts
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── login/
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── reports/
+│   │   │   │   │   ├── attendance/
+│   │   │   │   │   │   └── page.ts
+│   │   │   │   │   ├── bike-readings/
+│   │   │   │   │   │   └── page.ts
+│   │   │   │   │   ├── surveyors/
+│   │   │   │   │   │   └── page.ts
+│   │   │   │   │   ├── layout.ts
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── surveyors/
+│   │   │   │   │   ├── layout.ts
+│   │   │   │   │   └── page.ts
+│   │   │   │   ├── layout.ts
+│   │   │   │   └── page.ts
+│   │   │   ├── cache-life.d.ts
+│   │   │   ├── package.json
+│   │   │   ├── routes.d.ts
+│   │   │   └── validator.ts
+│   │   ├── app-build-manifest.json
+│   │   ├── build-manifest.json
+│   │   ├── package.json
+│   │   ├── prerender-manifest.json
+│   │   ├── react-loadable-manifest.json
+│   │   ├── routes-manifest.json
+│   │   └── trace
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── attendance/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── bike-readings/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── bike-trips/
+│   │   │   │   └── page.tsx
+│   │   │   ├── dashboard/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── reports/
+│   │   │   │   ├── attendance/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── bike-readings/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── surveyors/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── surveyors/
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-attendance-fix/
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-auth/
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-features/
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-fixes/
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-jwt/
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-login-fix/
+│   │   │   │   └── page.tsx
+│   │   │   ├── test-mobile-format/
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── components/
+│   │   │   ├── AdminLayout.tsx
+│   │   │   ├── AttendanceMap.tsx
+│   │   │   ├── ProtectedRoute.tsx
+│   │   │   └── ThemeProvider.tsx
+│   │   ├── context/
+│   │   │   └── AuthContext.tsx
+│   │   ├── lib/
+│   │   │   ├── mui-theme.d.ts
+│   │   │   └── theme.ts
+│   │   ├── services/
+│   │   │   └── api.ts
+│   │   ├── types/
+│   │   │   └── mui-icons.d.ts
+│   │   └── utils/
+│   │       ├── exportUtils.ts
+│   │       └── leafletSetup.ts
+│   ├── .env
+│   ├── .env.local
+│   ├── .gitignore
+│   ├── next-env.d.ts
+│   ├── next.config.js
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── README.md
+│   ├── tsconfig.json
+│   └── tsconfig.tsbuildinfo
+├── .gitignore
+└── README.md

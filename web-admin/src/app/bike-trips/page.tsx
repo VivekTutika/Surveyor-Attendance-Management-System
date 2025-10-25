@@ -490,9 +490,9 @@ export default function BikeTripsPage() {
                     <TableCell align="center">{t.surveyor?.employeeId ?? t.surveyorId}</TableCell>
                     <TableCell align="center">{t.surveyor?.name}</TableCell>
                     <TableCell align="center">{dayjs(t.date).format('YYYY-MM-DD')}</TableCell>
-                    <TableCell align="center">{t.morningKm != null ? `${t.morningKm} KM` : '-'}</TableCell>
-                    <TableCell align="center">{t.eveningKm != null ? `${t.eveningKm} KM` : '-'}</TableCell>
-                    <TableCell align="center">{t.computedKm ?? (t.eveningKm != null && t.morningKm != null ? (t.eveningKm - t.morningKm) : '-')}</TableCell>
+                    <TableCell align="center">{t.morningKm != null ? `${Number(t.morningKm).toFixed(1)} KM` : '-'}</TableCell>
+                    <TableCell align="center">{t.eveningKm != null ? `${Number(t.eveningKm).toFixed(1)} KM` : '-'}</TableCell>
+                    <TableCell align="center">{t.computedKm != null ? Number(t.computedKm).toFixed(1) : (t.eveningKm != null && t.morningKm != null ? Number(t.eveningKm - t.morningKm).toFixed(1) : '-')}</TableCell>
                     <TableCell align="center">
                       {(() => {
                         const staged = pendingFinals[String(t.id)]
@@ -504,14 +504,14 @@ export default function BikeTripsPage() {
                           )
                         }
                         // If there's a staged pending value, show it with a small label
-                        if (staged !== undefined) return <Typography>{staged} (staged)</Typography>
+                        if (staged !== undefined) return <Typography>{Number(staged).toFixed(1)} (staged)</Typography>
                         // If finalKm already persisted, display it
-                        if (t.finalKm != null) return <Typography>{t.finalKm}</Typography>
+                        if (t.finalKm != null) return <Typography>{Number(t.finalKm).toFixed(1)}</Typography>
                         // If both readings exist (computed available), show an editable input prefilled with computed
                         if (computed !== undefined && computed !== null) {
                           const value = staged !== undefined ? staged : computed
                           return (
-                            <TextField size="small" value={String(value)} onChange={(e) => {
+                            <TextField size="small" value={Number(value).toFixed(1)} onChange={(e) => {
                               const v = Number(e.target.value)
                               if (!isNaN(v)) {
                                 setPendingFinals(p => ({ ...p, [String(t.id)]: v }))
