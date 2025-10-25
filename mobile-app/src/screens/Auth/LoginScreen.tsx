@@ -2,25 +2,27 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
+  TouchableOpacity,
   StyleSheet,
+  SafeAreaView,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Alert,
-  Image,
   Switch,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch, useSelector } from 'react-redux';
-import { StackNavigationProp } from '@react-navigation/stack';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 import { Button, InputField, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
-import { loginUser, clearError, loadStoredAuth, logoutUser } from '../../store/authSlice';
 import { RootState, AuthStackParamList } from '../../types';
+import { loginUser, loadStoredAuth, clearError, logoutUser, getUserProfile } from '../../store/authSlice';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -56,6 +58,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       try {
         await loadCachedCredentials();
         await dispatch(loadStoredAuth());
+        // Fetch fresh user profile on app start if authenticated
+        if ((await AsyncStorage.getItem('userToken')) && (await AsyncStorage.getItem('userData'))) {
+          try {
+            await dispatch(getUserProfile());
+          } catch (e) {
+            console.log('Failed to fetch user profile on init:', e);
+          }
+        }
       } finally {
         setIsInitializing(false);
       }

@@ -5,24 +5,20 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch, useSelector } from 'react-redux';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context'; // Import from react-native-safe-area-context
 // @ts-ignore
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
 
-import { Button, LoadingSpinner, Card } from '../../components';
+import { Card, Button, LoadingSpinner } from '../../components';
 import { Colors, Typography } from '../../theme';
-import { getUserProfile, logoutUser } from '../../store/authSlice';
+import { RootState } from '../../types';
+import { logoutUser, getUserProfile } from '../../store/authSlice';
 import { getTodayBikeMeterStatus } from '../../store/bikeMeterSlice';
-import { RootState, ProfileStackParamList } from '../../types';
-
-type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
 interface Props {
-  navigation: ProfileScreenNavigationProp;
+  navigation: any;
 }
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
@@ -81,7 +77,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Profile Header - Custom card without internal padding */}
         <View style={styles.profileCard}>

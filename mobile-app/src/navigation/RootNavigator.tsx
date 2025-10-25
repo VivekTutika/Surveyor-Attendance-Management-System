@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSelector, useDispatch } from 'react-redux';
-import { loadStoredAuth } from '../store/authSlice';
 
+import { LoadingSpinner } from '../components';
+import { Colors } from '../theme';
+import { RootState } from '../types';
+import { loadStoredAuth, getUserProfile } from '../store/authSlice'; // Add getUserProfile import
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { Colors } from '../theme';
-import { RootStackParamList, RootState } from '../types';
-import { LoadingSpinner } from '../components';
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator();
 
 const RootNavigator: React.FC = () => {
   const { isAuthenticated, token, loading } = useSelector((state: RootState) => state.auth);
@@ -22,6 +22,14 @@ const RootNavigator: React.FC = () => {
     const initializeAuth = async () => {
       try {
         await dispatch(loadStoredAuth() as any);
+        // Fetch fresh user profile on app start if authenticated
+        if (isAuthenticated && token) {
+          try {
+            await dispatch(getUserProfile() as any);
+          } catch (e) {
+            console.log('Failed to fetch user profile on init:', e);
+          }
+        }
       } finally {
         setIsInitialized(true);
       }
