@@ -25,12 +25,19 @@ export const loginUser = createAsyncThunk<
       // eslint-disable-next-line no-console
       console.log('[AuthThunk] login response:', response ? Object.keys(response) : 'no response');
       
-      // Response is already the data object due to axios interceptor
-  const normalizedUser = normalizeUser(response.user);
+      // Save token and user data to AsyncStorage FIRST
       await AsyncStorage.setItem('userToken', response.token);
+      const normalizedUser = normalizeUser(response.user);
       await AsyncStorage.setItem('userData', JSON.stringify(normalizedUser));
       
-      return { ...response, user: normalizedUser } as LoginResponse;
+      // NOW fetch the complete user profile with the token available
+      const userProfile = await authService.getProfile();
+      const fullNormalizedUser = normalizeUser(userProfile);
+      
+      // Update stored user data with complete profile
+      await AsyncStorage.setItem('userData', JSON.stringify(fullNormalizedUser));
+      
+      return { ...response, user: fullNormalizedUser } as LoginResponse;
     } catch (error: any) {
       // eslint-disable-next-line no-console
       console.log('[AuthThunk] login error:', error?.message || error);

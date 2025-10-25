@@ -43,24 +43,17 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   const [refreshing, setRefreshing] = React.useState(false);
 
-  // Load today's status when screen comes into focus
+  // Load today's status and user profile when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       loadTodayStatus();
+      // Always fetch fresh user profile to ensure Project/Location data is current
+      dispatch(getUserProfile());
     }, [])
   );
 
   const loadTodayStatus = async () => {
     try {
-      // If hasBike is undefined on the stored user, try fetching profile once to populate it.
-      if (user && (user as any).hasBike === undefined) {
-        try {
-          await dispatch(getUserProfile()).unwrap();
-        } catch (e) {
-          // ignore profile fetch failure and continue
-        }
-      }
-
       await Promise.all([
         dispatch(getTodayAttendanceStatus()),
         dispatch(getTodayBikeMeterStatus()),
