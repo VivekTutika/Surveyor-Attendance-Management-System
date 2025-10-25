@@ -54,16 +54,16 @@ export const exportBikeReadingsToCSV = async (data: BikeMeterReading[], opts: { 
       const timeStr = date ? date.toLocaleTimeString() : ''
       const surveyor = record?.user?.name ?? ''
       const mobile = record?.user?.mobileNumber ?? ''
-  const reading = (record?.reading ?? '')
+      const reading = (record?.reading != null) ? Number(record.reading).toFixed(1) : ''
       const photo = record?.photoPath ?? ''
       return [dateStr, timeStr, surveyor, mobile, String(reading), photo].join(',')
     })
 
     const csvContent = [headers.join(','), ...csvLines].join('\n')
-  const kindSuffix = opts.reportKind === 'COMPREHENSIVE' ? 'comprehensive' : 'raw'
-  // Ensure the report kind is part of the filename even when a specific surveyor is selected
-  const filenameBase = opts.surveyorName ? `bike-readings-${kindSuffix}` : `bike-readings-all-${kindSuffix}`
-  const filename = `${buildFileName(filenameBase, opts.surveyorName ?? null, opts.startDate ?? null, opts.endDate ?? null)}.csv`
+    const kindSuffix = opts.reportKind === 'COMPREHENSIVE' ? 'comprehensive' : 'raw'
+    // Ensure the report kind is part of the filename even when a specific surveyor is selected
+    const filenameBase = opts.surveyorName ? `bike-readings-${kindSuffix}` : `bike-readings-all-${kindSuffix}`
+    const filename = `${buildFileName(filenameBase, opts.surveyorName ?? null, opts.startDate ?? null, opts.endDate ?? null)}.csv`
     downloadCSV(csvContent, filename)
 
     reportService.create({ userId: opts.userId ?? 0, reportType: 'CSV', startDate: opts.startDate ?? null, endDate: opts.endDate ?? null, filePath: filename, generatedAt: new Date().toISOString(), createdBy: opts.createdBy ?? 'admin' }).catch(() => {})
@@ -135,7 +135,7 @@ export const exportBikeReadingsToPDF = async (data: BikeMeterReading[], opts: { 
     new Date(record.capturedAt).toLocaleTimeString(),
     record.user.name,
     record.user.mobileNumber,
-    `${record.reading} KM`
+    `${record.reading != null ? Number(record.reading).toFixed(1) : ''} KM`
   ])
 
   autoTable(doc, {
@@ -242,7 +242,7 @@ export const buildBikeReadingsCSVString = (data: BikeMeterReading[], opts: { sur
     const timeStr = date ? date.toLocaleTimeString() : ''
     const surveyor = record?.user?.name ?? ''
     const mobile = record?.user?.mobileNumber ?? ''
-    const reading = (record?.reading ?? '')
+    const reading = (record?.reading != null) ? Number(record.reading).toFixed(1) : ''
     const photo = record?.photoPath ?? ''
     // escape commas in fields
     const esc = (s: any) => {
@@ -271,7 +271,7 @@ export const buildBikeReadingsPDFBlob = (data: BikeMeterReading[], opts: { surve
     record.capturedAt ? new Date(record.capturedAt).toLocaleTimeString() : '',
     record.user?.name ?? '',
     record.user?.mobileNumber ?? '',
-    String(record.reading ?? '')
+    record.reading != null ? Number(record.reading).toFixed(1) : ''
   ])
 
   autoTable(doc, {
@@ -446,7 +446,7 @@ export const buildConsolidatedBikeReadingsCSVString = (data: { dates: string[]; 
     if (s.includes(',') || s.includes('\n') || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"'
     return s
   }
-  const lines = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? 0))].map(esc).join(','))
+  const lines = data.surveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] != null) ? Number(r[d]).toFixed(1) : '0')].map(esc).join(','))
   return [row1.join(','), row2.join(','), ...lines].join('\n')
 }
 
@@ -472,7 +472,7 @@ export const buildConsolidatedBikeReadingsPDFBlob = (data: { dates: string[]; su
     if (!isNaN(nx) && !isNaN(ny)) return nx - ny
     return ax.localeCompare(ay)
   })
-  const body = sortedSurveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] ?? 0))])
+  const body = sortedSurveyors.map(r => [r.employeeId, r.name, ...data.dates.map(d => (r[d] != null) ? Number(r[d]).toFixed(1) : '0')])
   autoTable(doc, {
     head: [headRow1, headRow2],
     body,
@@ -515,10 +515,10 @@ export const buildBikeTripsCSVString = (trips: any[]) => {
     const emp = t.surveyor?.employeeId ?? ''
     const name = t.surveyor?.name ?? ''
     const dt = t.date ? new Date(t.date).toISOString().split('T')[0] : ''
-    const morning = t.morningKm != null ? t.morningKm : ''
-    const evening = t.eveningKm != null ? t.eveningKm : ''
+    const morning = t.morningKm != null ? Number(t.morningKm).toFixed(1) : ''
+    const evening = t.eveningKm != null ? Number(t.eveningKm).toFixed(1) : ''
     // Show the finalKm value if it exists and the trip is approved
-    const distance = t.isApproved && t.finalKm != null ? t.finalKm : 0
+    const distance = t.isApproved && t.finalKm != null ? Number(t.finalKm).toFixed(1) : '0'
     return [esc(emp), esc(name), esc(dt), esc(morning), esc(evening), esc(distance)].join(',')
   })
   return [headers.join(','), ...lines].join('\n')
@@ -546,7 +546,14 @@ export const buildBikeTripsPDFBlob = (trips: any[], opts?: { surveyorName?: stri
     if (!isNaN(nx) && !isNaN(ny)) return nx - ny
     return ax.localeCompare(ay)
   })
-  const body = sortedTrips.map(t => [t.surveyor?.employeeId ?? '', t.surveyor?.name ?? '', t.date ? new Date(t.date).toLocaleDateString() : '', t.morningKm != null ? String(t.morningKm) : '', t.eveningKm != null ? String(t.eveningKm) : '', t.isApproved && t.finalKm != null ? String(t.finalKm) : '0'])
+  const body = sortedTrips.map(t => [
+    t.surveyor?.employeeId ?? '', 
+    t.surveyor?.name ?? '', 
+    t.date ? new Date(t.date).toLocaleDateString() : '', 
+    t.morningKm != null ? Number(t.morningKm).toFixed(1) : '', 
+    t.eveningKm != null ? Number(t.eveningKm).toFixed(1) : '', 
+    t.isApproved && t.finalKm != null ? Number(t.finalKm).toFixed(1) : '0'
+  ])
   autoTable(doc, {
     head: [head],
     body,

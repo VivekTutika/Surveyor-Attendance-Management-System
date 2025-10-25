@@ -77,6 +77,8 @@ export default function BikeReadingsReportPage() {
     }
     // consolidated endpoint expects 'surveyorId' query param name
     if (params.userId) { params.surveyorId = params.userId; delete params.userId }
+    if (params.projectId) { params.projectId = params.projectId }
+    if (params.locationId) { params.locationId = params.locationId }
     const res = await reportService.getConsolidatedBikeReadings(params)
     res.data.surveyors = [...(res.data.surveyors || [])].sort((a: any, b: any) => {
       const ax = (a.employeeId ?? '').toString()
@@ -111,6 +113,8 @@ export default function BikeReadingsReportPage() {
       return
     }
     if (params.userId) { params.surveyorId = params.userId; delete params.userId }
+    if (params.projectId) { params.projectId = params.projectId }
+    if (params.locationId) { params.locationId = params.locationId }
     const res = await reportService.getConsolidatedBikeReadings(params)
     await exportConsolidatedBikeReadingsToPDF(res.data, { startDate: params.startDate ?? null, endDate: params.endDate ?? null, userId: adminProfile?.id ?? null, createdBy: adminProfile?.name ?? 'admin' })
   }
@@ -124,6 +128,7 @@ export default function BikeReadingsReportPage() {
     if (projectId) params.projectId = projectId
     if (locationId) params.locationId = locationId
     if (reportKind === 'COMPREHENSIVE') {
+      // Convert userId to surveyorId for consolidated endpoint
       if (params.userId) { params.surveyorId = params.userId; delete params.userId }
       const res = await reportService.getConsolidatedBikeReadings(params)
       const consolidated = res.data
@@ -143,7 +148,7 @@ export default function BikeReadingsReportPage() {
           const dayShort = dt.toLocaleDateString(undefined, { weekday: 'short' } as any)
           return `${dateShort}\n${dayShort}`
         })]
-        const rows = consolidated.surveyors.slice(0, 10).map((r: any) => [r.employeeId, r.name, ...consolidated.dates.slice(0, 10).map((d: string) => r[d] ?? 0)])
+        const rows = consolidated.surveyors.slice(0, 10).map((r: any) => [r.employeeId, r.name, ...consolidated.dates.slice(0, 10).map((d: string) => r[d] != null ? Number(r[d]).toFixed(1) : '0')])
         setPreviewRows({ headers, rows })
         if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null) }
       } else {
@@ -173,10 +178,10 @@ export default function BikeReadingsReportPage() {
         const name = t.surveyor?.name ?? ''
         const dt = t.date ? new Date(t.date) : null
         const dateStr = dt ? dt.toLocaleDateString() : ''
-        const morning = t.morningKm != null ? String(t.morningKm) : ''
-        const evening = t.eveningKm != null ? String(t.eveningKm) : ''
+        const morning = t.morningKm != null ? Number(t.morningKm).toFixed(1) : ''
+        const evening = t.eveningKm != null ? Number(t.eveningKm).toFixed(1) : ''
         // Show the finalKm value if it exists and the trip is approved
-        const distance = t.isApproved && t.finalKm != null ? String(t.finalKm) : '0'
+        const distance = t.isApproved && t.finalKm != null ? Number(t.finalKm).toFixed(1) : '0'
         return [emp, name, dateStr, morning, evening, distance]
       })
       setPreviewRows({ headers, rows })

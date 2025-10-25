@@ -5,6 +5,8 @@ export interface BikeTripFilters {
   date?: string;
   startDate?: string;
   endDate?: string;
+  page?: number;
+  limit?: number;
   projectId?: number;
   locationId?: number;
 }
@@ -100,7 +102,7 @@ export class BikeTripService {
   }
 
   static async getTrips(filters: BikeTripFilters, userRole: string, requestingUserId: number) {
-    const { userId, date, startDate, endDate, projectId, locationId } = filters;
+    const { userId, date, startDate, endDate, page = 1, limit = 10, projectId, locationId } = filters;
 
     const where: any = {};
 
@@ -154,6 +156,13 @@ export class BikeTripService {
       where.surveyor.locationId = parseInt(locationId as any, 10);
     }
 
+    // Get total count for pagination
+    const total = await prisma.bikeTrip.count({ where });
+    
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    const pages = Math.ceil(total / limit);
+
     const trips = await prisma.bikeTrip.findMany({
       where,
       select: {
@@ -176,9 +185,16 @@ export class BikeTripService {
         },
       },
       orderBy: [{ date: 'desc' }],
+      skip,
+      take: limit,
     });
 
-    return trips;
+    return {
+      trips,
+      total,
+      page,
+      pages
+    };
   }
 
   static async setFinalKm(tripId: number, finalKm: number) {

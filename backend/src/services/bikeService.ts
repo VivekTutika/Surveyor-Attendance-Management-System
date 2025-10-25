@@ -17,6 +17,8 @@ export interface BikeMeterFilters {
   startDate?: string;
   endDate?: string;
   type?: AttendanceType;
+  page?: number;
+  limit?: number;
   projectId?: number;
   locationId?: number;
 }
@@ -92,9 +94,9 @@ export class BikeService {
     return bikeMeterReading;
   }
 
-  // Get bike meter readings with filters
+  // Get bike meter readings with filters and pagination
   static async getBikeMeterReadings(filters: BikeMeterFilters, userRole: string, requestingUserId: number) {  // Changed from string to number
-    const { userId, date, startDate, endDate, type, projectId, locationId } = filters;
+    const { userId, date, startDate, endDate, type, page = 1, limit = 10, projectId, locationId } = filters;
 
     // Build where clause
     const where: any = {};
@@ -150,6 +152,13 @@ export class BikeService {
       where.user.locationId = parseInt(locationId as any, 10);
     }
 
+    // Get total count for pagination
+    const total = await prisma.bikeMeterReading.count({ where });
+    
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    const pages = Math.ceil(total / limit);
+
     const bikeMeterReadings = await prisma.bikeMeterReading.findMany({
       where,
       include: {
@@ -167,9 +176,16 @@ export class BikeService {
         { date: 'desc' },
         { type: 'asc' },
       ],
+      skip,
+      take: limit,
     });
 
-    return bikeMeterReadings;
+    return {
+      readings: bikeMeterReadings,
+      total,
+      page,
+      pages
+    };
   }
 
   // Get today's bike meter reading status for a user
